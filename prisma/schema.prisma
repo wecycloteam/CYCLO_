@@ -25,6 +25,9 @@ datasource db {
 // WasteMaterial.category -> plastic | paper | cardboard | glass | metal | e_waste | organic | other
 // WasteListing.status -> see packages/shared-types/src/marketplace.ts LISTING_STATUSES/LISTING_TRANSITIONS
 // WasteListing.pickupOption -> seller_dropoff | collection_required | flexible
+// PickupRequest.status -> see packages/shared-types/src/collection.ts PICKUP_STATUSES/PICKUP_TRANSITIONS
+// Transaction.paymentStatus -> see packages/shared-types/src/collection.ts PAYMENT_STATUSES
+// WasteEvent.eventType -> see packages/shared-types/src/collection.ts WASTE_EVENT_TYPES
 
 model User {
   id           String   @id @default(uuid())
@@ -44,6 +47,11 @@ model User {
   locations               Location[]
   refreshTokens           RefreshToken[]
   wasteListings           WasteListing[]
+  pickupRequestsMade      PickupRequest[]        @relation("PickupProducer")
+  pickupRequestsAssigned  PickupRequest[]        @relation("PickupCollector")
+  transactionsAsSeller    Transaction[]          @relation("TransactionSeller")
+  transactionsAsCollector Transaction[]          @relation("TransactionCollector")
+  wasteEvents             WasteEvent[]
 
   @@index([role])
 }
@@ -119,6 +127,7 @@ model Location {
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   wasteListings WasteListing[]
+  pickupRequests PickupRequest[]
 
   @@index([userId])
   @@index([organizationId])
@@ -136,7 +145,9 @@ model WasteMaterial {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  wasteListings WasteListing[]
+  wasteListings   WasteListing[]
+  pickupRequests  PickupRequest[]
+  transactions    Transaction[]
 
   @@unique([category, subtype])
   @@index([category])
@@ -164,13 +175,101 @@ model WasteListing {
   updatedAt        DateTime  @updatedAt
   expiresAt        DateTime?
 
-  seller   User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  material WasteMaterial @relation(fields: [materialId], references: [id])
-  location Location      @relation(fields: [locationId], references: [id])
+  seller         User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  material       WasteMaterial   @relation(fields: [materialId], references: [id])
+  location       Location        @relation(fields: [locationId], references: [id])
+  pickupRequests PickupRequest[]
 
   @@index([sellerId])
   @@index([materialId])
   @@index([status])
+}
+
+// §18/§19/§20 — a producer's request to have material collected. Optionally tied to a
+// WasteListing (the §75 vertical slice's path: list -> request pickup -> collector
+// completes -> transaction); listingId is nullable because §18 also describes standalone
+// "just pick this up" requests with no marketplace listing behind them.
+model PickupRequest {
+  id                     String    @id @default(uuid())
+  producerId             String
+  locationId             String
+  materialId             String
+  listingId              String?
+  estimatedWeightKg      Float
+  verifiedWeightKg       Float?
+  weightRecordedByUserId String?
+  weightRecordedAt       DateTime?
+  weightMethod           String?
+  preferredTime          DateTime?
+  notes                  String?
+  status                 String    @default("CREATED")
+  assignedCollectorId    String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  producer  User           @relation("PickupProducer", fields: [producerId], references: [id], onDelete: Cascade)
+  collector User?          @relation("PickupCollector", fields: [assignedCollectorId], references: [id])
+  location  Location       @relation(fields: [locationId], references: [id])
+  material  WasteMaterial  @relation(fields: [materialId], references: [id])
+  listing   WasteListing?  @relation(fields: [listingId], references: [id])
+  wasteEvents WasteEvent[]
+  transaction Transaction?
+
+  @@index([producerId])
+  @@index([assignedCollectorId])
+  @@index([status])
+}
+
+// §25 — immutable once paymentStatus reaches a terminal state (enforced in
+// CollectionService, not the DB — corrections happen via new linked records, never
+// mutation). One Transaction per completed PickupRequest for this slice; buyerId is
+// nullable because the recycler/buyer side (§16, Phase 7) doesn't exist yet — a real
+// buyer populates it once BuyRequest/Offer are built without changing this shape.
+model Transaction {
+  id               String   @id @default(uuid())
+  reference        String   @unique
+  pickupRequestId  String   @unique
+  sellerId         String
+  collectorId      String?
+  buyerId          String?
+  materialId       String
+  verifiedWeightKg Float
+  agreedPrice      Float?
+  platformFee      Float    @default(0)
+  grossAmount      Float?
+  netAmount        Float?
+  paymentStatus    String   @default("PENDING")
+  createdAt        DateTime @default(now())
+
+  pickupRequest PickupRequest @relation(fields: [pickupRequestId], references: [id])
+  seller        User          @relation("TransactionSeller", fields: [sellerId], references: [id])
+  collector     User?         @relation("TransactionCollector", fields: [collectorId], references: [id])
+  material      WasteMaterial @relation(fields: [materialId], references: [id])
+  wasteEvents   WasteEvent[]
+
+  @@index([sellerId])
+}
+
+// §23/§24 — the append-only traceability chain. Every PickupRequest status transition
+// (and the Transaction it produces) writes one row here; nothing is ever updated or
+// deleted, so this table alone reconstructs a waste item's full journey.
+model WasteEvent {
+  id              String   @id @default(uuid())
+  pickupRequestId String?
+  transactionId   String?
+  eventType       String
+  actorId         String?
+  notes           String?
+  previousState   String?
+  newState        String?
+  createdAt       DateTime @default(now())
+
+  pickupRequest PickupRequest? @relation(fields: [pickupRequestId], references: [id])
+  transaction   Transaction?   @relation(fields: [transactionId], references: [id])
+  actor         User?          @relation(fields: [actorId], references: [id])
+
+  @@index([pickupRequestId])
+  @@index([transactionId])
 }
 
 model CollectorProfile {

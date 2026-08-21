@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -65,6 +66,20 @@ export class MarketplaceService {
       take: BROWSE_PAGE_SIZE,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
+  }
+
+  // Used by the collection module when a producer requests a pickup against one of their
+  // own listings — a pickup can only be opened against a listing that is actually ACTIVE.
+  async getActiveOwnedListing(sellerId: string, id: string) {
+    const listing = await this.prisma.wasteListing.findUnique({ where: { id } });
+    if (!listing) throw new NotFoundException('Listing not found.');
+    if (listing.sellerId !== sellerId) {
+      throw new ForbiddenException('You do not have permission to use this listing.');
+    }
+    if (listing.status !== 'ACTIVE') {
+      throw new BadRequestException('A pickup can only be requested against an ACTIVE listing.');
+    }
+    return listing;
   }
 
   async findOne(requesterId: string, id: string) {

@@ -1,7 +1,6 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { RolesGuard } from './auth/guards/roles.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,9 +15,11 @@ async function bootstrap() {
     }),
   );
 
-  // RolesGuard runs after any route-level JwtAuthGuard populates req.user; it only
-  // enforces when a handler/class carries @Roles(...) metadata (§42).
-  app.useGlobalGuards(new RolesGuard(app.get(Reflector)));
+  // RolesGuard is applied per-controller via @UseGuards(JwtAuthGuard, RolesGuard), not
+  // globally here — a global guard (APP_GUARD or app.useGlobalGuards()) runs *before*
+  // controller-scoped guards in Nest's execution order, so a global RolesGuard would read
+  // request.user before JwtAuthGuard has populated it, rejecting every @Roles()-gated
+  // route regardless of the caller's actual role (§42 — verified via collection.e2e-spec).
 
   await app.listen(process.env.PORT ?? 3000);
 }

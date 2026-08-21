@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { LocationsModule } from './locations/locations.module';
 import { WasteMaterialsModule } from './waste-materials/waste-materials.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
+import { CollectionModule } from './collection/collection.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
     LocationsModule,
     WasteMaterialsModule,
     MarketplaceModule,
+    CollectionModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

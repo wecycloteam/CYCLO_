@@ -1,2 +1,3 @@
 export * from "./roles";
 export * from "./marketplace";
+export * from "./collection";

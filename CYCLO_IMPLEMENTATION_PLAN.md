@@ -39,13 +39,44 @@ Design/brand reference: [index.html](index.html) (static prototype — see Secti
   Ownership enforced server-side throughout. Covered by
   `apps/api/test/marketplace.e2e-spec.ts` (11 cases: cross-owner rejection, draft
   visibility, publish/cancel/re-transition rejection, browse/detail visibility).
-- Not yet built for this slice: `PickupRequest` + its §20 state machine, collector
-  accept/weigh/complete, `Transaction`, `WasteEvent` history, and the web UI for any of the
-  above (backend-only so far — see Open Decisions).
-- Listing fields intentionally deferred: `photos` (needs the storage abstraction, not built
-  yet — §39 gap) and `askingPrice`-driven pricing engine (§17, seller can still set a manual
-  ask; the pricing-suggestion engine is a later phase). Both are modeled in the schema but
-  not wired into the create-listing flow, so nothing is faked as working.
+- `PickupRequest` (collection module) live with the full explicit §20 state machine
+  (`packages/shared-types/src/collection.ts` — `PICKUP_TRANSITIONS`). Producer creates
+  (optionally against one of their own ACTIVE listings, which reserves it); collectors
+  browse the open pool and self-accept (race-safe — a second collector accepting an
+  already-taken job gets 409, not a silent double-assignment); assigned collector walks
+  en-route → arrived → collecting → records a verified weight (kept distinct from the
+  estimated weight, §22) → completes.
+- Completion (`CollectionService.complete`) creates a `Transaction` — reference format
+  `CYCLO-{REGION}-{SEQ}` (§23, region derived from the pickup location, never hardcoded)
+  — inside one DB transaction alongside the `PickupRequest` update, the linked listing's
+  RESERVED→SOLD→COLLECTED transitions, and the `WasteEvent` rows, so nothing can be left
+  half-applied. `paymentStatus` stays `PENDING`: no real payment provider exists yet
+  (§26/Phase 5), so nothing is ever faked as paid.
+- `WasteEvent` (§23/§24) is written on every pickup transition and on transaction
+  creation, giving a full ordered history per pickup at `GET /pickup-requests/:id/events`
+  — this is the "WASTE EVENT HISTORY UPDATED" step of the §75 vertical slice.
+- This closes the backend side of the §52 critical test case end-to-end: household lists
+  → publishes → requests pickup → collector accepts/collects/weighs/completes →
+  transaction recorded → traceable history. Proven by
+  `apps/api/test/collection.e2e-spec.ts` (18 cases, including the full happy path, the
+  double-accept race, and cross-listing reservation/release on cancel) — 36 e2e + 16 unit
+  tests passing across the whole api workspace.
+- Bug found and fixed along the way: `RolesGuard` had been wired via
+  `app.useGlobalGuards()` in `main.ts`. Nest runs global guards *before*
+  controller-scoped ones, so it was reading `request.user` before `JwtAuthGuard`
+  (controller-scoped) had populated it — every `@Roles()`-gated route would have 403'd
+  regardless of the caller's actual role, in production as well as tests. This was
+  latent until the collection module became the first to actually use `@Roles()`. Fixed
+  by applying `@UseGuards(JwtAuthGuard, RolesGuard)` locally, in that order, on
+  `CollectionController`; see the comment in `main.ts`.
+- Not yet built: web UI for any of the above (backend-only so far), collector
+  verification gating (§21 — any user with `role=collector` can currently accept jobs;
+  the verification workflow is Phase 4), and the recycler/buyer side of a transaction
+  (`Transaction.buyerId` is nullable until `BuyRequest`/`Offer` exist in Phase 7).
+- Deferred deliberately, not faked: listing/pickup `photos` (needs the storage
+  abstraction, §39 gap) and the `askingPrice`-driven pricing engine (§17 — a listing's
+  manual asking price passes straight through to the transaction's `agreedPrice` with a
+  zero platform fee; there is no real pricing engine yet).
 
 ---
 
