@@ -11,6 +11,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 const OTP_TTL_MINUTES = 5;
 const OTP_LENGTH = 6;
+const MAX_OTP_ATTEMPTS = 5;
 
 function hashRefreshToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -46,8 +47,20 @@ export class AuthService {
       throw new BadRequestException('No active verification code for this number. Request a new one.');
     }
 
+    if (challenge.attemptCount >= MAX_OTP_ATTEMPTS) {
+      await this.prisma.otpChallenge.update({
+        where: { id: challenge.id },
+        data: { consumedAt: new Date() },
+      });
+      throw new BadRequestException('Too many incorrect attempts. Request a new code.');
+    }
+
     const matches = await bcrypt.compare(dto.code, challenge.codeHash);
     if (!matches) {
+      await this.prisma.otpChallenge.update({
+        where: { id: challenge.id },
+        data: { attemptCount: { increment: 1 } },
+      });
       throw new BadRequestException('Incorrect verification code.');
     }
 

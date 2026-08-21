@@ -45,12 +45,13 @@ model User {
 }
 
 model OtpChallenge {
-  id         String    @id @default(uuid())
-  phone      String
-  codeHash   String
-  expiresAt  DateTime
-  consumedAt DateTime?
-  createdAt  DateTime  @default(now())
+  id           String    @id @default(uuid())
+  phone        String
+  codeHash     String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  createdAt    DateTime  @default(now())
 
   @@index([phone])
 }

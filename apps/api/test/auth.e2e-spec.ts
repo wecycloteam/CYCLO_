@@ -106,4 +106,27 @@ describe('Auth (e2e) — the phone+OTP loop backing Phase 1 (auth, roles, profil
   it('rejects /users/me without a token', async () => {
     await request(app.getHttpServer()).get('/users/me').expect(401);
   });
+
+  it('locks a challenge out after too many wrong attempts, even with the right code', async () => {
+    const lockoutPhone = '+255700333444';
+    await request(app.getHttpServer()).post('/auth/otp/request').send({ phone: lockoutPhone }).expect(201);
+    const rightCode = sms.lastCode;
+
+    for (let i = 0; i < 5; i++) {
+      await request(app.getHttpServer())
+        .post('/auth/otp/verify')
+        .send({ phone: lockoutPhone, code: '000000' })
+        .expect(400);
+    }
+
+    // The challenge is now locked out — even the correct code is rejected.
+    const res = await request(app.getHttpServer())
+      .post('/auth/otp/verify')
+      .send({ phone: lockoutPhone, code: rightCode })
+      .expect(400);
+    expect(res.body.message).toMatch(/too many/i);
+
+    await prisma.user.deleteMany({ where: { phone: lockoutPhone } });
+    await prisma.otpChallenge.deleteMany({ where: { phone: lockoutPhone } });
+  });
 });
