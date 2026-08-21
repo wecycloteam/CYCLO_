@@ -1,8 +1,27 @@
 # CYCLO Implementation Plan
 
-Status: DRAFT — pending stack confirmation (see "Open Decisions" at the end).
+Status: Phase 1 (Foundation) in progress. Stack confirmed — see "Open Decisions" at the end.
 Source of truth for product rules: the CYCLO Master Implementation Prompt provided 2026-08-21.
 Design/brand reference: [index.html](index.html) (static prototype — see Section 1).
+
+## Phase 1 progress
+
+- Monorepo scaffolded: `apps/api` (NestJS), `apps/web` (Next.js), `packages/design-tokens`,
+  `packages/shared-types`, root npm workspaces, git initialized.
+- Brand assets extracted byte-identical from the prototype to `assets/brand/` and wired into
+  both the design-tokens CSS and the web app.
+- Database foundation live: Prisma + SQLite, initial migration applied (User, OtpChallenge,
+  RefreshToken, Organization, OrganizationMember, Location, CollectorProfile, Verification,
+  AuditLog).
+- Auth working end-to-end: phone+OTP request/verify, JWT access + rotating refresh tokens,
+  RBAC guard scaffold (`@Roles()`), `GET /users/me`. Covered by an e2e test
+  (`apps/api/test/auth.e2e-spec.ts`) exercising request → verify → profile → refresh →
+  rotation-rejection, plus expiry/replay/unauthorized rejection paths. All passing.
+- Web app: CYCLO-themed login (phone → OTP code) and an authenticated home/profile page with
+  loading/error/retry states, built on the shared design tokens.
+- Still open for the rest of Phase 1: navigation shell content for the other five roles is not
+  built yet (only household-shaped login/home exist); Flutter mobile app not started (SDK
+  install in progress, see below).
 
 ---
 
@@ -159,8 +178,8 @@ Each phase ships as one or more vertical slices (§75), never screens-first (§5
 
 ---
 
-## Open Decisions (blocking Phase 1 start)
+## Open Decisions — resolved 2026-08-21
 
-1. **Mobile platform** — this machine has no `flutter`/`dart` installed. Options: (a) start with a mobile-responsive **web PWA** (Next.js) that can be built and verified today with just Node — reuses the exact prototype look immediately; native Flutter app added in a later phase once tooling is installed; or (b) install Flutter now and build native-first per §39's literal recommendation.
-2. **Version control** — `git` is not installed on this machine, and the project isn't a repository yet. Real engineering discipline (§64, code review, safe rollbacks) needs it before any substantial code is written.
-3. **Local database** — no `docker`/`psql` installed. Options: (a) SQLite for local dev via Prisma, swapped for Postgres in staging/prod (fast to start, zero extra installs), or (b) install PostgreSQL/Docker locally now to match production from day one.
+1. **Mobile platform** — Decided: install Flutter now, native-first, per §39's literal recommendation. Flutter/Dart SDK download and extraction in progress (large download; the storage.googleapis.com host truncates connections on this network, so it's being fetched via a resumable `curl -C -` retry loop rather than a single request). `apps/mobile` (Flutter) will be scaffolded once the SDK is verified working via `flutter doctor`.
+2. **Version control** — Decided: install Git and init a repo now. Done — Git 2.55 installed, repository initialized, 7 logical commits made so far (brand assets, scaffold, db, auth, web).
+3. **Local database** — Decided: SQLite for local dev via Prisma. Done — schema is Postgres-portable (no native `enum` usage; string fields validated at the application layer), initial migration applied, verified working end-to-end through the auth e2e suite.
