@@ -1,6 +1,6 @@
 import { IsIn, IsOptional, IsString, Length, Matches, MinLength } from 'class-validator';
-import { USER_ROLES } from '@cyclo/shared-types';
-import type { UserRole } from '@cyclo/shared-types';
+import { SELF_REGISTERABLE_ROLES } from '@cyclo/shared-types';
+import type { SelfRegisterableRole } from '@cyclo/shared-types';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
 
@@ -18,7 +18,8 @@ export class VerifyOtpDto {
   @MinLength(2)
   name?: string;
 
+  // authority/admin are deliberately excluded — see SELF_REGISTERABLE_ROLES.
   @IsOptional()
-  @IsIn(USER_ROLES)
-  role?: UserRole;
+  @IsIn(SELF_REGISTERABLE_ROLES)
+  role?: SelfRegisterableRole;
 }

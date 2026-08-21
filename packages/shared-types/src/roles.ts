@@ -13,6 +13,12 @@ export const USER_ROLES = [
 ] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+// authority and admin are never self-service (see master prompt §6, roles 5-6 —
+// authority is a dedicated dashboard and admin is internal platform staff).
+// Only these roles may be chosen by a user completing signup themselves.
+export const SELF_REGISTERABLE_ROLES = ["household", "business", "collector", "recycler"] as const;
+export type SelfRegisterableRole = (typeof SELF_REGISTERABLE_ROLES)[number];
+
 export const ORGANIZATION_TYPES = ["business", "recycler", "authority"] as const;
 export type OrganizationType = (typeof ORGANIZATION_TYPES)[number];
 

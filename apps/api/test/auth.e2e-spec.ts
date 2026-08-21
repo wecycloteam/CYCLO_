@@ -50,6 +50,13 @@ describe('Auth (e2e) — the phone+OTP loop backing Phase 1 (auth, roles, profil
       .expect(400);
   });
 
+  it('rejects self-registration with a privileged role', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/otp/verify')
+      .send({ phone, code: '123456', role: 'admin' })
+      .expect(400);
+  });
+
   it('rejects verification when no code was requested', async () => {
     await request(app.getHttpServer())
       .post('/auth/otp/verify')
