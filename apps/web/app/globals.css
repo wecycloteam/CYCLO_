@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "../../../packages/design-tokens/src/tokens.css";
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text-1);
+  --color-cyclo-teal: var(--cyclo-teal);
+  --color-cyclo-mint: var(--cyclo-mint);
+  --color-cyclo-green: var(--cyclo-green);
+  --font-sans: var(--font-inter), var(--font);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font);
+}
