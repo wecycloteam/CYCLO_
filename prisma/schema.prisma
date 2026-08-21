@@ -1,0 +1,157 @@
+// CYCLO — Phase 1 database foundation (auth, roles, profile).
+// Provider is SQLite for local dev (per CYCLO_IMPLEMENTATION_PLAN.md open decisions);
+// swapped to PostgreSQL for staging/production without changing the model shapes below.
+//
+// NOTE: Prisma's native `enum` type is not supported on the SQLite connector, so
+// role/status fields are modeled as String and validated at the application layer
+// (see packages/shared-types) — this keeps the schema portable across both providers.
+// Every entity carries a stable id, createdAt, and updatedAt where mutable, per
+// CYCLO_IMPLEMENTATION_PLAN.md section 6/36.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Allowed values (enforced in application code, not the DB):
+// User.role        -> household | business | collector | recycler | authority | admin
+// Organization.type -> business | recycler | authority
+// VerificationStatus -> unverified | pending | verified | rejected | suspended
+// CollectorAvailability -> online | offline
+
+model User {
+  id           String   @id @default(uuid())
+  phone        String   @unique
+  email        String?  @unique
+  passwordHash String?
+  name         String
+  role         String
+  locale       String   @default("en")
+  country      String   @default("TZ")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  organizationMemberships OrganizationMember[]
+  ownedOrganizations      Organization[]        @relation("OrganizationOwner")
+  collectorProfile        CollectorProfile?
+  locations               Location[]
+  refreshTokens           RefreshToken[]
+
+  @@index([role])
+}
+
+model OtpChallenge {
+  id         String    @id @default(uuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Organization {
+  id                 String   @id @default(uuid())
+  type               String
+  name               String
+  verificationStatus String   @default("unverified")
+  ownerUserId        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  owner      User                 @relation("OrganizationOwner", fields: [ownerUserId], references: [id])
+  members    OrganizationMember[]
+  locations  Location[]
+
+  @@index([type])
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+}
+
+model Location {
+  id             String   @id @default(uuid())
+  ownerType      String
+  userId         String?
+  organizationId String?
+  label          String
+  addressLine    String?
+  region         String?
+  country        String   @default("TZ")
+  latitude       Float?
+  longitude      Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model CollectorProfile {
+  userId             String   @id
+  verificationStatus String   @default("unverified")
+  vehicleType        String?
+  vehiclePlate       String?
+  serviceAreaLabel   String?
+  availability       String   @default("offline")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id             String    @id @default(uuid())
+  subjectType    String
+  subjectId      String
+  status         String    @default("pending")
+  documents      String? // JSON-encoded array of storage refs
+  reviewedByUserId String?
+  reviewedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([subjectType, subjectId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  targetType String
+  targetId  String
+  metadata  String? // JSON-encoded
+  createdAt DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
