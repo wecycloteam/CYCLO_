@@ -7,6 +7,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 
 class CapturingSmsProvider {
   public lastCode: string | null = null;
+  readonly exposesCodeInResponse = false;
   async sendOtp(_phone: string, code: string) {
     this.lastCode = code;
   }

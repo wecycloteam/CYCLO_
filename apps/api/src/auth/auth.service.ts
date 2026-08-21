@@ -35,7 +35,13 @@ export class AuthService {
     await this.prisma.otpChallenge.create({ data: { phone, codeHash, expiresAt } });
     await this.sms.sendOtp(phone, code);
 
-    return { message: 'Verification code sent.', expiresInSeconds: OTP_TTL_MINUTES * 60 };
+    return {
+      message: 'Verification code sent.',
+      expiresInSeconds: OTP_TTL_MINUTES * 60,
+      // Only ever set when the bound provider is a non-delivering dev stub (see
+      // SmsProvider.exposesCodeInResponse) — never present once a real provider is wired in.
+      devCode: this.sms.exposesCodeInResponse ? code : undefined,
+    };
   }
 
   async verifyOtp(dto: VerifyOtpDto) {

@@ -16,13 +16,18 @@ export default function LoginPage() {
   const [role, setRole] = useState("household");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [devCode, setDevCode] = useState<string | null>(null);
 
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await api.requestOtp(phone);
+      const res = await api.requestOtp(phone);
+      // devCode only ever comes back from the dev SMS stub (never in production) —
+      // see apps/api SmsProvider.exposesCodeInResponse.
+      setDevCode(res.devCode ?? null);
+      setCode(res.devCode ?? "");
       setStep("code");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
@@ -113,6 +118,12 @@ export default function LoginPage() {
             <p className="text-sm text-[#B9D6D1] mb-9 leading-relaxed">
               We sent a 6-digit code to {phone}.
             </p>
+            {devCode && (
+              <div className="mb-6 rounded-2xl border border-dashed border-[var(--cyclo-green)]/50 bg-black/20 px-4 py-3 text-xs text-[#B9D6D1]">
+                <span className="font-bold text-[var(--cyclo-green)]">DEV MODE</span> — no SMS is actually sent
+                locally, so the real code is shown here and pre-filled below: <span className="font-mono tracking-widest">{devCode}</span>
+              </div>
+            )}
             <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
               <input
                 type="text"
@@ -152,7 +163,11 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setStep("phone")}
+                onClick={() => {
+                  setStep("phone");
+                  setDevCode(null);
+                  setCode("");
+                }}
                 className="w-full rounded-full border border-white/25 text-[#EFFBF3] font-bold text-sm py-3.5"
               >
                 Use a different number

@@ -213,7 +213,9 @@ export interface AdminPendingListing extends WasteListing {
 
 export const api = {
   requestOtp: (phone: string) =>
-    request<{ message: string; expiresInSeconds: number }>("/auth/otp/request", {
+    // devCode is only ever present when the API's bound SmsProvider is a non-delivering
+    // dev stub (see apps/api SmsProvider.exposesCodeInResponse) — never in production.
+    request<{ message: string; expiresInSeconds: number; devCode?: string }>("/auth/otp/request", {
       method: "POST",
       body: JSON.stringify({ phone }),
     }),

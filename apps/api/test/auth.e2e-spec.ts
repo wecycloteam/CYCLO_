@@ -10,6 +10,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 // into the database.
 class CapturingSmsProvider {
   public lastCode: string | null = null;
+  readonly exposesCodeInResponse = true;
   async sendOtp(_phone: string, code: string) {
     this.lastCode = code;
   }
@@ -65,9 +66,12 @@ describe('Auth (e2e) — the phone+OTP loop backing Phase 1 (auth, roles, profil
   });
 
   it('completes the request → verify → authenticated profile loop', async () => {
-    await request(app.getHttpServer()).post('/auth/otp/request').send({ phone }).expect(201);
+    const requestRes = await request(app.getHttpServer()).post('/auth/otp/request').send({ phone }).expect(201);
 
     expect(sms.lastCode).toMatch(/^\d{6}$/);
+    // devCode is only ever present because this test's SmsProvider stub declares
+    // exposesCodeInResponse=true — see sms-provider.interface.ts.
+    expect(requestRes.body.devCode).toBe(sms.lastCode);
 
     // Wrong code is rejected without consuming the real one.
     await request(app.getHttpServer())
