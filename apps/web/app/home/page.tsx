@@ -1,114 +1,132 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { api, tokenStore, ApiError, CurrentUser } from "@/lib/api";
+import Link from "next/link";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { api, PickupRequest, WasteListing } from "@/lib/api";
+import { AppHeader } from "@/components/AppHeader";
+import { BottomNav } from "@/components/BottomNav";
+import { StatusBadge } from "@/components/StatusBadge";
+import { LoadingState, ErrorState } from "@/components/AsyncState";
 
-type LoadState = "loading" | "ready" | "error" | "unauthenticated";
-
-const ROLE_LABELS: Record<string, string> = {
-  household: "Household",
-  business: "Business",
-  collector: "Collector",
-  recycler: "Recycling Company",
-  authority: "Environmental Authority",
-  admin: "CYCLO Admin",
-};
-
+// §10 — home answers "what can I do right now": Scan / Sell / Request Pickup, then
+// contextual recent activity. Kept intentionally light — no impact stats yet, since
+// there's no real aggregate-computation endpoint behind one (would otherwise be a
+// screen-only number with nothing real behind it).
 export default function HomePage() {
-  const router = useRouter();
-  const [state, setState] = useState<LoadState>("loading");
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { state, user, error, retry } = useCurrentUser();
+  const [recentListings, setRecentListings] = useState<WasteListing[]>([]);
+  const [recentPickups, setRecentPickups] = useState<PickupRequest[]>([]);
 
   useEffect(() => {
-    if (!tokenStore.getAccess()) {
-      router.replace("/login");
-      return;
+    if (state !== "ready" || !user) return;
+    api.myListings().then(setRecentListings).catch(() => undefined);
+    if (user.role === "collector") {
+      api.assignedPickupJobs().then(setRecentPickups).catch(() => undefined);
+    } else {
+      api.myPickupRequests().then(setRecentPickups).catch(() => undefined);
     }
-    api
-      .me()
-      .then((u) => {
-        setUser(u);
-        setState("ready");
-      })
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) {
-          tokenStore.clear();
-          router.replace("/login");
-          return;
-        }
-        setError(err instanceof ApiError ? err.message : "We couldn't load your profile.");
-        setState("error");
-      });
-  }, [router]);
-
-  async function handleLogout() {
-    const refreshToken = tokenStore.getRefresh();
-    tokenStore.clear();
-    if (refreshToken) {
-      await api.logout(refreshToken).catch(() => undefined);
-    }
-    router.replace("/login");
-  }
+  }, [state, user]);
 
   return (
-    <main className="min-h-screen bg-[var(--bg)]">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
-        <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={140} height={40} className="h-[42px] w-auto" />
-        <button
-          onClick={handleLogout}
-          className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-bold text-[var(--text-2)]"
-        >
-          Log out
-        </button>
-      </header>
+    <main className="min-h-screen flex flex-col bg-[var(--bg)]">
+      <AppHeader />
 
-      <div className="max-w-md mx-auto px-6 py-8">
-        {state === "loading" && <p className="text-[var(--text-2)] text-sm">Loading your profile…</p>}
-
-        {state === "error" && (
-          <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
-            <p className="text-sm text-[var(--text-2)] mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5"
-            >
-              Retry
-            </button>
-          </div>
-        )}
+      <div className="flex-1 max-w-md w-full mx-auto px-6 py-8">
+        {state === "loading" && <LoadingState label="Loading your profile…" />}
+        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={retry} />}
 
         {state === "ready" && user && (
           <>
             <div className="mb-6">
-              <div className="text-sm text-[var(--text-2)]">Welcome back</div>
+              <div className="text-sm text-[var(--text-2)]">Good to see you</div>
               <div className="text-xl font-extrabold">{user.name}</div>
             </div>
 
-            <div
-              className="rounded-[var(--r-lg)] p-5 mb-6 text-white relative overflow-hidden"
-              style={{ background: "linear-gradient(135deg, var(--cyclo-teal), #1B3E41)" }}
-            >
-              <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">
-                Account type
+            {user.role !== "collector" ? (
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                <Link
+                  href="/scan"
+                  className="col-span-2 rounded-[var(--r-lg)] p-5 text-white relative overflow-hidden"
+                  style={{ background: "linear-gradient(135deg, var(--cyclo-teal), #1B3E41)" }}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">Get started</div>
+                  <div className="text-lg font-extrabold">Scan Waste →</div>
+                  <div className="text-xs text-[#C7E3DE] mt-1">Identify and value materials</div>
+                </Link>
+                <Link
+                  href="/marketplace/new"
+                  className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4"
+                >
+                  <div className="text-2xl mb-1">🏷️</div>
+                  <div className="text-sm font-extrabold">Sell Recyclables</div>
+                </Link>
+                <Link
+                  href="/activity/new"
+                  className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4"
+                >
+                  <div className="text-2xl mb-1">🚚</div>
+                  <div className="text-sm font-extrabold">Request Pickup</div>
+                </Link>
               </div>
-              <div className="text-lg font-extrabold">{ROLE_LABELS[user.role] ?? user.role}</div>
-              <div className="text-xs text-[#C7E3DE] mt-2">{user.phone}</div>
+            ) : (
+              <Link
+                href="/jobs"
+                className="block rounded-[var(--r-lg)] p-5 mb-8 text-white relative overflow-hidden"
+                style={{ background: "linear-gradient(135deg, var(--cyclo-teal), #1B3E41)" }}
+              >
+                <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">Collector</div>
+                <div className="text-lg font-extrabold">Browse open jobs →</div>
+              </Link>
+            )}
+
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-extrabold">
+                {user.role === "collector" ? "Your active jobs" : "Your recent activity"}
+              </h3>
+              <Link href="/activity" className="text-xs font-bold text-[var(--cyclo-teal)]">
+                See all
+              </Link>
             </div>
 
-            <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-5">
-              <h3 className="text-sm font-extrabold mb-2">The CYCLO loop is coming online</h3>
-              <p className="text-xs text-[var(--text-2)] leading-relaxed">
-                Your account and profile are live. Scanning, listing, pickups, and
-                transactions ship next as the core CYCLO loop is built out — see
-                CYCLO_IMPLEMENTATION_PLAN.md, Phase 2.
-              </p>
+            {recentPickups.length === 0 && recentListings.length === 0 && (
+              <p className="text-xs text-[var(--text-2)]">Nothing here yet — get started above.</p>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {recentPickups.slice(0, 3).map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/activity/${p.id}`}
+                  className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                >
+                  <div>
+                    <div className="text-sm font-bold">{p.material.label}</div>
+                    <div className="text-xs text-[var(--text-2)]">{p.estimatedWeightKg} kg est.</div>
+                  </div>
+                  <StatusBadge status={p.status} />
+                </Link>
+              ))}
+              {user.role !== "collector" &&
+                recentListings.slice(0, 2).map((l) => (
+                  <Link
+                    key={l.id}
+                    href={`/marketplace/${l.id}`}
+                    className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                  >
+                    <div>
+                      <div className="text-sm font-bold">{l.material.label}</div>
+                      <div className="text-xs text-[var(--text-2)]">{l.estimatedWeightKg} kg listed</div>
+                    </div>
+                    <StatusBadge status={l.status} />
+                  </Link>
+                ))}
             </div>
           </>
         )}
       </div>
+
+      {user && <BottomNav role={user.role} />}
     </main>
   );
 }

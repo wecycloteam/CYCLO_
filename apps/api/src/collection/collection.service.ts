@@ -89,7 +89,7 @@ export class CollectionService {
   listMine(producerId: string) {
     return this.prisma.pickupRequest.findMany({
       where: { producerId },
-      include: { material: true, location: true },
+      include: { material: true, location: true, transaction: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -97,13 +97,17 @@ export class CollectionService {
   listAssigned(collectorId: string) {
     return this.prisma.pickupRequest.findMany({
       where: { assignedCollectorId: collectorId },
-      include: { material: true, location: true },
+      include: { material: true, location: true, transaction: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(requesterId: string, id: string) {
-    const pickup = await this.getRaw(id);
+    const pickup = await this.prisma.pickupRequest.findUnique({
+      where: { id },
+      include: { material: true, location: true, transaction: true },
+    });
+    if (!pickup) throw new NotFoundException('Pickup request not found.');
     if (pickup.producerId !== requesterId && pickup.assignedCollectorId !== requesterId) {
       throw new NotFoundException('Pickup request not found.');
     }

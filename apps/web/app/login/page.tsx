@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [role, setRole] = useState("household");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +36,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const tokens = await api.verifyOtp({ phone, code, name: name || undefined });
+      const tokens = await api.verifyOtp({ phone, code, name: name || undefined, role });
       tokenStore.set(tokens.accessToken, tokens.refreshToken);
       router.push("/home");
     } catch (err) {
@@ -131,6 +132,16 @@ export default function LoginPage() {
                 onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-[#1B3E41] px-5 py-3.5 text-center text-white focus:outline-none focus:border-[var(--cyclo-green)]"
+              >
+                <option value="household">I&rsquo;m a Household (first time only)</option>
+                <option value="business">I&rsquo;m a Business</option>
+                <option value="collector">I&rsquo;m a Waste Collector</option>
+                <option value="recycler">I&rsquo;m a Recycling Company</option>
+              </select>
               {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
               <button
                 type="submit"

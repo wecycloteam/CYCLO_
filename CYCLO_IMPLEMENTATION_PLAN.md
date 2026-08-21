@@ -69,9 +69,32 @@ Design/brand reference: [index.html](index.html) (static prototype — see Secti
   latent until the collection module became the first to actually use `@Roles()`. Fixed
   by applying `@UseGuards(JwtAuthGuard, RolesGuard)` locally, in that order, on
   `CollectionController`; see the comment in `main.ts`.
-- Not yet built: web UI for any of the above (backend-only so far), collector
-  verification gating (§21 — any user with `role=collector` can currently accept jobs;
-  the verification workflow is Phase 4), and the recycler/buyer side of a transaction
+- Web UI now covers the full §75 slice end to end (`apps/web`): role-aware bottom nav
+  (§9 — Home/Marketplace/Scan/Activity/Profile for household/business, Jobs/Active/Profile
+  for collector; other roles get a minimal Home/Profile shell since no dashboard exists yet
+  for them). Home implements §10 (Scan/Sell/Request-Pickup primary actions + recent
+  activity). Marketplace: browse/mine tabs, create-listing form (with inline
+  first-location creation), listing detail with owner publish/cancel and a
+  Request-Pickup CTA. Activity: pickup list, create-pickup form (standalone or
+  listing-linked), pickup detail with the full §23/§24 waste-event timeline and
+  role-gated action buttons (collector's en-route/arrive/collecting/weigh/complete;
+  producer's/collector's cancel) plus the resulting Transaction summary once completed.
+  Jobs: collector's open-pool browse + accept. `/scan` is an honest "coming in Phase 3"
+  placeholder, not a fake scanner. Login now exposes the role picker
+  `VerifyOtpDto.role` already supported server-side, for signing up as
+  household/business/collector/recycler.
+- Verified for real, not just built: ran the actual dev servers and drove the exact
+  sequence the UI's `lib/api.ts` calls make (household signs up → creates a location →
+  creates and publishes a listing → requests a pickup; collector signs up → sees the job
+  in the open pool → accepts → en-route → arrives → collects → records a verified weight
+  → completes) — produced a real `Transaction` (`CYCLO-ARU-0000001`) and confirmed the
+  detail/event-history endpoints return exactly the shape the pages read. Production
+  build (`next build`) and lint are both clean; a new React/Next lint rule
+  (`react-hooks/set-state-in-effect`) caught and was fixed by deferring data-fetch
+  triggers in `useEffect` to a microtask rather than calling them synchronously.
+- Not yet built: collector verification gating (§21 — any user with `role=collector` can
+  currently accept jobs; the verification workflow is Phase 4), and the recycler/buyer
+  side of a transaction
   (`Transaction.buyerId` is nullable until `BuyRequest`/`Offer` exist in Phase 7).
 - Deferred deliberately, not faked: listing/pickup `photos` (needs the storage
   abstraction, §39 gap) and the `askingPrice`-driven pricing engine (§17 — a listing's
