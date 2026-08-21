@@ -1,0 +1,68 @@
+/* ============================================================
+   CYCLO DESIGN TOKENS
+   Extracted verbatim from the official prototype (index.html).
+   Colors come directly from the official CYCLO logo assets:
+   - Deep teal background (#275458) from the dark lockup
+   - Mint wordmark (#CAFFBD) and bright green tagline (#48F53B) from the dark lockup
+   - Near-black wordmark (#101010) and gray tagline from the light lockup
+   Do not change these values without an explicit brand decision — see §7
+   of CYCLO_IMPLEMENTATION_PLAN.md ("Branding — Absolute Rule").
+============================================================ */
+:root{
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  --cyclo-teal: #275458;
+  --cyclo-teal-dark: #1B3E41;
+  --cyclo-mint: #CAFFBD;
+  --cyclo-mint-deep: #7FBE6D;
+  --cyclo-green: #48F53B;
+  --cyclo-green-deep: #2FA827;
+
+  --bg: #F6F9F8;
+  --surface: #FFFFFF;
+  --surface-2: #EEF3F2;
+  --border: #E2E9E7;
+  --text-1: #10161A;
+  --text-2: #5B6C69;
+  --text-3: #8B9997;
+  --on-primary: #FFFFFF;
+
+  --success: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+
+  --chart-1: #275458; /* teal */
+  --chart-2: #48F53B; /* green */
+  --chart-3: #1baf7a; /* aqua, from validated categorical set */
+  --chart-4: #eb6834; /* orange, from validated categorical set */
+  --chart-5: #8B9997; /* neutral / other */
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(16,22,26,0.06), 0 1px 1px rgba(16,22,26,0.04);
+  --shadow-md: 0 8px 24px rgba(16,22,26,0.08);
+  --shadow-lg: 0 16px 40px rgba(16,22,26,0.14);
+}
+
+html[data-theme="dark"]{
+  --bg: #0E2624;
+  --surface: #163634;
+  --surface-2: #1C403D;
+  --border: #2A4C49;
+  --text-1: #F2FBF6;
+  --text-2: #AFCAC5;
+  --text-3: #7FA29C;
+  --on-primary: #0E2624;
+
+  --cyclo-teal: #6FD3C6;
+  --cyclo-teal-dark: #58B3A8;
+  --cyclo-mint: #CAFFBD;
+  --cyclo-green: #48F53B;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+}
