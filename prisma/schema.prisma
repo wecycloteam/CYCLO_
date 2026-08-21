@@ -22,6 +22,9 @@ datasource db {
 // Organization.type -> business | recycler | authority
 // VerificationStatus -> unverified | pending | verified | rejected | suspended
 // CollectorAvailability -> online | offline
+// WasteMaterial.category -> plastic | paper | cardboard | glass | metal | e_waste | organic | other
+// WasteListing.status -> see packages/shared-types/src/marketplace.ts LISTING_STATUSES/LISTING_TRANSITIONS
+// WasteListing.pickupOption -> seller_dropoff | collection_required | flexible
 
 model User {
   id           String   @id @default(uuid())
@@ -40,6 +43,7 @@ model User {
   collectorProfile        CollectorProfile?
   locations               Location[]
   refreshTokens           RefreshToken[]
+  wasteListings           WasteListing[]
 
   @@index([role])
 }
@@ -114,9 +118,59 @@ model Location {
 
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  wasteListings WasteListing[]
 
   @@index([userId])
   @@index([organizationId])
+}
+
+// Canonical, extensible taxonomy (§11) — not hardcoded into application logic.
+// Seeded by prisma/seed.ts; extended here (and re-seeded) rather than in code.
+model WasteMaterial {
+  id         String   @id @default(uuid())
+  category   String
+  subtype    String
+  label      String
+  recyclable Boolean  @default(true)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  wasteListings WasteListing[]
+
+  @@unique([category, subtype])
+  @@index([category])
+}
+
+// §14/§15 — a producer's listing of recyclable material. Status is an explicit state
+// machine (see packages/shared-types marketplace.ts), never a boolean, enforced in
+// MarketplaceService before any write.
+model WasteListing {
+  id               String    @id @default(uuid())
+  sellerId         String
+  materialId       String
+  locationId       String
+  estimatedWeightKg Float
+  verifiedWeightKg  Float?
+  condition        String?
+  grade            String?
+  purity           Float?
+  photos           String? // JSON-encoded array of storage refs/URLs
+  askingPrice      Float?
+  pickupOption     String
+  description      String?
+  status           String    @default("DRAFT")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  expiresAt        DateTime?
+
+  seller   User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  material WasteMaterial @relation(fields: [materialId], references: [id])
+  location Location      @relation(fields: [locationId], references: [id])
+
+  @@index([sellerId])
+  @@index([materialId])
+  @@index([status])
 }
 
 model CollectorProfile {
