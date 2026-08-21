@@ -20,8 +20,32 @@ Design/brand reference: [index.html](index.html) (static prototype — see Secti
 - Web app: CYCLO-themed login (phone → OTP code) and an authenticated home/profile page with
   loading/error/retry states, built on the shared design tokens.
 - Still open for the rest of Phase 1: navigation shell content for the other five roles is not
-  built yet (only household-shaped login/home exist); Flutter mobile app not started (SDK
-  install in progress, see below).
+  built yet (only household-shaped login/home exist). Flutter SDK is now installed
+  (`flutter` on PATH, confirmed 2026-08-21) but `apps/mobile` is not scaffolded yet.
+
+## Phase 2 progress (§75 vertical slice, started 2026-08-21)
+
+- `WasteMaterial` taxonomy live: 19 seeded materials across all 8 §14 categories
+  (`prisma/seed.ts`, idempotent upsert by `(category, subtype)`), read via
+  `GET /waste-materials`.
+- `Location` now has a real module (`apps/api/src/locations`): create/list own locations,
+  with ownership asserted server-side before any other module (e.g. marketplace) is allowed
+  to attach one to a resource.
+- `WasteListing` (marketplace module) live with the full explicit §15 state machine
+  (`packages/shared-types/src/marketplace.ts` — `LISTING_TRANSITIONS`, checked in
+  `apps/api/src/marketplace/domain/listing-state-machine.ts`, unit-tested for every
+  allowed/rejected transition). Endpoints: create (DRAFT), publish (→ACTIVE), cancel,
+  browse (ACTIVE only, paginated), view-one (DRAFT hidden from non-owners), list-mine.
+  Ownership enforced server-side throughout. Covered by
+  `apps/api/test/marketplace.e2e-spec.ts` (11 cases: cross-owner rejection, draft
+  visibility, publish/cancel/re-transition rejection, browse/detail visibility).
+- Not yet built for this slice: `PickupRequest` + its §20 state machine, collector
+  accept/weigh/complete, `Transaction`, `WasteEvent` history, and the web UI for any of the
+  above (backend-only so far — see Open Decisions).
+- Listing fields intentionally deferred: `photos` (needs the storage abstraction, not built
+  yet — §39 gap) and `askingPrice`-driven pricing engine (§17, seller can still set a manual
+  ask; the pricing-suggestion engine is a later phase). Both are modeled in the schema but
+  not wired into the create-listing flow, so nothing is faked as working.
 
 ---
 
@@ -180,6 +204,6 @@ Each phase ships as one or more vertical slices (§75), never screens-first (§5
 
 ## Open Decisions — resolved 2026-08-21
 
-1. **Mobile platform** — Decided: install Flutter now, native-first, per §39's literal recommendation. Flutter/Dart SDK download and extraction in progress (large download; the storage.googleapis.com host truncates connections on this network, so it's being fetched via a resumable `curl -C -` retry loop rather than a single request). `apps/mobile` (Flutter) will be scaffolded once the SDK is verified working via `flutter doctor`.
+1. **Mobile platform** — Decided: install Flutter now, native-first, per §39's literal recommendation. Flutter SDK installed and on PATH (confirmed 2026-08-21). `apps/mobile` scaffolding is still pending — deferred behind finishing the Phase 2 backend vertical slice so mobile isn't built against an API surface that's still moving.
 2. **Version control** — Decided: install Git and init a repo now. Done — Git 2.55 installed, repository initialized, 7 logical commits made so far (brand assets, scaffold, db, auth, web).
 3. **Local database** — Decided: SQLite for local dev via Prisma. Done — schema is Postgres-portable (no native `enum` usage; string fields validated at the application layer), initial migration applied, verified working end-to-end through the auth e2e suite.
