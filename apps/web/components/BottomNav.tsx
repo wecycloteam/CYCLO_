@@ -29,8 +29,15 @@ const COLLECTOR_ITEMS: NavItem[] = [
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
-// Roles without a built dashboard yet (business dashboard, recycler, authority, admin —
-// Phases 6, 7, 9, 8) fall back to this rather than a fabricated set of tabs.
+const ADMIN_ITEMS: NavItem[] = [
+  { href: "/admin", label: "Dashboard", icon: "📊" },
+  { href: "/admin/listings", label: "Listings", icon: "🏷️" },
+  { href: "/admin/users", label: "Users", icon: "🛡️" },
+  { href: "/profile", label: "Profile", icon: "👤" },
+];
+
+// Roles without a built dashboard yet (business dashboard, recycler, authority —
+// Phases 6, 7, 9) fall back to this rather than a fabricated set of tabs.
 const MINIMAL_ITEMS: NavItem[] = [
   { href: "/home", label: "Home", icon: "🏠" },
   { href: "/profile", label: "Profile", icon: "👤" },
@@ -39,6 +46,7 @@ const MINIMAL_ITEMS: NavItem[] = [
 function itemsForRole(role: string): NavItem[] {
   if (role === "household") return PRODUCER_ITEMS;
   if (role === "collector") return COLLECTOR_ITEMS;
+  if (role === "admin") return ADMIN_ITEMS;
   return MINIMAL_ITEMS;
 }
 

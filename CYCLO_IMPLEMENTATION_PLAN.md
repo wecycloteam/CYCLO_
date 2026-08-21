@@ -101,6 +101,60 @@ Design/brand reference: [index.html](index.html) (static prototype — see Secti
   manual asking price passes straight through to the transaction's `agreedPrice` with a
   zero platform fee; there is no real pricing engine yet).
 
+## Admin foundation (started 2026-08-21, after a scope-conflict resolution)
+
+A second, unrelated prompt arrived mid-session asking to rebuild the backend on
+Supabase/Vite/Netlify. Per §2's conflict-resolution rule, this was flagged as
+conflicting with the existing (tested, working) NestJS/Prisma/phone+OTP+JWT stack rather
+than silently actioned; the user chose to keep the current stack and build the
+prompt's *features* as extensions instead. This section covers the first of those:
+admin/moderation, the biggest structural gap (Phase 8, previously unstarted).
+
+- **Bootstrap, not self-registration**: `prisma/promote-admin.ts` (`npm run
+  admin:promote -- +255...`) promotes an *already signed-up* user to `role=admin`
+  directly in the DB. There is no HTTP path to admin — self-registration already
+  blocked it (see the very first commits of this session) — and no admin
+  password/secret lives in frontend code.
+- **Listing moderation gate**: `WasteListing.moderationStatus`
+  (`PENDING`/`APPROVED`/`REJECTED`) added as a field orthogonal to the existing,
+  already-tested operational state machine — it doesn't touch `LISTING_TRANSITIONS` or
+  the 20+ tests built around it. `MarketplaceService.browseActive()`/`findOne()` now
+  require `moderationStatus=APPROVED` (in addition to `status=ACTIVE`) before a
+  non-owner can see a listing — a seller's own publish action alone no longer makes a
+  listing publicly visible, it only submits it for review. Rejecting a listing
+  transitions it to `CANCELLED` via the existing transition table and records
+  `moderationReason`.
+- **Admin module** (`apps/api/src/admin`): `GET /admin/dashboard` (counts by
+  role/verification-status/listing-status/pickup-status), `GET /admin/activity`
+  (the previously-unused `AuditLog` table, now actually written to, with actor names
+  resolved), `GET /admin/users/pending` + verify/reject/suspend for both collectors and
+  organizations, `GET /admin/listings/pending` (full seller identity — name, phone,
+  role, collector verification status, org membership — for admin eyes only) +
+  approve/reject.
+- **Bug found and fixed while building this**: no code anywhere ever created a
+  `CollectorProfile` row, so a `role=collector` signup had nothing for the
+  verification queue to find. Fixed in `UsersService.create` — a `CollectorProfile` is
+  now created atomically with the `User` row when `role=collector`.
+- **Web UI** (`apps/web/app/admin/*`): dashboard, pending-listings queue, pending-users
+  queue, all gated by `AdminGate` — unauthenticated redirects to login
+  (`useCurrentUser`'s existing behavior), authenticated-but-wrong-role shows "Access
+  denied" rather than a silent redirect or just a hidden nav button. This is a UX layer
+  on top of the real server-side `@Roles('admin')` check, not a substitute for one.
+- **Verified for real**: ran `npm run admin:promote`, logged in as that user, and drove
+  the actual admin API — signed up a fresh collector (confirmed the auto-created
+  `CollectorProfile` appears in the pending queue), verified them (confirmed the audit
+  log entry with resolved actor name), published a fresh listing (confirmed it's hidden
+  from public browse and absent for a non-owner), approved it (confirmed it becomes
+  publicly visible). 46 e2e (10 new, in `admin.e2e-spec.ts`) + 16 unit tests passing.
+  `next build` and lint clean on both workspaces.
+- Not yet built (from the same conflicting prompt, deferred to later increments):
+  messaging/chat, AI waste scanning, image storage (Supabase Storage was proposed;
+  staying stack-consistent means this becomes an S3-compatible `StorageProvider`
+  behind the abstraction the plan already calls for in §39), phone/SMS/WhatsApp contact
+  buttons (also needs a privacy decision — showing a seller's phone number to any
+  logged-in browser is a real PII-exposure choice, not something to slip in
+  silently), video calling, and Netlify deployment prep.
+
 ---
 
 ## 1. Current Architecture

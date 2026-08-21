@@ -171,22 +171,44 @@ describe('Marketplace (e2e) — listings (§14/§15)', () => {
       .expect(400);
   });
 
-  it('shows the ACTIVE listing on the public browse endpoint', async () => {
-    const res = await request(app.getHttpServer())
+  it('does not show a freshly-published (not yet admin-approved) listing on browse or to a non-owner', async () => {
+    const browseRes = await request(app.getHttpServer())
       .get('/listings')
       .set('Authorization', `Bearer ${otherToken}`)
       .expect(200);
-    expect(res.body.some((l: { id: string }) => l.id === listingId)).toBe(true);
+    expect(browseRes.body.some((l: { id: string }) => l.id === listingId)).toBe(
+      false,
+    );
+
+    await request(app.getHttpServer())
+      .get(`/listings/${listingId}`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .expect(404);
   });
 
-  it('lets a non-owner view the ACTIVE listing detail', async () => {
-    const res = await request(app.getHttpServer())
+  it('shows the listing on browse and to a non-owner once admin-approved', async () => {
+    // Admin moderation itself is covered by admin.e2e-spec.ts — here we only need the
+    // resulting state, so it's set directly rather than standing up an admin session.
+    await prisma.wasteListing.update({
+      where: { id: listingId },
+      data: { moderationStatus: 'APPROVED' },
+    });
+
+    const browseRes = await request(app.getHttpServer())
+      .get('/listings')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .expect(200);
+    expect(browseRes.body.some((l: { id: string }) => l.id === listingId)).toBe(
+      true,
+    );
+
+    const detailRes = await request(app.getHttpServer())
       .get(`/listings/${listingId}`)
       .set('Authorization', `Bearer ${otherToken}`)
       .expect(200);
-    expect(res.body.id).toBe(listingId);
-    expect(res.body.material).toBeDefined();
-    expect(res.body.location).toBeDefined();
+    expect(detailRes.body.id).toBe(listingId);
+    expect(detailRes.body.material).toBeDefined();
+    expect(detailRes.body.location).toBeDefined();
   });
 
   it('cancels the listing', async () => {

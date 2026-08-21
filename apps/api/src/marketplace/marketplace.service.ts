@@ -56,11 +56,12 @@ export class MarketplaceService {
     });
   }
 
-  // Public marketplace browse — only ACTIVE listings are discoverable (§15); a seller's
-  // own drafts/cancelled/etc. are only visible via listMine/findOne-as-owner.
+  // Public marketplace browse — only ACTIVE *and admin-approved* listings are
+  // discoverable (§15 plus the admin moderation gate); a seller's own drafts/pending/
+  // cancelled/etc. are only visible via listMine/findOne-as-owner.
   browseActive(cursor?: string) {
     return this.prisma.wasteListing.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', moderationStatus: 'APPROVED' },
       include: { material: true, location: true },
       orderBy: { createdAt: 'desc' },
       take: BROWSE_PAGE_SIZE,
@@ -71,13 +72,19 @@ export class MarketplaceService {
   // Used by the collection module when a producer requests a pickup against one of their
   // own listings — a pickup can only be opened against a listing that is actually ACTIVE.
   async getActiveOwnedListing(sellerId: string, id: string) {
-    const listing = await this.prisma.wasteListing.findUnique({ where: { id } });
+    const listing = await this.prisma.wasteListing.findUnique({
+      where: { id },
+    });
     if (!listing) throw new NotFoundException('Listing not found.');
     if (listing.sellerId !== sellerId) {
-      throw new ForbiddenException('You do not have permission to use this listing.');
+      throw new ForbiddenException(
+        'You do not have permission to use this listing.',
+      );
     }
     if (listing.status !== 'ACTIVE') {
-      throw new BadRequestException('A pickup can only be requested against an ACTIVE listing.');
+      throw new BadRequestException(
+        'A pickup can only be requested against an ACTIVE listing.',
+      );
     }
     return listing;
   }
@@ -89,9 +96,13 @@ export class MarketplaceService {
     });
     if (!listing) throw new NotFoundException('Listing not found.');
 
-    // DRAFT is only visible to its owner — everything else is at least discoverable
-    // in principle once it has left DRAFT (§15).
-    if (listing.status === 'DRAFT' && listing.sellerId !== requesterId) {
+    // DRAFT, and anything not yet admin-approved, is only visible to its owner —
+    // everything else is at least discoverable in principle once it has left DRAFT (§15).
+    const isOwner = listing.sellerId === requesterId;
+    if (
+      !isOwner &&
+      (listing.status === 'DRAFT' || listing.moderationStatus !== 'APPROVED')
+    ) {
       throw new NotFoundException('Listing not found.');
     }
     return listing;

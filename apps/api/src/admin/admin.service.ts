@@ -1,0 +1,241 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { AdminAction, ListingStatus } from '@cyclo/shared-types';
+import { PrismaService } from '../prisma/prisma.service';
+import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
+
+const ACTIVITY_PAGE_SIZE = 20;
+const PENDING_VERIFICATION_STATUSES = ['unverified', 'pending'];
+
+function toCountRecord(
+  rows: Array<{
+    status?: string;
+    verificationStatus?: string;
+    role?: string;
+    _count: number;
+  }>,
+) {
+  const record: Record<string, number> = {};
+  for (const row of rows) {
+    const key = row.status ?? row.verificationStatus ?? row.role ?? 'unknown';
+    record[key] = row._count;
+  }
+  return record;
+}
+
+@Injectable()
+export class AdminService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async dashboard() {
+    const [
+      usersByRole,
+      collectorsByStatus,
+      orgsByStatus,
+      listingsByStatus,
+      pendingListings,
+      pickupsByStatus,
+      totalUsers,
+    ] = await Promise.all([
+      this.prisma.user.groupBy({ by: ['role'], _count: true }),
+      this.prisma.collectorProfile.groupBy({
+        by: ['verificationStatus'],
+        _count: true,
+      }),
+      this.prisma.organization.groupBy({
+        by: ['verificationStatus'],
+        _count: true,
+      }),
+      this.prisma.wasteListing.groupBy({ by: ['status'], _count: true }),
+      this.prisma.wasteListing.count({
+        where: { status: 'ACTIVE', moderationStatus: 'PENDING' },
+      }),
+      this.prisma.pickupRequest.groupBy({ by: ['status'], _count: true }),
+      this.prisma.user.count(),
+    ]);
+
+    return {
+      totalUsers,
+      usersByRole: toCountRecord(usersByRole),
+      collectorsByVerificationStatus: toCountRecord(collectorsByStatus),
+      organizationsByVerificationStatus: toCountRecord(orgsByStatus),
+      listingsByStatus: toCountRecord(listingsByStatus),
+      pendingListingModerationCount: pendingListings,
+      pickupsByStatus: toCountRecord(pickupsByStatus),
+    };
+  }
+
+  async recentActivity() {
+    const logs = await this.prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: ACTIVITY_PAGE_SIZE,
+    });
+    const actorIds = [
+      ...new Set(logs.map((l) => l.actorId).filter((id): id is string => !!id)),
+    ];
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const actorNames = new Map(actors.map((a) => [a.id, a.name]));
+
+    return logs.map((log) => ({
+      ...log,
+      actorName: log.actorId
+        ? (actorNames.get(log.actorId) ?? 'Unknown admin')
+        : null,
+    }));
+  }
+
+  async pendingUsers() {
+    const [pendingCollectors, pendingOrganizations] = await Promise.all([
+      this.prisma.collectorProfile.findMany({
+        where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
+        include: {
+          user: {
+            select: { id: true, name: true, phone: true, createdAt: true },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.organization.findMany({
+        where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
+        include: { owner: { select: { id: true, name: true, phone: true } } },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+    return { pendingCollectors, pendingOrganizations };
+  }
+
+  async setCollectorVerification(
+    adminId: string,
+    userId: string,
+    status: string,
+    action: AdminAction,
+    reason?: string,
+  ) {
+    const profile = await this.prisma.collectorProfile.findUnique({
+      where: { userId },
+    });
+    if (!profile) throw new NotFoundException('Collector profile not found.');
+
+    const updated = await this.prisma.collectorProfile.update({
+      where: { userId },
+      data: { verificationStatus: status },
+    });
+    await this.audit(adminId, action, 'CollectorProfile', userId, reason);
+    return updated;
+  }
+
+  async setOrganizationVerification(
+    adminId: string,
+    orgId: string,
+    status: string,
+    action: AdminAction,
+    reason?: string,
+  ) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: orgId },
+    });
+    if (!org) throw new NotFoundException('Organization not found.');
+
+    const updated = await this.prisma.organization.update({
+      where: { id: orgId },
+      data: { verificationStatus: status },
+    });
+    await this.audit(adminId, action, 'Organization', orgId, reason);
+    return updated;
+  }
+
+  pendingListings() {
+    return this.prisma.wasteListing.findMany({
+      where: { status: 'ACTIVE', moderationStatus: 'PENDING' },
+      include: {
+        material: true,
+        location: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            role: true,
+            collectorProfile: { select: { verificationStatus: true } },
+            organizationMemberships: {
+              select: {
+                organization: {
+                  select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    verificationStatus: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async approveListing(adminId: string, id: string) {
+    await this.getPendingListing(id);
+    const updated = await this.prisma.wasteListing.update({
+      where: { id },
+      data: { moderationStatus: 'APPROVED' },
+    });
+    await this.audit(adminId, 'LISTING_APPROVED', 'WasteListing', id);
+    return updated;
+  }
+
+  async rejectListing(adminId: string, id: string, reason?: string) {
+    const listing = await this.getPendingListing(id);
+    assertValidListingTransition(listing.status as ListingStatus, 'CANCELLED');
+
+    const updated = await this.prisma.wasteListing.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        moderationStatus: 'REJECTED',
+        moderationReason: reason,
+      },
+    });
+    await this.audit(adminId, 'LISTING_REJECTED', 'WasteListing', id, reason);
+    return updated;
+  }
+
+  private async getPendingListing(id: string) {
+    const listing = await this.prisma.wasteListing.findUnique({
+      where: { id },
+    });
+    if (!listing) throw new NotFoundException('Listing not found.');
+    if (listing.moderationStatus !== 'PENDING') {
+      throw new BadRequestException('This listing has already been reviewed.');
+    }
+    return listing;
+  }
+
+  private audit(
+    actorId: string,
+    action: AdminAction,
+    targetType: string,
+    targetId: string,
+    reason?: string,
+  ) {
+    return this.prisma.auditLog.create({
+      data: {
+        actorId,
+        action,
+        targetType,
+        targetId,
+        metadata: reason ? JSON.stringify({ reason }) : undefined,
+      },
+    });
+  }
+}

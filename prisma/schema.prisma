@@ -28,6 +28,7 @@ datasource db {
 // PickupRequest.status -> see packages/shared-types/src/collection.ts PICKUP_STATUSES/PICKUP_TRANSITIONS
 // Transaction.paymentStatus -> see packages/shared-types/src/collection.ts PAYMENT_STATUSES
 // WasteEvent.eventType -> see packages/shared-types/src/collection.ts WASTE_EVENT_TYPES
+// WasteListing.moderationStatus -> PENDING | APPROVED | REJECTED (see packages/shared-types/src/admin.ts)
 
 model User {
   id           String   @id @default(uuid())
@@ -171,6 +172,12 @@ model WasteListing {
   pickupOption     String
   description      String?
   status           String    @default("DRAFT")
+  // Orthogonal to `status` on purpose — admin moderation gate, not part of the
+  // operational state machine, so it never touches the already-tested transition table.
+  // A listing only needs to reach ACTIVE (the seller's "publish"/submit action) to enter
+  // the admin queue; browseActive() requires both status=ACTIVE and moderationStatus=APPROVED.
+  moderationStatus String    @default("PENDING")
+  moderationReason String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   expiresAt        DateTime?
@@ -183,6 +190,7 @@ model WasteListing {
   @@index([sellerId])
   @@index([materialId])
   @@index([status])
+  @@index([moderationStatus])
 }
 
 // §18/§19/§20 — a producer's request to have material collected. Optionally tied to a

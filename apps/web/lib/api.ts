@@ -161,6 +161,56 @@ export interface WasteEvent {
   createdAt: string;
 }
 
+export interface AdminDashboard {
+  totalUsers: number;
+  usersByRole: Record<string, number>;
+  collectorsByVerificationStatus: Record<string, number>;
+  organizationsByVerificationStatus: Record<string, number>;
+  listingsByStatus: Record<string, number>;
+  pendingListingModerationCount: number;
+  pickupsByStatus: Record<string, number>;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorId: string | null;
+  actorName: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  metadata: string | null;
+  createdAt: string;
+}
+
+export interface PendingCollector {
+  userId: string;
+  verificationStatus: string;
+  vehicleType: string | null;
+  createdAt: string;
+  user: { id: string; name: string; phone: string; createdAt: string };
+}
+
+export interface PendingOrganization {
+  id: string;
+  type: string;
+  name: string;
+  verificationStatus: string;
+  ownerUserId: string;
+  createdAt: string;
+  owner: { id: string; name: string; phone: string };
+}
+
+export interface AdminPendingListing extends WasteListing {
+  seller: {
+    id: string;
+    name: string;
+    phone: string;
+    role: string;
+    collectorProfile: { verificationStatus: string } | null;
+    organizationMemberships: { organization: { id: string; name: string; type: string; verificationStatus: string } }[];
+  };
+}
+
 export const api = {
   requestOtp: (phone: string) =>
     request<{ message: string; expiresInSeconds: number }>("/auth/otp/request", {
@@ -234,4 +284,30 @@ export const api = {
     request<Transaction>(`/pickup-requests/${id}/complete`, { method: "PATCH" }, true),
   cancelPickup: (id: string) =>
     request<PickupRequest>(`/pickup-requests/${id}/cancel`, { method: "PATCH" }, true),
+
+  // Admin
+  adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),
+  adminActivity: () => request<AuditLogEntry[]>("/admin/activity", { method: "GET" }, true),
+  adminPendingUsers: () =>
+    request<{ pendingCollectors: PendingCollector[]; pendingOrganizations: PendingOrganization[] }>(
+      "/admin/users/pending",
+      { method: "GET" },
+      true,
+    ),
+  adminVerifyCollector: (userId: string) =>
+    request(`/admin/collectors/${userId}/verify`, { method: "PATCH" }, true),
+  adminRejectCollector: (userId: string, reason?: string) =>
+    request(`/admin/collectors/${userId}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+  adminSuspendCollector: (userId: string, reason?: string) =>
+    request(`/admin/collectors/${userId}/suspend`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+  adminVerifyOrganization: (orgId: string) =>
+    request(`/admin/organizations/${orgId}/verify`, { method: "PATCH" }, true),
+  adminRejectOrganization: (orgId: string, reason?: string) =>
+    request(`/admin/organizations/${orgId}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+  adminSuspendOrganization: (orgId: string, reason?: string) =>
+    request(`/admin/organizations/${orgId}/suspend`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+  adminPendingListings: () => request<AdminPendingListing[]>("/admin/listings/pending", { method: "GET" }, true),
+  adminApproveListing: (id: string) => request<WasteListing>(`/admin/listings/${id}/approve`, { method: "PATCH" }, true),
+  adminRejectListing: (id: string, reason?: string) =>
+    request<WasteListing>(`/admin/listings/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
 };
