@@ -17,4 +17,10 @@ export class UsersController {
     const { passwordHash: _passwordHash, ...safeUser } = user;
     return safeUser;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/impact')
+  impact(@CurrentUser() principal: CurrentUserPayload) {
+    return this.users.impact(principal.userId);
+  }
 }

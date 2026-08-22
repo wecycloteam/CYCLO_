@@ -3,20 +3,29 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, PickupRequest, WasteListing } from "@/lib/api";
+import { api, ImpactStats, PickupRequest, WasteListing } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
-// §10 — home answers "what can I do right now": Scan / Sell / Request Pickup, then
-// contextual recent activity. Kept intentionally light — no impact stats yet, since
-// there's no real aggregate-computation endpoint behind one (would otherwise be a
-// screen-only number with nothing real behind it).
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-3">
+      <div className="text-base font-extrabold">{value}</div>
+      <div className="text-[10px] text-[var(--text-2)]">{label}</div>
+    </div>
+  );
+}
+
+// §10 — home answers "what can I do right now": Scan / Sell / Request Pickup / Marketplace,
+// then contextual recent activity and real impact stats (derived only from actual
+// completed Transaction rows — see UsersService.impact — never a fabricated number).
 export default function HomePage() {
   const { state, user, error, retry } = useCurrentUser();
   const [recentListings, setRecentListings] = useState<WasteListing[]>([]);
   const [recentPickups, setRecentPickups] = useState<PickupRequest[]>([]);
+  const [impact, setImpact] = useState<ImpactStats | null>(null);
 
   useEffect(() => {
     if (state !== "ready" || !user) return;
@@ -26,6 +35,7 @@ export default function HomePage() {
     } else {
       api.myPickupRequests().then(setRecentPickups).catch(() => undefined);
     }
+    api.myImpact().then(setImpact).catch(() => undefined);
   }, [state, user]);
 
   return (
@@ -68,6 +78,13 @@ export default function HomePage() {
                   <div className="text-2xl mb-1">🚚</div>
                   <div className="text-sm font-extrabold">Request Pickup</div>
                 </Link>
+                <Link
+                  href="/marketplace"
+                  className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4"
+                >
+                  <div className="text-2xl mb-1">🛒</div>
+                  <div className="text-sm font-extrabold">Marketplace</div>
+                </Link>
               </div>
             ) : (
               <Link
@@ -78,6 +95,20 @@ export default function HomePage() {
                 <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">Collector</div>
                 <div className="text-lg font-extrabold">Browse open jobs →</div>
               </Link>
+            )}
+
+            {impact && user.role !== "collector" && (
+              <div className="grid grid-cols-3 gap-2 mb-8">
+                <StatTile label="Waste recycled" value={`${impact.asSeller.wasteRecycledKg} kg`} />
+                <StatTile label="Est. earnings" value={`TZS ${Math.round(impact.asSeller.estimatedEarnings).toLocaleString()}`} />
+                <StatTile label="Est. CO₂ avoided" value={`${impact.asSeller.co2AvoidedKg} kg`} />
+              </div>
+            )}
+            {impact && user.role === "collector" && (
+              <div className="grid grid-cols-2 gap-2 mb-8">
+                <StatTile label="Pickups completed" value={`${impact.asCollector.completedCount}`} />
+                <StatTile label="Weight collected" value={`${impact.asCollector.collectedWeightKg} kg`} />
+              </div>
             )}
 
             <div className="flex items-center justify-between mb-3">

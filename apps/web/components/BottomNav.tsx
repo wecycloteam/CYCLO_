@@ -33,6 +33,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
   { href: "/admin/listings", label: "Listings", icon: "🏷️" },
   { href: "/admin/users", label: "Users", icon: "🛡️" },
+  { href: "/admin/pricing", label: "Pricing", icon: "💰" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 

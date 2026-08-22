@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
 import { WasteMaterialsService } from '../waste-materials/waste-materials.service';
 import { MarketplaceService } from '../marketplace/marketplace.service';
+import { PricingService } from '../pricing/pricing.service';
 import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
 import { assertValidPickupTransition } from './domain/pickup-state-machine';
 import { buildTransactionReference } from './domain/transaction-reference';
@@ -17,6 +18,7 @@ export class CollectionService {
     private readonly locations: LocationsService,
     private readonly materials: WasteMaterialsService,
     private readonly marketplace: MarketplaceService,
+    private readonly pricing: PricingService,
   ) {}
 
   async create(producerId: string, dto: CreatePickupRequestDto) {
@@ -77,13 +79,25 @@ export class CollectionService {
     });
   }
 
-  // The open job pool — collectors browse requests nobody has accepted yet.
-  listOpen() {
-    return this.prisma.pickupRequest.findMany({
-      where: { status: 'MATCHING' },
-      include: { material: true, location: true },
-      orderBy: { createdAt: 'asc' },
-    });
+  // The open job pool — collectors browse requests nobody has accepted yet. Each job
+  // carries the producer's name (never phone — same PII-minimal posture as the
+  // marketplace's PUBLIC_SELLER_SELECT) and an estimated value from the admin-set
+  // reference price, so a collector can judge a job before accepting it.
+  async listOpen() {
+    const [jobs, prices] = await Promise.all([
+      this.prisma.pickupRequest.findMany({
+        where: { status: 'MATCHING' },
+        include: { material: true, location: true, producer: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.pricing.asMap(),
+    ]);
+    return jobs.map((job) => ({
+      ...job,
+      estimatedValue: prices[job.material.category as keyof typeof prices]
+        ? prices[job.material.category as keyof typeof prices]! * job.estimatedWeightKg
+        : null,
+    }));
   }
 
   listMine(producerId: string) {

@@ -9,6 +9,9 @@ export type ModerationStatus = (typeof MODERATION_STATUSES)[number];
 // Canonical admin-action names for AuditLog.action — a free string in the DB (no
 // migration needed to add one), this is just the agreed vocabulary for new code.
 export const ADMIN_ACTIONS = [
+  "USER_VERIFIED",
+  "USER_REJECTED",
+  "USER_SUSPENDED",
   "COLLECTOR_VERIFIED",
   "COLLECTOR_REJECTED",
   "COLLECTOR_SUSPENDED",
@@ -17,5 +20,6 @@ export const ADMIN_ACTIONS = [
   "ORGANIZATION_SUSPENDED",
   "LISTING_APPROVED",
   "LISTING_REJECTED",
+  "PRICE_UPDATED",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];

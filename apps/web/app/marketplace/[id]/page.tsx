@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, WasteListing } from "@/lib/api";
+import { api, ApiError, WasteListing, SellerContact, listingStatusLabel } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
-import { StatusBadge } from "@/components/StatusBadge";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
@@ -20,6 +20,9 @@ export default function ListingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
+  const [contact, setContact] = useState<SellerContact | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [contactLoading, setContactLoading] = useState(false);
 
   function load() {
     setState("loading");
@@ -66,6 +69,18 @@ export default function ListingDetailPage() {
     }
   }
 
+  async function handleContact() {
+    setContactLoading(true);
+    setContactError(null);
+    try {
+      setContact(await api.contactSeller(id));
+    } catch (err) {
+      setContactError(err instanceof ApiError ? err.message : "Couldn't load contact details.");
+    } finally {
+      setContactLoading(false);
+    }
+  }
+
   const isOwner = user && listing && listing.sellerId === user.id;
 
   return (
@@ -77,9 +92,32 @@ export default function ListingDetailPage() {
 
         {state === "ready" && listing && (
           <>
+            {listing.photos.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto mb-4 -mx-6 px-6">
+                {listing.photos.map((p, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element -- data: URL, not an optimizable remote asset
+                  <img key={i} src={p} alt="" className="h-40 w-40 flex-shrink-0 object-cover rounded-[var(--r-lg)]" />
+                ))}
+              </div>
+            )}
+
             <div className="flex items-start justify-between gap-3 mb-2">
               <h1 className="text-lg font-extrabold">{listing.material.label}</h1>
-              <StatusBadge status={listing.status} />
+              <span
+                className={`inline-block rounded-[var(--r-pill)] px-2.5 py-1 text-[11px] font-bold ${
+                  listing.moderationStatus === "PENDING"
+                    ? "bg-[#FFF3DC] text-[var(--warning)]"
+                    : listing.moderationStatus === "REJECTED"
+                      ? "bg-[#FCE3DE] text-[var(--critical)]"
+                      : "bg-[#E4F7E2] text-[var(--success)]"
+                }`}
+              >
+                {listingStatusLabel(listing)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mb-2 text-xs text-[var(--text-2)]">
+              <span>{listing.seller.name}</span>
+              <VerifiedBadge status={listing.seller.verificationStatus} />
             </div>
             {listing.askingPrice != null && (
               <div className="text-2xl font-extrabold text-[var(--cyclo-teal)] mb-4">
@@ -88,14 +126,38 @@ export default function ListingDetailPage() {
             )}
 
             <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)] mb-6">
-              <Row k="Estimated weight" v={`${listing.estimatedWeightKg} kg`} />
+              <Row k="Quantity" v={`${listing.estimatedWeightKg} ${listing.quantityUnit}`} />
               {listing.verifiedWeightKg != null && <Row k="Verified weight" v={`${listing.verifiedWeightKg} kg`} />}
               {listing.condition && <Row k="Condition" v={listing.condition} />}
               <Row k="Location" v={listing.location.region ?? listing.location.label} />
               <Row k="Pickup" v={listing.pickupOption.replace(/_/g, " ")} />
+              <Row k="Listing status" v={listing.status.replace(/_/g, " ")} />
             </div>
 
             {listing.description && <p className="text-sm text-[var(--text-2)] mb-6">{listing.description}</p>}
+
+            {!isOwner && (
+              <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4 mb-4">
+                {contact ? (
+                  <>
+                    <div className="text-xs font-bold text-[var(--text-2)] mb-1">Seller contact</div>
+                    <div className="text-sm font-extrabold">{contact.name}</div>
+                    <a href={`tel:${contact.phone}`} className="text-sm text-[var(--cyclo-teal)] font-bold">
+                      {contact.phone}
+                    </a>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleContact}
+                    disabled={contactLoading}
+                    className="w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 disabled:opacity-60"
+                  >
+                    {contactLoading ? "Loading…" : "Contact Seller / Make Offer"}
+                  </button>
+                )}
+                {contactError && <p className="text-xs text-[var(--critical)] mt-2">{contactError}</p>}
+              </div>
+            )}
 
             {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}
 

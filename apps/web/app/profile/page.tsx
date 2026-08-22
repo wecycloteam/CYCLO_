@@ -3,6 +3,7 @@
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -12,6 +13,14 @@ const ROLE_LABELS: Record<string, string> = {
   recycler: "Recycling Company",
   authority: "Environmental Authority",
   admin: "CYCLO Admin",
+};
+
+const VERIFICATION_LABELS: Record<string, string> = {
+  unverified: "Not yet reviewed",
+  pending: "Pending review",
+  verified: "Verified",
+  rejected: "Not approved",
+  suspended: "Suspended",
 };
 
 export default function ProfilePage() {
@@ -31,7 +40,10 @@ export default function ProfilePage() {
               <div className="h-16 w-16 rounded-full bg-[var(--cyclo-teal)] text-white flex items-center justify-center text-xl font-extrabold mb-3">
                 {user.name.slice(0, 2).toUpperCase()}
               </div>
-              <div className="text-lg font-extrabold">{user.name}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-lg font-extrabold">{user.name}</div>
+                <VerifiedBadge status={user.verificationStatus} />
+              </div>
               <div className="text-sm text-[var(--text-2)]">{user.phone}</div>
             </div>
 
@@ -39,6 +51,10 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-[var(--text-2)]">Account type</span>
                 <span className="text-sm font-bold">{ROLE_LABELS[user.role] ?? user.role}</span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-[var(--text-2)]">Verification</span>
+                <span className="text-sm font-bold">{VERIFICATION_LABELS[user.verificationStatus] ?? user.verificationStatus}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-[var(--text-2)]">Country</span>

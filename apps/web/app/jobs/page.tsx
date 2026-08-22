@@ -68,9 +68,22 @@ export default function OpenJobsPage() {
           <div className="flex flex-col gap-2">
             {jobs.map((job) => (
               <div key={job.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <div className="text-sm font-extrabold mb-1">{job.material.label}</div>
-                <div className="text-xs text-[var(--text-2)] mb-3">
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <span className="text-sm font-extrabold">{job.material.label}</span>
+                  {job.estimatedValue != null && (
+                    <span className="text-sm font-extrabold text-[var(--cyclo-teal)] whitespace-nowrap">
+                      ~TZS {Math.round(job.estimatedValue).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-[var(--text-2)] mb-1">
                   📍 {job.location.region ?? job.location.label} · ⚖️ {job.estimatedWeightKg} kg
+                  {job.producer && ` · 👤 ${job.producer.name}`}
+                </div>
+                <div className="text-xs text-[var(--text-2)] mb-3">
+                  {job.preferredTime
+                    ? `🕒 ${new Date(job.preferredTime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`
+                    : "No preferred time set"}
                 </div>
                 <button
                   onClick={() => handleAccept(job.id)}

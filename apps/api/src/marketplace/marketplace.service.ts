@@ -13,6 +13,11 @@ import { assertValidListingTransition } from './domain/listing-state-machine';
 
 const BROWSE_PAGE_SIZE = 20;
 
+// Minimal, public-safe seller fields for the "Verified Seller" badge (§26) — never phone
+// or anything else PII-adjacent; that stays behind the not-yet-built contact-buttons
+// increment, which needs its own privacy decision (see CYCLO_IMPLEMENTATION_PLAN.md).
+const PUBLIC_SELLER_SELECT = { id: true, name: true, verificationStatus: true } as const;
+
 @Injectable()
 export class MarketplaceService {
   constructor(
@@ -25,48 +30,48 @@ export class MarketplaceService {
     await this.materials.assertExists(dto.materialId);
     await this.locations.assertOwnedBy(dto.locationId, sellerId);
 
-    return this.prisma.wasteListing.create({
-      data: { sellerId, status: 'DRAFT', ...dto },
+    const { photos, ...rest } = dto;
+    const listing = await this.prisma.wasteListing.create({
+      data: { sellerId, status: 'DRAFT', ...rest, photos: photos ? JSON.stringify(photos) : undefined },
     });
+    return mapListing(listing);
   }
 
   async publish(sellerId: string, id: string) {
     const listing = await this.getOwned(sellerId, id);
     assertValidListingTransition(listing.status as ListingStatus, 'ACTIVE');
-    return this.prisma.wasteListing.update({
-      where: { id },
-      data: { status: 'ACTIVE' },
-    });
+    await this.prisma.wasteListing.update({ where: { id }, data: { status: 'ACTIVE' } });
+    return this.findOne(sellerId, id);
   }
 
   async cancel(sellerId: string, id: string) {
     const listing = await this.getOwned(sellerId, id);
     assertValidListingTransition(listing.status as ListingStatus, 'CANCELLED');
-    return this.prisma.wasteListing.update({
-      where: { id },
-      data: { status: 'CANCELLED' },
-    });
+    await this.prisma.wasteListing.update({ where: { id }, data: { status: 'CANCELLED' } });
+    return this.findOne(sellerId, id);
   }
 
-  listMine(sellerId: string) {
-    return this.prisma.wasteListing.findMany({
+  async listMine(sellerId: string) {
+    const listings = await this.prisma.wasteListing.findMany({
       where: { sellerId },
-      include: { material: true, location: true },
+      include: { material: true, location: true, seller: { select: PUBLIC_SELLER_SELECT } },
       orderBy: { createdAt: 'desc' },
     });
+    return listings.map(mapListing);
   }
 
   // Public marketplace browse — only ACTIVE *and admin-approved* listings are
   // discoverable (§15 plus the admin moderation gate); a seller's own drafts/pending/
   // cancelled/etc. are only visible via listMine/findOne-as-owner.
-  browseActive(cursor?: string) {
-    return this.prisma.wasteListing.findMany({
+  async browseActive(cursor?: string) {
+    const listings = await this.prisma.wasteListing.findMany({
       where: { status: 'ACTIVE', moderationStatus: 'APPROVED' },
-      include: { material: true, location: true },
+      include: { material: true, location: true, seller: { select: PUBLIC_SELLER_SELECT } },
       orderBy: { createdAt: 'desc' },
       take: BROWSE_PAGE_SIZE,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
+    return listings.map(mapListing);
   }
 
   // Used by the collection module when a producer requests a pickup against one of their
@@ -92,7 +97,7 @@ export class MarketplaceService {
   async findOne(requesterId: string, id: string) {
     const listing = await this.prisma.wasteListing.findUnique({
       where: { id },
-      include: { material: true, location: true },
+      include: { material: true, location: true, seller: { select: PUBLIC_SELLER_SELECT } },
     });
     if (!listing) throw new NotFoundException('Listing not found.');
 
@@ -105,7 +110,24 @@ export class MarketplaceService {
     ) {
       throw new NotFoundException('Listing not found.');
     }
-    return listing;
+    return mapListing(listing);
+  }
+
+  // Deliberate, narrow privacy decision (flagged as unmade in CYCLO_IMPLEMENTATION_PLAN.md
+  // until now): a seller's phone is never in the listing payload itself — it's only
+  // returned via this explicit, authenticated, per-click action, and never to the seller's
+  // own request (nothing to "contact" on your own listing).
+  async contact(requesterId: string, id: string) {
+    const listing = await this.findOne(requesterId, id);
+    if (listing.sellerId === requesterId) {
+      throw new BadRequestException('This is your own listing.');
+    }
+    const seller = await this.prisma.user.findUnique({
+      where: { id: listing.sellerId },
+      select: { name: true, phone: true },
+    });
+    if (!seller) throw new NotFoundException('Seller not found.');
+    return seller;
   }
 
   private async getOwned(sellerId: string, id: string) {
@@ -120,4 +142,13 @@ export class MarketplaceService {
     }
     return listing;
   }
+}
+
+// `WasteListing.photos` is stored as a JSON-encoded string (no storage abstraction/blob
+// column exists yet — see CYCLO_IMPLEMENTATION_PLAN.md §39 gap); every read path decodes
+// it back to an array so the API's actual shape always matches what apps/web expects.
+// Exported so admin.service.ts's approve/reject (which touch WasteListing directly) stay
+// consistent with every other WasteListing read path instead of leaking the raw string.
+export function mapListing<T extends { photos?: string | null }>(listing: T): T & { photos: string[] } {
+  return { ...listing, photos: listing.photos ? JSON.parse(listing.photos) : [] };
 }

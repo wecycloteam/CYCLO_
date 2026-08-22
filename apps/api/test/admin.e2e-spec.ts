@@ -27,6 +27,7 @@ describe('Admin (e2e) — moderation and access control', () => {
   let adminToken: string;
   let collectorToken: string;
   let sellerToken: string;
+  let sellerUserId: string;
   let collectorUserId: string;
   let orgOwnerUserId: string;
   let materialId: string;
@@ -115,6 +116,7 @@ describe('Admin (e2e) — moderation and access control', () => {
 
     const seller = await loginAsNewUser(sellerPhone, 'household');
     sellerToken = seller.token;
+    sellerUserId = seller.userId;
 
     // Seeded directly — no token needed for this one, and every extra OTP round trip
     // eats into the endpoint's 5-per-60s throttle (§42).
@@ -202,6 +204,23 @@ describe('Admin (e2e) — moderation and access control', () => {
         (o: { ownerUserId: string }) => o.ownerUserId === orgOwnerUserId,
       ),
     ).toBe(true);
+    expect(
+      res.body.pendingAccounts.some((a: { id: string }) => a.id === sellerUserId),
+    ).toBe(true);
+  });
+
+  it('verifies the general user account and writes an audit log entry, giving them a verified badge', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/admin/users/${sellerUserId}/verify`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(res.body.verificationStatus).toBe('verified');
+
+    const me = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(200);
+    expect(me.body.verificationStatus).toBe('verified');
   });
 
   it('verifies the collector and writes an audit log entry', async () => {

@@ -60,4 +60,12 @@ export class MarketplaceController {
   ) {
     return this.marketplace.cancel(principal.userId, id);
   }
+
+  @Get(':id/contact')
+  contact(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.marketplace.contact(principal.userId, id);
+  }
 }

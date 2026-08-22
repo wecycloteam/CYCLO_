@@ -27,4 +27,33 @@ export class UsersService {
       return user;
     });
   }
+
+  // §13/§34 — home-dashboard impact stats. Only ever derived from real completed
+  // Transaction rows (one per completed pickup, see CollectionService.complete) — never a
+  // fabricated number. co2AvoidedKg uses a widely-cited rough recycling-vs-landfill factor
+  // (~2.5kg CO2e avoided per kg diverted) and is always labeled "estimated" in the UI.
+  async impact(userId: string) {
+    const CO2_FACTOR_PER_KG = 2.5;
+    const [sellerTx, collectorTx] = await Promise.all([
+      this.prisma.transaction.findMany({ where: { sellerId: userId }, select: { verifiedWeightKg: true, agreedPrice: true } }),
+      this.prisma.transaction.findMany({ where: { collectorId: userId }, select: { verifiedWeightKg: true } }),
+    ]);
+
+    const wasteRecycledKg = sellerTx.reduce((sum, t) => sum + t.verifiedWeightKg, 0);
+    const estimatedEarnings = sellerTx.reduce((sum, t) => sum + (t.agreedPrice ?? 0), 0);
+    const collectedWeightKg = collectorTx.reduce((sum, t) => sum + t.verifiedWeightKg, 0);
+
+    return {
+      asSeller: {
+        completedCount: sellerTx.length,
+        wasteRecycledKg,
+        estimatedEarnings,
+        co2AvoidedKg: Math.round(wasteRecycledKg * CO2_FACTOR_PER_KG * 10) / 10,
+      },
+      asCollector: {
+        completedCount: collectorTx.length,
+        collectedWeightKg,
+      },
+    };
+  }
 }

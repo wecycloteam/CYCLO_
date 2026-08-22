@@ -29,6 +29,12 @@ datasource db {
 // Transaction.paymentStatus -> see packages/shared-types/src/collection.ts PAYMENT_STATUSES
 // WasteEvent.eventType -> see packages/shared-types/src/collection.ts WASTE_EVENT_TYPES
 // WasteListing.moderationStatus -> PENDING | APPROVED | REJECTED (see packages/shared-types/src/admin.ts)
+// User.verificationStatus -> general account-level trust badge (unverified|pending|verified|rejected|suspended),
+//   distinct from CollectorProfile.verificationStatus (collector competency) and
+//   Organization.verificationStatus (business legitimacy) — every user gets this one.
+// AiScan.category -> see packages/shared-types/src/marketplace.ts WASTE_CATEGORIES
+// WasteListing.quantityUnit -> see packages/shared-types/src/marketplace.ts QUANTITY_UNITS
+// WastePrice.category -> see packages/shared-types/src/marketplace.ts WASTE_CATEGORIES
 
 model User {
   id           String   @id @default(uuid())
@@ -37,6 +43,7 @@ model User {
   passwordHash String?
   name         String
   role         String
+  verificationStatus String @default("unverified")
   locale       String   @default("en")
   country      String   @default("TZ")
   createdAt    DateTime @default(now())
@@ -53,8 +60,10 @@ model User {
   transactionsAsSeller    Transaction[]          @relation("TransactionSeller")
   transactionsAsCollector Transaction[]          @relation("TransactionCollector")
   wasteEvents             WasteEvent[]
+  aiScans                 AiScan[]
 
   @@index([role])
+  @@index([verificationStatus])
 }
 
 model OtpChallenge {
@@ -149,6 +158,7 @@ model WasteMaterial {
   wasteListings   WasteListing[]
   pickupRequests  PickupRequest[]
   transactions    Transaction[]
+  aiScans         AiScan[]
 
   @@unique([category, subtype])
   @@index([category])
@@ -169,6 +179,10 @@ model WasteListing {
   purity           Float?
   photos           String? // JSON-encoded array of storage refs/URLs
   askingPrice      Float?
+  // Display-only unit label chosen by the seller (kg | tonnes | pieces | litres, see
+  // shared-types QUANTITY_UNITS) — estimatedWeightKg/verifiedWeightKg stay the single
+  // numeric quantity the rest of the system (pricing, transactions) operates on.
+  quantityUnit     String    @default("kg")
   pickupOption     String
   description      String?
   status           String    @default("DRAFT")
@@ -280,6 +294,16 @@ model WasteEvent {
   @@index([transactionId])
 }
 
+// §17 — admin-editable reference price per WasteMaterial.category, driving every
+// "Estimated Market Value" shown to users. One row per category, not per material/subtype
+// (the taxonomy can have many subtypes per category; a per-category price is the level the
+// master prompt's "Waste Prices" transparency section operates at).
+model WastePrice {
+  category   String   @id
+  pricePerKg Float
+  updatedAt  DateTime @updatedAt
+}
+
 model CollectorProfile {
   userId             String   @id
   verificationStatus String   @default("unverified")
@@ -316,4 +340,29 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([targetType, targetId])
+}
+
+// §11-§13, §33 — one row per scan attempt. No image bytes/ref are stored: the storage
+// abstraction (§39) doesn't exist yet, so nothing here pretends photos are persisted.
+// `mock` is true for every scan right now (see apps/api/src/ai — MockWasteClassifier is
+// the only provider bound); a real vision provider flips it to false without changing
+// this shape. finalMaterialId/acceptedResult are set once the user proceeds to a listing
+// — null until then, since the AI never creates a listing on its own (§12).
+model AiScan {
+  id              String   @id @default(uuid())
+  userId          String
+  category        String
+  subtype         String?
+  label           String
+  confidence      Float
+  recyclable      Boolean
+  mock            Boolean  @default(true)
+  finalMaterialId String?
+  acceptedResult  Boolean?
+  createdAt       DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  finalMaterial WasteMaterial? @relation(fields: [finalMaterialId], references: [id])
+
+  @@index([userId])
 }

@@ -12,6 +12,8 @@ import { WasteMaterialsModule } from './waste-materials/waste-materials.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { CollectionModule } from './collection/collection.module';
 import { AdminModule } from './admin/admin.module';
+import { AiModule } from './ai/ai.module';
+import { PricingModule } from './pricing/pricing.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { AdminModule } from './admin/admin.module';
     MarketplaceModule,
     CollectionModule,
     AdminModule,
+    AiModule,
+    PricingModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

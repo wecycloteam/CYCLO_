@@ -3,9 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AdminAction, ListingStatus } from '@cyclo/shared-types';
+import { AdminAction, ListingStatus, WasteCategory } from '@cyclo/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
+import { mapListing } from '../marketplace/marketplace.service';
+import { PricingService } from '../pricing/pricing.service';
 
 const ACTIVITY_PAGE_SIZE = 20;
 const PENDING_VERIFICATION_STATUSES = ['unverified', 'pending'];
@@ -28,11 +30,15 @@ function toCountRecord(
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pricing: PricingService,
+  ) {}
 
   async dashboard() {
     const [
       usersByRole,
+      usersByVerification,
       collectorsByStatus,
       orgsByStatus,
       listingsByStatus,
@@ -41,6 +47,7 @@ export class AdminService {
       totalUsers,
     ] = await Promise.all([
       this.prisma.user.groupBy({ by: ['role'], _count: true }),
+      this.prisma.user.groupBy({ by: ['verificationStatus'], _count: true }),
       this.prisma.collectorProfile.groupBy({
         by: ['verificationStatus'],
         _count: true,
@@ -60,6 +67,7 @@ export class AdminService {
     return {
       totalUsers,
       usersByRole: toCountRecord(usersByRole),
+      usersByVerificationStatus: toCountRecord(usersByVerification),
       collectorsByVerificationStatus: toCountRecord(collectorsByStatus),
       organizationsByVerificationStatus: toCountRecord(orgsByStatus),
       listingsByStatus: toCountRecord(listingsByStatus),
@@ -93,7 +101,12 @@ export class AdminService {
   }
 
   async pendingUsers() {
-    const [pendingCollectors, pendingOrganizations] = await Promise.all([
+    const [pendingAccounts, pendingCollectors, pendingOrganizations] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
+        select: { id: true, name: true, phone: true, role: true, verificationStatus: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
       this.prisma.collectorProfile.findMany({
         where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
         include: {
@@ -109,7 +122,20 @@ export class AdminService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
-    return { pendingCollectors, pendingOrganizations };
+    return { pendingAccounts, pendingCollectors, pendingOrganizations };
+  }
+
+  async setUserVerification(adminId: string, userId: string, status: string, action: AdminAction, reason?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found.');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { verificationStatus: status },
+      select: { id: true, name: true, phone: true, role: true, verificationStatus: true },
+    });
+    await this.audit(adminId, action, 'User', userId, reason);
+    return updated;
   }
 
   async setCollectorVerification(
@@ -152,8 +178,8 @@ export class AdminService {
     return updated;
   }
 
-  pendingListings() {
-    return this.prisma.wasteListing.findMany({
+  async pendingListings() {
+    const listings = await this.prisma.wasteListing.findMany({
       where: { status: 'ACTIVE', moderationStatus: 'PENDING' },
       include: {
         material: true,
@@ -182,6 +208,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'asc' },
     });
+    return listings.map(mapListing);
   }
 
   async approveListing(adminId: string, id: string) {
@@ -191,7 +218,7 @@ export class AdminService {
       data: { moderationStatus: 'APPROVED' },
     });
     await this.audit(adminId, 'LISTING_APPROVED', 'WasteListing', id);
-    return updated;
+    return mapListing(updated);
   }
 
   async rejectListing(adminId: string, id: string, reason?: string) {
@@ -207,6 +234,12 @@ export class AdminService {
       },
     });
     await this.audit(adminId, 'LISTING_REJECTED', 'WasteListing', id, reason);
+    return mapListing(updated);
+  }
+
+  async setPrice(adminId: string, category: WasteCategory, pricePerKg: number) {
+    const updated = await this.pricing.upsert(category, pricePerKg);
+    await this.audit(adminId, 'PRICE_UPDATED', 'WastePrice', category, `pricePerKg=${pricePerKg}`);
     return updated;
   }
 

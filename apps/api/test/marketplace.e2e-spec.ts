@@ -210,6 +210,14 @@ describe('Marketplace (e2e) — listings (§14/§15)', () => {
     expect(detailRes.body.id).toBe(listingId);
     expect(detailRes.body.material).toBeDefined();
     expect(detailRes.body.location).toBeDefined();
+    // §26 — a "Verified Seller" badge is only ever real if it reflects the DB, never a
+    // client-side claim; the seller's actual account-level verificationStatus is exposed
+    // here (name only, no phone/PII) for exactly that badge.
+    expect(detailRes.body.seller).toMatchObject({ id: expect.any(String), name: expect.any(String), verificationStatus: expect.any(String) });
+    expect(detailRes.body.seller.phone).toBeUndefined();
+    expect(browseRes.body.find((l: { id: string }) => l.id === listingId).seller.verificationStatus).toEqual(
+      expect.any(String),
+    );
   });
 
   it('cancels the listing', async () => {

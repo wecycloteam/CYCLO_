@@ -13,6 +13,8 @@ function NewPickupRequestForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const listingId = searchParams.get("listingId") ?? undefined;
+  const scanMaterialId = searchParams.get("materialId") ?? undefined;
+  const scanWeightKg = searchParams.get("weightKg") ?? undefined;
   const { state: authState } = useCurrentUser();
 
   const [state, setState] = useState<LoadState>("loading");
@@ -43,7 +45,9 @@ function NewPickupRequestForm() {
           setLocationId(listingRes.locationId);
         } else {
           setMaterials(m);
-          if (m.length > 0) setMaterialId(m[0].id);
+          const scanned = scanMaterialId && m.some((material) => material.id === scanMaterialId);
+          setMaterialId(scanned ? scanMaterialId! : m.length > 0 ? m[0].id : "");
+          if (scanWeightKg) setEstimatedWeightKg(scanWeightKg);
         }
         setState("ready");
       })

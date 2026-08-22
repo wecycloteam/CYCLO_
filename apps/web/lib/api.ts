@@ -55,6 +55,7 @@ export interface CurrentUser {
   phone: string;
   name: string;
   role: string;
+  verificationStatus: string;
   locale: string;
   country: string;
   createdAt: string;
@@ -89,6 +90,14 @@ export type ListingStatus =
   | "EXPIRED"
   | "DISPUTED";
 
+export interface PublicSeller {
+  id: string;
+  name: string;
+  verificationStatus: string;
+}
+
+export type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export interface WasteListing {
   id: string;
   sellerId: string;
@@ -96,15 +105,29 @@ export interface WasteListing {
   locationId: string;
   estimatedWeightKg: number;
   verifiedWeightKg: number | null;
+  quantityUnit: string;
   condition: string | null;
   grade: string | null;
+  photos: string[];
   askingPrice: number | null;
   pickupOption: string;
   description: string | null;
   status: ListingStatus;
+  moderationStatus: ModerationStatus;
   createdAt: string;
   material: WasteMaterial;
   location: Location;
+  seller: PublicSeller;
+}
+
+// A listing's true public status is status + moderationStatus combined — ACTIVE alone
+// just means the seller published it, not that it's admin-approved yet (§15 vs the
+// moderation gate in CYCLO_IMPLEMENTATION_PLAN.md's "Admin foundation" section).
+export function listingStatusLabel(listing: Pick<WasteListing, "status" | "moderationStatus">): string {
+  if (listing.status === "ACTIVE" && listing.moderationStatus === "PENDING") return "Pending Verification";
+  if (listing.status === "ACTIVE" && listing.moderationStatus === "REJECTED") return "Rejected";
+  if (listing.status === "ACTIVE") return "Approved";
+  return listing.status.replace(/_/g, " ");
 }
 
 // Mirrors packages/shared-types/src/collection.ts PICKUP_STATUSES.
@@ -149,6 +172,8 @@ export interface PickupRequest {
   material: WasteMaterial;
   location: Location;
   transaction?: Transaction | null;
+  producer?: { id: string; name: string };
+  estimatedValue?: number | null;
 }
 
 export interface WasteEvent {
@@ -164,6 +189,7 @@ export interface WasteEvent {
 export interface AdminDashboard {
   totalUsers: number;
   usersByRole: Record<string, number>;
+  usersByVerificationStatus: Record<string, number>;
   collectorsByVerificationStatus: Record<string, number>;
   organizationsByVerificationStatus: Record<string, number>;
   listingsByStatus: Record<string, number>;
@@ -179,6 +205,15 @@ export interface AuditLogEntry {
   targetType: string;
   targetId: string;
   metadata: string | null;
+  createdAt: string;
+}
+
+export interface PendingAccount {
+  id: string;
+  name: string;
+  phone: string;
+  role: string;
+  verificationStatus: string;
   createdAt: string;
 }
 
@@ -200,7 +235,7 @@ export interface PendingOrganization {
   owner: { id: string; name: string; phone: string };
 }
 
-export interface AdminPendingListing extends WasteListing {
+export interface AdminPendingListing extends Omit<WasteListing, "seller"> {
   seller: {
     id: string;
     name: string;
@@ -208,6 +243,47 @@ export interface AdminPendingListing extends WasteListing {
     role: string;
     collectorProfile: { verificationStatus: string } | null;
     organizationMemberships: { organization: { id: string; name: string; type: string; verificationStatus: string } }[];
+  };
+}
+
+export interface ClassificationResult {
+  category: string;
+  subtype: string | null;
+  label: string;
+  confidence: number;
+  recyclable: boolean;
+  handlingInstructions: string[];
+  recommendedAction: string;
+  mock: boolean;
+}
+
+export interface ScanResponse {
+  scanId: string;
+  result: ClassificationResult;
+  suggestedMaterialId: string | null;
+}
+
+export interface WastePrice {
+  category: string;
+  pricePerKg: number;
+  updatedAt: string;
+}
+
+export interface SellerContact {
+  name: string;
+  phone: string;
+}
+
+export interface ImpactStats {
+  asSeller: {
+    completedCount: number;
+    wasteRecycledKg: number;
+    estimatedEarnings: number;
+    co2AvoidedKg: number;
+  };
+  asCollector: {
+    completedCount: number;
+    collectedWeightKg: number;
   };
 }
 
@@ -227,6 +303,7 @@ export const api = {
     }),
 
   me: () => request<CurrentUser>("/users/me", { method: "GET" }, true),
+  myImpact: () => request<ImpactStats>("/users/me/impact", { method: "GET" }, true),
 
   logout: (refreshToken: string) =>
     request<{ message: string }>("/auth/logout", {
@@ -247,8 +324,10 @@ export const api = {
     materialId: string;
     locationId: string;
     estimatedWeightKg: number;
+    quantityUnit?: string;
     condition?: string;
     askingPrice?: number;
+    photos?: string[];
     pickupOption: string;
     description?: string;
   }) => request<WasteListing>("/listings", { method: "POST", body: JSON.stringify(input) }, true),
@@ -257,6 +336,12 @@ export const api = {
   getListing: (id: string) => request<WasteListing>(`/listings/${id}`, { method: "GET" }, true),
   publishListing: (id: string) => request<WasteListing>(`/listings/${id}/publish`, { method: "PATCH" }, true),
   cancelListing: (id: string) => request<WasteListing>(`/listings/${id}/cancel`, { method: "PATCH" }, true),
+  contactSeller: (id: string) => request<SellerContact>(`/listings/${id}/contact`, { method: "GET" }, true),
+
+  // Transparent pricing (§17)
+  wastePrices: () => request<WastePrice[]>("/waste-prices", { method: "GET" }, true),
+  adminSetPrice: (category: string, pricePerKg: number) =>
+    request<WastePrice>(`/admin/waste-prices/${category}`, { method: "PATCH", body: JSON.stringify({ pricePerKg }) }, true),
 
   // Pickup requests / collection
   createPickupRequest: (input: {
@@ -291,11 +376,16 @@ export const api = {
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),
   adminActivity: () => request<AuditLogEntry[]>("/admin/activity", { method: "GET" }, true),
   adminPendingUsers: () =>
-    request<{ pendingCollectors: PendingCollector[]; pendingOrganizations: PendingOrganization[] }>(
+    request<{ pendingAccounts: PendingAccount[]; pendingCollectors: PendingCollector[]; pendingOrganizations: PendingOrganization[] }>(
       "/admin/users/pending",
       { method: "GET" },
       true,
     ),
+  adminVerifyUser: (userId: string) => request(`/admin/users/${userId}/verify`, { method: "PATCH" }, true),
+  adminRejectUser: (userId: string, reason?: string) =>
+    request(`/admin/users/${userId}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+  adminSuspendUser: (userId: string, reason?: string) =>
+    request(`/admin/users/${userId}/suspend`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
   adminVerifyCollector: (userId: string) =>
     request(`/admin/collectors/${userId}/verify`, { method: "PATCH" }, true),
   adminRejectCollector: (userId: string, reason?: string) =>
@@ -312,4 +402,10 @@ export const api = {
   adminApproveListing: (id: string) => request<WasteListing>(`/admin/listings/${id}/approve`, { method: "PATCH" }, true),
   adminRejectListing: (id: string, reason?: string) =>
     request<WasteListing>(`/admin/listings/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+
+  // AI waste scanning (§11-§13) — mock classifier only for now, see ClassificationResult.mock.
+  scanWaste: (imageBase64: string) =>
+    request<ScanResponse>("/ai/scan", { method: "POST", body: JSON.stringify({ imageBase64 }) }, true),
+  confirmScan: (scanId: string, finalMaterialId: string) =>
+    request(`/ai/scans/${scanId}/confirm`, { method: "PATCH", body: JSON.stringify({ finalMaterialId }) }, true),
 };

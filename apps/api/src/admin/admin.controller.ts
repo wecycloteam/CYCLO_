@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import type { WasteCategory } from '@cyclo/shared-types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -6,6 +7,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { ModerationReasonDto } from './dto/moderation-reason.dto';
+import { SetPriceDto } from './dto/set-price.dto';
 
 // Every route here requires role=admin — see main.ts for why RolesGuard is applied
 // locally (after JwtAuthGuard) rather than as a global guard.
@@ -28,6 +30,29 @@ export class AdminController {
   @Get('users/pending')
   pendingUsers() {
     return this.admin.pendingUsers();
+  }
+
+  @Patch('users/:userId/verify')
+  verifyUser(@CurrentUser() principal: CurrentUserPayload, @Param('userId') userId: string) {
+    return this.admin.setUserVerification(principal.userId, userId, 'verified', 'USER_VERIFIED');
+  }
+
+  @Patch('users/:userId/reject')
+  rejectUser(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Param('userId') userId: string,
+    @Body() dto: ModerationReasonDto,
+  ) {
+    return this.admin.setUserVerification(principal.userId, userId, 'rejected', 'USER_REJECTED', dto.reason);
+  }
+
+  @Patch('users/:userId/suspend')
+  suspendUser(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Param('userId') userId: string,
+    @Body() dto: ModerationReasonDto,
+  ) {
+    return this.admin.setUserVerification(principal.userId, userId, 'suspended', 'USER_SUSPENDED', dto.reason);
   }
 
   @Patch('collectors/:userId/verify')
@@ -136,5 +161,14 @@ export class AdminController {
     @Body() dto: ModerationReasonDto,
   ) {
     return this.admin.rejectListing(principal.userId, id, dto.reason);
+  }
+
+  @Patch('waste-prices/:category')
+  setPrice(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Param('category') category: WasteCategory,
+    @Body() dto: SetPriceDto,
+  ) {
+    return this.admin.setPrice(principal.userId, category, dto.pricePerKg);
   }
 }

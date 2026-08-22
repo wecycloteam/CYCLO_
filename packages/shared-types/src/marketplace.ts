@@ -18,6 +18,12 @@ export type WasteCategory = (typeof WASTE_CATEGORIES)[number];
 export const PICKUP_OPTIONS = ["seller_dropoff", "collection_required", "flexible"] as const;
 export type PickupOption = (typeof PICKUP_OPTIONS)[number];
 
+export const QUANTITY_UNITS = ["kg", "tonnes", "pieces", "litres"] as const;
+export type QuantityUnit = (typeof QUANTITY_UNITS)[number];
+
+export const LISTING_CONDITIONS = ["Clean", "Sorted", "Mixed", "Compressed", "Damaged", "Other"] as const;
+export type ListingCondition = (typeof LISTING_CONDITIONS)[number];
+
 // §15 — explicit states, not booleans. DISPUTED has no forward transition defined yet;
 // dispute resolution (master prompt §28, plan Phase 4) will extend this table when built.
 export const LISTING_STATUSES = [

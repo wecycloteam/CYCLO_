@@ -37,6 +37,38 @@ const MATERIALS: Array<{
   { category: 'other', subtype: 'MIXED', label: 'Mixed/Unsorted', recyclable: false },
 ];
 
+// §17 — reference prices (TZS/kg) shown as "Estimated Market Value" everywhere and
+// editable from the admin dashboard. Approximate real-world East Africa scrap-value
+// ordering (metal/e-waste highest, organic/mixed lowest) — a starting point, not a claim
+// of accuracy; admins are expected to correct these to real market rates.
+const PRICES: Array<{ category: string; pricePerKg: number }> = [
+  { category: 'plastic', pricePerKg: 500 },
+  { category: 'paper', pricePerKg: 200 },
+  { category: 'cardboard', pricePerKg: 150 },
+  { category: 'glass', pricePerKg: 100 },
+  { category: 'metal', pricePerKg: 1200 },
+  { category: 'e_waste', pricePerKg: 2000 },
+  { category: 'organic', pricePerKg: 50 },
+  { category: 'other', pricePerKg: 100 },
+];
+
+// §14 — DEMO DATA so the marketplace is never empty for a live demo. Tagged with a
+// "[DEMO]" marker in the description so the block below is safely re-runnable: it checks
+// for that marker instead of blindly re-inserting on every `npm run db:seed`.
+const DEMO_PHONE = '+255700000001';
+const DEMO_LISTINGS: Array<{
+  category: string;
+  subtype: string;
+  label: string;
+  estimatedWeightKg: number;
+  description: string;
+}> = [
+  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household. [DEMO]' },
+  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened. [DEMO]' },
+  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean. [DEMO]' },
+  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs. [DEMO]' },
+];
+
 async function main() {
   for (const material of MATERIALS) {
     await prisma.wasteMaterial.upsert({
@@ -46,6 +78,53 @@ async function main() {
     });
   }
   console.log(`Seeded ${MATERIALS.length} waste materials.`);
+
+  for (const price of PRICES) {
+    await prisma.wastePrice.upsert({
+      where: { category: price.category },
+      update: {},
+      create: price,
+    });
+  }
+  console.log(`Seeded ${PRICES.length} reference prices.`);
+
+  const alreadySeeded = await prisma.wasteListing.findFirst({ where: { description: { contains: '[DEMO]' } } });
+  if (alreadySeeded) {
+    console.log('Demo listings already present — skipping.');
+  } else {
+    const demoUser = await prisma.user.upsert({
+      where: { phone: DEMO_PHONE },
+      update: {},
+      create: { phone: DEMO_PHONE, name: 'Amina (Demo Household)', role: 'household', verificationStatus: 'verified' },
+    });
+    const demoLocation = await prisma.location.create({
+      data: { ownerType: 'user', userId: demoUser.id, label: 'Home', region: 'Arusha', country: 'TZ' },
+    });
+
+    for (const item of DEMO_LISTINGS) {
+      const material = await prisma.wasteMaterial.findUnique({
+        where: { category_subtype: { category: item.category, subtype: item.subtype } },
+      });
+      const price = PRICES.find((p) => p.category === item.category);
+      if (!material || !price) continue;
+
+      await prisma.wasteListing.create({
+        data: {
+          sellerId: demoUser.id,
+          materialId: material.id,
+          locationId: demoLocation.id,
+          estimatedWeightKg: item.estimatedWeightKg,
+          condition: 'Clean',
+          askingPrice: Math.round(price.pricePerKg * item.estimatedWeightKg),
+          pickupOption: 'collection_required',
+          description: item.description,
+          status: 'ACTIVE',
+          moderationStatus: 'APPROVED',
+        },
+      });
+    }
+    console.log(`Seeded ${DEMO_LISTINGS.length} demo marketplace listings under ${DEMO_PHONE}.`);
+  }
 }
 
 main()

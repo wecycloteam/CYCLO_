@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, PendingCollector, PendingOrganization } from "@/lib/api";
+import { api, ApiError, PendingAccount, PendingCollector, PendingOrganization } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { AdminGate } from "@/components/AdminGate";
@@ -12,6 +12,7 @@ type LoadState = "loading" | "ready" | "error";
 
 export default function AdminUsersPage() {
   const { state: authState, user } = useCurrentUser();
+  const [accounts, setAccounts] = useState<PendingAccount[]>([]);
   const [collectors, setCollectors] = useState<PendingCollector[]>([]);
   const [organizations, setOrganizations] = useState<PendingOrganization[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -24,6 +25,7 @@ export default function AdminUsersPage() {
     api
       .adminPendingUsers()
       .then((res) => {
+        setAccounts(res.pendingAccounts);
         setCollectors(res.pendingCollectors);
         setOrganizations(res.pendingOrganizations);
         setState("ready");
@@ -38,12 +40,28 @@ export default function AdminUsersPage() {
     if (authState === "ready" && user?.role === "admin") Promise.resolve().then(load);
   }, [authState, user]);
 
-  async function handleCollector(userId: string, action: "verify" | "reject") {
+  async function handleAccount(userId: string, action: "verify" | "reject" | "suspend") {
+    setActingId(userId);
+    setActionError(null);
+    try {
+      if (action === "verify") await api.adminVerifyUser(userId);
+      else if (action === "reject") await api.adminRejectUser(userId);
+      else await api.adminSuspendUser(userId);
+      setAccounts((prev) => prev.filter((a) => a.id !== userId));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "That action didn't go through.");
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function handleCollector(userId: string, action: "verify" | "reject" | "suspend") {
     setActingId(userId);
     setActionError(null);
     try {
       if (action === "verify") await api.adminVerifyCollector(userId);
-      else await api.adminRejectCollector(userId);
+      else if (action === "reject") await api.adminRejectCollector(userId);
+      else await api.adminSuspendCollector(userId);
       setCollectors((prev) => prev.filter((c) => c.userId !== userId));
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "That action didn't go through.");
@@ -52,12 +70,13 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleOrganization(orgId: string, action: "verify" | "reject") {
+  async function handleOrganization(orgId: string, action: "verify" | "reject" | "suspend") {
     setActingId(orgId);
     setActionError(null);
     try {
       if (action === "verify") await api.adminVerifyOrganization(orgId);
-      else await api.adminRejectOrganization(orgId);
+      else if (action === "reject") await api.adminRejectOrganization(orgId);
+      else await api.adminSuspendOrganization(orgId);
       setOrganizations((prev) => prev.filter((o) => o.id !== orgId));
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "That action didn't go through.");
@@ -66,7 +85,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  const nothingPending = collectors.length === 0 && organizations.length === 0;
+  const nothingPending = accounts.length === 0 && collectors.length === 0 && organizations.length === 0;
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
@@ -78,7 +97,46 @@ export default function AdminUsersPage() {
           {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}
 
           {state === "ready" && nothingPending && (
-            <EmptyState title="Nothing pending" hint="New collector and business accounts will show up here for verification." />
+            <EmptyState title="Nothing pending" hint="New household, business, and collector accounts will show up here for verification." />
+          )}
+
+          {state === "ready" && accounts.length > 0 && (
+            <>
+              <h3 className="text-xs font-extrabold text-[var(--text-2)] uppercase tracking-wide mb-2">Households &amp; other accounts</h3>
+              <div className="flex flex-col gap-2 mb-6">
+                {accounts.map((a) => (
+                  <div key={a.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
+                    <div className="text-sm font-extrabold">{a.name}</div>
+                    <div className="text-xs text-[var(--text-2)] mb-3">
+                      {a.phone} · {a.role} · joined {new Date(a.createdAt).toLocaleDateString()}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAccount(a.id, "verify")}
+                        disabled={actingId === a.id}
+                        className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-xs py-2.5 disabled:opacity-60"
+                      >
+                        Verify
+                      </button>
+                      <button
+                        onClick={() => handleAccount(a.id, "reject")}
+                        disabled={actingId === a.id}
+                        className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => handleAccount(a.id, "suspend")}
+                        disabled={actingId === a.id}
+                        className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-xs py-2.5 disabled:opacity-60"
+                      >
+                        Suspend
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {state === "ready" && collectors.length > 0 && (
@@ -105,6 +163,13 @@ export default function AdminUsersPage() {
                         className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
                         Reject
+                      </button>
+                      <button
+                        onClick={() => handleCollector(c.userId, "suspend")}
+                        disabled={actingId === c.userId}
+                        className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-xs py-2.5 disabled:opacity-60"
+                      >
+                        Suspend
                       </button>
                     </div>
                   </div>
@@ -137,6 +202,13 @@ export default function AdminUsersPage() {
                         className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
                         Reject
+                      </button>
+                      <button
+                        onClick={() => handleOrganization(o.id, "suspend")}
+                        disabled={actingId === o.id}
+                        className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-xs py-2.5 disabled:opacity-60"
+                      >
+                        Suspend
                       </button>
                     </div>
                   </div>

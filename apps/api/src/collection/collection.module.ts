@@ -4,9 +4,10 @@ import { CollectionController } from './collection.controller';
 import { LocationsModule } from '../locations/locations.module';
 import { WasteMaterialsModule } from '../waste-materials/waste-materials.module';
 import { MarketplaceModule } from '../marketplace/marketplace.module';
+import { PricingModule } from '../pricing/pricing.module';
 
 @Module({
-  imports: [LocationsModule, WasteMaterialsModule, MarketplaceModule],
+  imports: [LocationsModule, WasteMaterialsModule, MarketplaceModule, PricingModule],
   controllers: [CollectionController],
   providers: [CollectionService],
   exports: [CollectionService],

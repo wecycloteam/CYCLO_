@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, Location, WasteMaterial } from "@/lib/api";
+import { api, ApiError, Location, WasteMaterial, WastePrice } from "@/lib/api";
+import { resizeImageFile } from "@/lib/resizeImage";
 import { AppHeader } from "@/components/AppHeader";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
@@ -13,35 +14,52 @@ const PICKUP_OPTIONS = [
   { value: "flexible", label: "Flexible" },
 ];
 
+const QUANTITY_UNITS = ["kg", "tonnes", "pieces", "litres"];
+const CONDITIONS = ["Clean", "Sorted", "Mixed", "Compressed", "Damaged", "Other"];
+const MAX_PHOTOS = 4;
+
 type LoadState = "loading" | "ready" | "error";
 
-export default function NewListingPage() {
+function NewListingForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const scanId = searchParams.get("scanId") ?? undefined;
+  const scanMaterialId = searchParams.get("materialId") ?? undefined;
+  const scanWeightKg = searchParams.get("weightKg") ?? undefined;
+  const manual = searchParams.get("manual") === "1";
   const { state: authState } = useCurrentUser();
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [materials, setMaterials] = useState<WasteMaterial[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [prices, setPrices] = useState<WastePrice[]>([]);
 
   const [materialId, setMaterialId] = useState("");
   const [locationId, setLocationId] = useState("");
   const [newLocationLabel, setNewLocationLabel] = useState("");
   const [newLocationRegion, setNewLocationRegion] = useState("");
-  const [estimatedWeightKg, setEstimatedWeightKg] = useState("");
-  const [condition, setCondition] = useState("");
+  const [estimatedWeightKg, setEstimatedWeightKg] = useState(scanWeightKg ?? "");
+  const [quantityUnit, setQuantityUnit] = useState("kg");
+  const [condition, setCondition] = useState(CONDITIONS[0]);
+  const [pricePerUnit, setPricePerUnit] = useState("");
   const [askingPrice, setAskingPrice] = useState("");
   const [pickupOption, setPickupOption] = useState(PICKUP_OPTIONS[0].value);
   const [description, setDescription] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
-    Promise.all([api.wasteMaterials(), api.myLocations()])
-      .then(([m, l]) => {
+    Promise.all([api.wasteMaterials(), api.myLocations(), api.wastePrices()])
+      .then(([m, l, p]) => {
         setMaterials(m);
         setLocations(l);
-        if (m.length > 0) setMaterialId(m[0].id);
+        setPrices(p);
+        const scanned = scanMaterialId && m.some((material) => material.id === scanMaterialId);
+        setMaterialId(scanned ? scanMaterialId! : m.length > 0 ? m[0].id : "");
         if (l.length > 0) setLocationId(l[0].id);
         setState("ready");
       })
@@ -53,7 +71,42 @@ export default function NewListingPage() {
 
   useEffect(() => {
     if (authState === "ready") Promise.resolve().then(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authState]);
+
+  const selectedMaterial = materials.find((m) => m.id === materialId);
+  const pricePerKg = selectedMaterial ? prices.find((p) => p.category === selectedMaterial.category)?.pricePerKg ?? null : null;
+  const estimatedMarketValue = pricePerKg != null && estimatedWeightKg ? pricePerKg * Number(estimatedWeightKg) : null;
+
+  function handlePricePerUnitChange(value: string) {
+    setPricePerUnit(value);
+    const weight = Number(estimatedWeightKg || 0);
+    setAskingPrice(value && weight ? String(Math.round(Number(value) * weight)) : "");
+  }
+
+  function handleAskingPriceChange(value: string) {
+    setAskingPrice(value);
+    const weight = Number(estimatedWeightKg || 0);
+    setPricePerUnit(value && weight ? String(Math.round((Number(value) / weight) * 100) / 100) : "");
+  }
+
+  async function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    setPhotoError(null);
+    try {
+      const remaining = MAX_PHOTOS - photos.length;
+      const resized = await Promise.all(files.slice(0, remaining).map((f) => resizeImageFile(f)));
+      setPhotos((prev) => [...prev, ...resized]);
+    } catch {
+      setPhotoError("Couldn't add that photo.");
+    }
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleAddLocation(e: React.FormEvent) {
     e.preventDefault();
@@ -81,11 +134,17 @@ export default function NewListingPage() {
         materialId,
         locationId,
         estimatedWeightKg: Number(estimatedWeightKg),
+        quantityUnit,
         condition: condition || undefined,
         askingPrice: askingPrice ? Number(askingPrice) : undefined,
+        photos: photos.length > 0 ? photos : undefined,
         pickupOption,
         description: description || undefined,
       });
+      if (scanId) {
+        // Best-effort scan-history linkage (§33) — never blocks listing creation if it fails.
+        api.confirmScan(scanId, materialId).catch(() => undefined);
+      }
       router.push(`/marketplace/${listing.id}`);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't create that listing.");
@@ -100,6 +159,19 @@ export default function NewListingPage() {
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
         {state === "loading" && <LoadingState label="Loading form…" />}
         {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+
+        {state === "ready" && scanId && (
+          <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--text-2)] mb-4">
+            <span className="font-bold text-[var(--text-1)]">AI Identification —</span> material pre-filled from your
+            scan. Change it below if it&apos;s not right.
+          </div>
+        )}
+        {state === "ready" && !scanId && manual && (
+          <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--text-2)] mb-4">
+            <span className="font-bold text-[var(--text-1)]">Manual Selection —</span> choose the waste type yourself
+            below.
+          </div>
+        )}
 
         {state === "ready" && locations.length === 0 && (
           <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-6">
@@ -164,27 +236,96 @@ export default function NewListingPage() {
               </select>
             </label>
 
+            <div className="flex gap-3">
+              <label className="flex-1 flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-[var(--text-2)]">Quantity</span>
+                <input
+                  required
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={estimatedWeightKg}
+                  onChange={(e) => setEstimatedWeightKg(e.target.value)}
+                  className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-[var(--text-2)]">Unit</span>
+                <select
+                  value={quantityUnit}
+                  onChange={(e) => setQuantityUnit(e.target.value)}
+                  className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2.5 text-sm bg-[var(--surface)]"
+                >
+                  {QUANTITY_UNITS.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {quantityUnit === "kg" && (
+              <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5">
+                <div className="text-[11px] font-bold text-[var(--text-2)] uppercase tracking-wide">Estimated Market Value</div>
+                <div className="text-lg font-extrabold text-[var(--cyclo-teal)]">
+                  {estimatedMarketValue != null ? `TZS ${Math.round(estimatedMarketValue).toLocaleString()}` : "No reference price set"}
+                </div>
+                <div className="text-[11px] text-[var(--text-2)]">An estimate, not a guaranteed buying price.</div>
+              </div>
+            )}
+
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Estimated weight (kg)</span>
-              <input
-                required
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={estimatedWeightKg}
-                onChange={(e) => setEstimatedWeightKg(e.target.value)}
-                className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
-              />
+              <span className="text-xs font-bold text-[var(--text-2)]">Condition</span>
+              <select
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+                className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm bg-[var(--surface)]"
+              >
+                {CONDITIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Condition (optional)</span>
+              <span className="text-xs font-bold text-[var(--text-2)]">Photos (optional, up to {MAX_PHOTOS})</span>
+              <div className="flex flex-wrap gap-2">
+                {photos.map((p, i) => (
+                  <div key={i} className="relative h-16 w-16">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- data: URL, not an optimizable remote asset */}
+                    <img src={p} alt="" className="h-16 w-16 object-cover rounded-[var(--r-md)]" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[var(--critical)] text-white text-[10px] font-bold"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-16 w-16 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-2)] text-xs flex items-center justify-center"
+                  >
+                    + Add
+                  </button>
+                )}
+              </div>
               <input
-                placeholder="e.g. clean, sorted"
-                value={condition}
-                onChange={(e) => setCondition(e.target.value)}
-                className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                onChange={handlePhotoAdd}
+                className="hidden"
               />
+              {photoError && <p className="text-xs text-[var(--critical)]">{photoError}</p>}
             </label>
 
             <label className="flex flex-col gap-1.5">
@@ -202,17 +343,30 @@ export default function NewListingPage() {
               </select>
             </label>
 
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Asking price — TZS (optional)</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="Leave blank if unsure"
-                value={askingPrice}
-                onChange={(e) => setAskingPrice(e.target.value)}
-                className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
-              />
-            </label>
+            <div className="flex gap-3">
+              <label className="flex-1 flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-[var(--text-2)]">Price per {quantityUnit} — TZS (optional)</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Leave blank if unsure"
+                  value={pricePerUnit}
+                  onChange={(e) => handlePricePerUnitChange(e.target.value)}
+                  className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+                />
+              </label>
+              <label className="flex-1 flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-[var(--text-2)]">Total asking price — TZS</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Leave blank if unsure"
+                  value={askingPrice}
+                  onChange={(e) => handleAskingPriceChange(e.target.value)}
+                  className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+                />
+              </label>
+            </div>
 
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-bold text-[var(--text-2)]">Description (optional)</span>
@@ -237,5 +391,13 @@ export default function NewListingPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function NewListingPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <NewListingForm />
+    </Suspense>
   );
 }
