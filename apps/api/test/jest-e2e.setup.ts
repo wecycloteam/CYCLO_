@@ -1,9 +1,8 @@
 import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
 
-// Load apps/api/.env, then pin DATABASE_URL to an absolute path — Prisma's
-// relative sqlite path resolution is inconsistent across how the process was
-// launched (npm workspace script vs. jest's own cwd), so relative paths are
-// unreliable here even though they work fine for `npm run start:dev`.
+// Load apps/api/.env — DATABASE_URL now comes straight from there (Postgres, as of
+// 2026-08-22's Supabase migration). Previously this pinned DATABASE_URL to an absolute
+// SQLite file path (relative sqlite paths resolved inconsistently depending on how the
+// process was launched); that hack is gone now that the datasource is a real network URL.
 loadEnv({ path: path.resolve(__dirname, '../.env') });
-process.env.DATABASE_URL = `file:${path.resolve(__dirname, '../../../prisma/dev.db').replace(/\\/g, '/')}`;

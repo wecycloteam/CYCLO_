@@ -1,10 +1,13 @@
 // CYCLO — Phase 1 database foundation (auth, roles, profile).
-// Provider is SQLite for local dev (per CYCLO_IMPLEMENTATION_PLAN.md open decisions);
-// swapped to PostgreSQL for staging/production without changing the model shapes below.
+// Provider is PostgreSQL (Supabase-hosted) as of 2026-08-22 — was SQLite for local dev
+// before that; DATABASE_URL (see prisma/.env, apps/api/.env, both gitignored) points at
+// the real database. Never put a real connection string/password directly in this file —
+// it is NOT gitignored and gets committed/pushed as plain text.
 //
-// NOTE: Prisma's native `enum` type is not supported on the SQLite connector, so
-// role/status fields are modeled as String and validated at the application layer
-// (see packages/shared-types) — this keeps the schema portable across both providers.
+// NOTE: role/status fields are modeled as String and validated at the application layer
+// (see packages/shared-types) rather than native Postgres enums — this was chosen back
+// when the schema still needed to stay portable to SQLite; kept for now for zero-downtime
+// migration flexibility, not a hard requirement anymore.
 // Every entity carries a stable id, createdAt, and updatedAt where mutable, per
 // CYCLO_IMPLEMENTATION_PLAN.md section 6/36.
 
@@ -13,7 +16,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
