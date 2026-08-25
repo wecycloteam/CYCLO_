@@ -1,0 +1,15 @@
+# Netlify config for the CYCLO web app (Next.js), lives at the repo root so it's read
+# regardless of whatever "Base directory" is set to in the Netlify dashboard — `base`
+# below is what actually scopes the build to apps/web in this npm-workspaces monorepo.
+# The official @netlify/plugin-nextjs runtime manages the publish directory itself, so
+# no `publish` path is set here — declaring one caused it to look for `.next` relative
+# to the repo root instead of apps/web, which is what broke the first deploy attempt.
+[build]
+  base = "apps/web"
+  command = "cd ../.. && npm install && npm run build --workspace=apps/web"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

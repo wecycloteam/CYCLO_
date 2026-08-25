@@ -1,9 +1,0 @@
-# Netlify config for the CYCLO web app. In the Netlify dashboard: Add new site ->
-# Import an existing project, connect this repo, and set "Base directory" to apps/web
-# (Netlify then reads this file from there). The Next.js runtime plugin is auto-detected.
-[build]
-  command = "npm install && npm run build"
-  publish = ".next"
-
-[build.environment]
-  NODE_VERSION = "20"
