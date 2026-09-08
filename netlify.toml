@@ -1,15 +1,38 @@
-# Netlify config for the CYCLO web app (Next.js), lives at the repo root so it's read
-# regardless of whatever "Base directory" is set to in the Netlify dashboard — `base`
-# below is what actually scopes the build to apps/web in this npm-workspaces monorepo.
-# The official @netlify/plugin-nextjs runtime manages the publish directory itself, so
-# no `publish` path is set here — declaring one caused it to look for `.next` relative
-# to the repo root instead of apps/web, which is what broke the first deploy attempt.
+# Netlify config for CYCLO — both the Next.js web app AND the NestJS API are hosted here
+# (no Render/other backend host). Lives at the repo root so it's read regardless of
+# whatever "Base directory" is set to in the Netlify dashboard — `base` below is what
+# actually scopes the site build to apps/web in this npm-workspaces monorepo.
 [build]
   base = "apps/web"
-  command = "cd ../.. && npm install && npm run build --workspace=apps/web"
+  # Builds the web app (for the site itself) and the API (so its compiled dist/ exists
+  # before Netlify bundles netlify/functions/api.ts, which requires that compiled output).
+  command = "cd ../.. && npm install && npm run build --workspace=apps/web && npm run build --workspace=apps/api"
 
 [build.environment]
   NODE_VERSION = "20"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# `functions`/`included_files` paths are relative to `base` (apps/web), so "../.." reaches
+# the repo root from there.
+[functions]
+  directory = "../../netlify/functions"
+  node_bundler = "esbuild"
+  # Prisma's query engine is a native binary, not JS — bundling it would corrupt it, so it's
+  # left external and shipped as-is via included_files instead (needs the
+  # rhel-openssl-3.0.x binaryTarget in prisma/schema.prisma, which is what generates this
+  # file's Linux/Lambda-compatible engine).
+  external_node_modules = ["@prisma/client", ".prisma/client"]
+  included_files = [
+    "../../node_modules/.prisma/client/schema.prisma",
+    "../../node_modules/.prisma/client/*.so.node",
+  ]
+
+# The web app calls the API at NEXT_PUBLIC_API_URL + path (e.g. "/auth/otp/request"). Set
+# NEXT_PUBLIC_API_URL=/api in the Netlify dashboard's site environment variables (build-time
+# var, so it must live there, not just in apps/web/.env.local) so requests hit this redirect.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200

@@ -41,3 +41,6 @@ npm-debug.log*
 Thumbs.db
 
 # Local Flutter SDK install (kept outside the repo, at C:\src\flutter)
+
+# Local Netlify folder
+.netlify
