@@ -10,6 +10,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Netlify sets NODE_ENV=production during builds, which makes `npm install` skip
+  # devDependencies — but the build needs several (typescript, @nestjs/cli, ts-loader) to
+  # even compile. Without this the build fails with "exit code 2" before anything runs.
+  NPM_FLAGS = "--include=dev"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
