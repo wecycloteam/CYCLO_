@@ -3,8 +3,8 @@
 # whatever "Base directory" is set to in the Netlify dashboard — `base` below is what
 # actually scopes the site build to apps/web in this npm-workspaces monorepo.
 [build]
-base = "apps/web"
-  publish = "apps/web/.next"
+  base = "apps/web"
+  publish = ".next"
   command = "cd ../.. && npm install && npm run build --workspace=apps/web && npm run build --workspace=apps/api"
 
 [build.environment]
