@@ -36,13 +36,15 @@
   NPM_FLAGS = "--include=dev"
   # Netlify injects every site env var (not just NEXT_PUBLIC_* ones) into both the web and
   # API build steps, since they share one `npm install && ... build` command. The web build
-  # never reads GOOGLE_CLIENT_SECRET (only apps/api's ConfigService does), but Next.js/
-  # Turbopack's build cache snapshots process.env internally for cache-key purposes, which
-  # put the raw value inside a .next/cache/turbopack/*.sst file — Netlify's secret scanner
-  # then (correctly, mechanically) flags that file and fails the build. Omitting this one
-  # key from scanning is safe specifically because it's never in the actual shipped bundle,
-  # only an internal build-cache artifact.
-  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_CLIENT_SECRET"
+  # never reads these backend-only secrets (only apps/api's ConfigService does), but
+  # Next.js/Turbopack's build cache snapshots process.env internally for cache-key
+  # purposes, which puts the raw value inside a .next/cache/turbopack/*.sst file —
+  # Netlify's secret scanner then (correctly, mechanically) flags that file and fails the
+  # build. Omitting these keys from scanning is safe specifically because they're never in
+  # the actual shipped bundle, only an internal build-cache artifact. Add any future
+  # backend-only secret here too, or every Gemini/Google-key-shaped addition will fail the
+  # build the same way.
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_CLIENT_SECRET,GEMINI_API_KEY"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
