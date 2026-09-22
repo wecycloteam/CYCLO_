@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 // Phase 1 keeps tokens in localStorage for simplicity. Moving to httpOnly cookies
 // is a known hardening item before production (see CYCLO_IMPLEMENTATION_PLAN.md §42).
@@ -298,6 +298,18 @@ export const api = {
 
   verifyOtp: (input: { phone: string; code: string; name?: string; role?: string }) =>
     request<AuthTokens>("/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  register: (input: { email: string; password: string; phone: string; name: string; role?: string }) =>
+    request<AuthTokens>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  login: (input: { email: string; password: string }) =>
+    request<AuthTokens>("/auth/login", {
       method: "POST",
       body: JSON.stringify(input),
     }),

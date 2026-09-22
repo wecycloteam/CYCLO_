@@ -3,11 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes, randomInt, createHash } from 'crypto';
+import type { GoogleProfile } from './strategies/google.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { SMS_PROVIDER } from '../sms/sms-provider.interface';
 import type { SmsProvider } from '../sms/sms-provider.interface';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 const OTP_TTL_MINUTES = 5;
 const OTP_LENGTH = 6;
@@ -84,6 +87,65 @@ export class AuthService {
       });
     }
 
+    return this.issueTokens(user.id, user.role);
+  }
+
+  // Email+password is a second, independent way to reach the same User row the OTP flow
+  // creates — both require a phone (still the unique identity for pickup/contact-seller)
+  // but this path lets someone who already has an email+password skip SMS entirely.
+  async register(dto: RegisterDto) {
+    const [existingEmail, existingPhone] = await Promise.all([
+      this.users.findByEmail(dto.email),
+      this.users.findByPhone(dto.phone),
+    ]);
+    if (existingEmail) {
+      throw new BadRequestException('An account with this email already exists.');
+    }
+    if (existingPhone) {
+      throw new BadRequestException('An account with this phone number already exists.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const user = await this.users.create({
+      phone: dto.phone,
+      name: dto.name.trim(),
+      role: dto.role ?? 'household',
+      email: dto.email,
+      passwordHash,
+    });
+
+    return this.issueTokens(user.id, user.role);
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.users.findByEmail(dto.email);
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Incorrect email or password.');
+    }
+
+    const matches = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!matches) {
+      throw new UnauthorizedException('Incorrect email or password.');
+    }
+
+    return this.issueTokens(user.id, user.role);
+  }
+
+  // Google never gives us a phone number (the User row's other unique identity, used by
+  // pickup/contact-seller), so a first-time Google sign-in gets a random placeholder —
+  // real, unique, but not a usable phone. The account works immediately for browsing/
+  // buying; selling still needs a real phone, which isn't collectible from Google alone.
+  async loginWithGoogle(profile: GoogleProfile) {
+    let user = await this.users.findByEmail(profile.email);
+    if (!user) {
+      const placeholderPhone = `google:${randomBytes(8).toString('hex')}`;
+      user = await this.users.create({
+        phone: placeholderPhone,
+        name: profile.name,
+        role: 'household',
+        email: profile.email,
+      });
+    }
     return this.issueTokens(user.id, user.role);
   }
 

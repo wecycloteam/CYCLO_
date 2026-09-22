@@ -2,19 +2,51 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
-import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, WasteListing, SellerContact, listingStatusLabel } from "@/lib/api";
+import { api, ApiError, CurrentUser, WasteListing, SellerContact, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
 
+// A listing is publicly viewable (§ landing/home redesign — a visitor can browse
+// without an account); only owner actions and Contact Seller need one. Mirrors the
+// same pattern used on the marketplace list page.
+function useOptionalCurrentUser() {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    if (!tokenStore.getAccess()) {
+      setChecked(true);
+      return;
+    }
+    let cancelled = false;
+    api
+      .me()
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .catch(() => {
+        if (!cancelled) tokenStore.clear();
+      })
+      .finally(() => {
+        if (!cancelled) setChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { user, checked };
+}
+
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { state: authState, user } = useCurrentUser();
+  const { user, checked } = useOptionalCurrentUser();
   const [listing, setListing] = useState<WasteListing | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -39,9 +71,9 @@ export default function ListingDetailPage() {
   }
 
   useEffect(() => {
-    if (authState === "ready") Promise.resolve().then(load);
+    if (checked) Promise.resolve().then(load);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authState, id]);
+  }, [checked, id]);
 
   async function handlePublish() {
     if (!listing) return;
@@ -85,7 +117,21 @@ export default function ListingDetailPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="Listing" />
+      {user ? (
+        <AppHeader title="Listing" />
+      ) : (
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
+          <Link href="/" aria-label="CYCLO home">
+            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="h-[34px] w-auto" />
+          </Link>
+          <Link
+            href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
+            className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
+          >
+            Log in
+          </Link>
+        </header>
+      )}
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
         {state === "loading" && <LoadingState label="Loading listing…" />}
         {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
@@ -146,7 +192,7 @@ export default function ListingDetailPage() {
                       {contact.phone}
                     </a>
                   </>
-                ) : (
+                ) : user ? (
                   <button
                     onClick={handleContact}
                     disabled={contactLoading}
@@ -154,6 +200,13 @@ export default function ListingDetailPage() {
                   >
                     {contactLoading ? "Loading…" : "Contact Seller / Make Offer"}
                   </button>
+                ) : (
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
+                    className="block w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 text-center"
+                  >
+                    Log in to Contact Seller / Buy
+                  </Link>
                 )}
                 {contactError && <p className="text-xs text-[var(--critical)] mt-2">{contactError}</p>}
               </div>

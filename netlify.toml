@@ -1,12 +1,32 @@
 # Netlify config for CYCLO — both the Next.js web app AND the NestJS API are hosted here
 # (no Render/other backend host). Lives at the repo root so it's read regardless of
-# whatever "Base directory" is set to in the Netlify dashboard — `base` below is what
-# actually scopes the site build to apps/web in this npm-workspaces monorepo.
+# whatever "Base directory" is set to in the Netlify dashboard.
+#
+# `base` is deliberately NOT set here — this site's dashboard already has monorepo
+# detection configured with package_path=apps/web (set when the site was first connected).
+# Declaring `base = "apps/web"` here too made Netlify apply it twice, doubling the resolved
+# publish path to apps/web/apps/web/.next and breaking the @netlify/plugin-nextjs build.
+# The dashboard setting alone already scopes the working directory to apps/web.
 [build]
-  base = "apps/web"
   # Builds the web app (for the site itself) and the API (so its compiled dist/ exists
   # before Netlify bundles netlify/functions/api.ts, which requires that compiled output).
-  command = "cd ../.. && npm install && npm run build --workspace=apps/web && npm run build --workspace=apps/api"
+  # The trailing prune removes files Netlify's function packager would otherwise ship
+  # verbatim: @prisma/client's npm package bundles wasm query-engine variants for every
+  # database Prisma supports (MySQL, SQLite, SQL Server, CockroachDB — this app only uses
+  # Postgres with the default native binary engine, never those wasm ones), and .prisma/client
+  # carries every platform's native engine binary though only the Linux one runs here. Left
+  # in, these blew the packaged function past Netlify's 50MB compressed function limit.
+  # Also prunes @prisma/client's generator-build (schema-generation tooling, only used by
+  # the `prisma generate` CLI, never at runtime) — Netlify's function packager traces
+  # requires even inside externalized packages, found generator-build's own `require('typescript')`,
+  # and pulled in the entire 15MB+ TypeScript compiler package for code that's never reachable
+  # from an actual API request.
+  command = "cd ../.. && npm install && npm run build --workspace=apps/web && npm run build --workspace=apps/api && rm -f node_modules/@prisma/client/runtime/*wasm* node_modules/@prisma/client/runtime/*.map node_modules/.prisma/client/*.wasm node_modules/.prisma/client/query_engine-windows.dll.node && rm -rf node_modules/@prisma/client/generator-build node_modules/typescript"
+  # Without this, @netlify/plugin-nextjs falls back to a framework-detected default that
+  # gets joined against the dashboard's monorepo package_path (apps/web) a second time,
+  # doubling to apps/web/apps/web/.next and failing with "publish directory not found".
+  # Declaring it explicitly (relative to the effective apps/web base) fixes that.
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -27,7 +47,18 @@
   # left external and shipped as-is via included_files instead (needs the
   # rhel-openssl-3.0.x binaryTarget in prisma/schema.prisma, which is what generates this
   # file's Linux/Lambda-compatible engine).
-  external_node_modules = ["@prisma/client", ".prisma/client"]
+  # @nestjs/core lazily requires @nestjs/websockets and @nestjs/microservices to support
+  # those optional features — neither is installed since this app uses neither, but esbuild
+  # still tries to statically resolve them and fails, falling back to a slower bundler.
+  # Nest's own lazy-require already handles them being absent at runtime; marking them
+  # external here just stops esbuild from trying to resolve them at bundle time.
+  #
+  # @prisma/client and .prisma/client are both external (raw-copied, not bundled) per
+  # Prisma's own serverless guidance — esbuild can corrupt native binary loading if it
+  # tries to bundle them. The build.command prune step above already stripped the unused
+  # wasm/other-platform files from node_modules before this copy happens, so the raw copy
+  # ships only what's actually needed.
+  external_node_modules = ["@prisma/client", ".prisma/client", "@nestjs/websockets", "@nestjs/microservices"]
   included_files = [
     "../../node_modules/.prisma/client/schema.prisma",
     "../../node_modules/.prisma/client/*.so.node",

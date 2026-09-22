@@ -10,6 +10,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { phone } });
   }
 
+  findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
   findById(id: string) {
     return this.prisma.user.findUnique({ where: { id } });
   }
@@ -18,7 +22,7 @@ export class UsersService {
   // fields are all optional), so its CollectorProfile is created here, atomically with
   // the User row — otherwise a collector would exist with no verificationStatus at all,
   // and the admin verification queue (§21) would never see them.
-  create(data: { phone: string; name: string; role: UserRole }) {
+  create(data: { phone: string; name: string; role: UserRole; email?: string; passwordHash?: string }) {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({ data });
       if (data.role === 'collector') {

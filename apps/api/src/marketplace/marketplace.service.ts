@@ -94,7 +94,7 @@ export class MarketplaceService {
     return listing;
   }
 
-  async findOne(requesterId: string, id: string) {
+  async findOne(requesterId: string | undefined, id: string) {
     const listing = await this.prisma.wasteListing.findUnique({
       where: { id },
       include: { material: true, location: true, seller: { select: PUBLIC_SELLER_SELECT } },
@@ -103,7 +103,9 @@ export class MarketplaceService {
 
     // DRAFT, and anything not yet admin-approved, is only visible to its owner —
     // everything else is at least discoverable in principle once it has left DRAFT (§15).
-    const isOwner = listing.sellerId === requesterId;
+    // An anonymous requester (requesterId undefined, from the public browse path) is
+    // never the owner.
+    const isOwner = requesterId != null && listing.sellerId === requesterId;
     if (
       !isOwner &&
       (listing.status === 'DRAFT' || listing.moderationStatus !== 'APPROVED')

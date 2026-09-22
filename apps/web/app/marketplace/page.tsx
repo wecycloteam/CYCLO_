@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, WasteListing, listingStatusLabel } from "@/lib/api";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -46,8 +46,41 @@ function ListingCard({ listing }: { listing: WasteListing }) {
   );
 }
 
+// Browsing the marketplace is public (§ landing/home redesign — a visitor can look
+// without an account); only creating/managing listings and buying (contact seller)
+// need one. So this checks for a session without ever redirecting an anonymous
+// visitor away, unlike useCurrentUser().
+function useOptionalCurrentUser() {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    if (!tokenStore.getAccess()) {
+      setChecked(true);
+      return;
+    }
+    let cancelled = false;
+    api
+      .me()
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .catch(() => {
+        if (!cancelled) tokenStore.clear();
+      })
+      .finally(() => {
+        if (!cancelled) setChecked(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { user, checked };
+}
+
 export default function MarketplacePage() {
-  const { state: authState, user } = useCurrentUser();
+  const { user, checked } = useOptionalCurrentUser();
   const [tab, setTab] = useState<Tab>("browse");
   const [listings, setListings] = useState<WasteListing[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -75,9 +108,10 @@ export default function MarketplacePage() {
   }
 
   useEffect(() => {
-    if (authState !== "ready") return;
+    if (!checked) return;
+    if (tab === "mine" && !user) return;
     Promise.resolve().then(() => load(tab));
-  }, [authState, tab]);
+  }, [checked, user, tab]);
 
   const filteredListings = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -94,7 +128,21 @@ export default function MarketplacePage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="Marketplace" />
+      {user ? (
+        <AppHeader title="Marketplace" />
+      ) : (
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
+          <Link href="/" aria-label="CYCLO home">
+            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="h-[34px] w-auto" />
+          </Link>
+          <Link
+            href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
+            className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
+          >
+            Log in
+          </Link>
+        </header>
+      )}
 
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-4">
@@ -107,16 +155,28 @@ export default function MarketplacePage() {
             >
               Browse
             </button>
-            <button
-              onClick={() => setTab("mine")}
-              className={`rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold ${
-                tab === "mine" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-2)]"
-              }`}
-            >
-              My Listings
-            </button>
+            {user ? (
+              <button
+                onClick={() => setTab("mine")}
+                className={`rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold ${
+                  tab === "mine" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-2)]"
+                }`}
+              >
+                My Listings
+              </button>
+            ) : (
+              <Link
+                href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
+                className="rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold text-[var(--text-2)]"
+              >
+                My Listings
+              </Link>
+            )}
           </div>
-          <Link href="/marketplace/new" className="rounded-full bg-[var(--cyclo-teal)] text-white text-xs font-bold px-4 py-2">
+          <Link
+            href={user ? "/marketplace/new" : `/login?redirect=${encodeURIComponent("/marketplace/new")}`}
+            className="rounded-full bg-[var(--cyclo-teal)] text-white text-xs font-bold px-4 py-2"
+          >
             + New
           </Link>
         </div>
@@ -194,26 +254,46 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        {state === "loading" && <LoadingState label="Loading listings…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(tab)} />}
+        {tab === "mine" && !user && checked && (
+          <EmptyState
+            title="Log in to see your listings"
+            hint="Create a free account or log in to list and manage your own materials."
+            action={
+              <Link
+                href={`/login?redirect=${encodeURIComponent("/marketplace/new")}`}
+                className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5"
+              >
+                Log in / Sign up
+              </Link>
+            }
+          />
+        )}
 
-        {state === "ready" && listings.length === 0 && (
+        {(tab === "browse" || user) && state === "loading" && <LoadingState label="Loading listings…" />}
+        {(tab === "browse" || user) && state === "error" && (
+          <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(tab)} />
+        )}
+
+        {(tab === "browse" || user) && state === "ready" && listings.length === 0 && (
           <EmptyState
             title={tab === "browse" ? "No listings yet" : "You haven't listed anything yet"}
             hint="Start by listing recyclable material to sell."
             action={
-              <Link href="/marketplace/new" className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5">
+              <Link
+                href={user ? "/marketplace/new" : `/login?redirect=${encodeURIComponent("/marketplace/new")}`}
+                className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5"
+              >
                 List Material
               </Link>
             }
           />
         )}
 
-        {state === "ready" && listings.length > 0 && filteredListings.length === 0 && (
+        {(tab === "browse" || user) && state === "ready" && listings.length > 0 && filteredListings.length === 0 && (
           <EmptyState title="No listings match your filters" hint="Try widening your search." />
         )}
 
-        {state === "ready" && filteredListings.length > 0 && (
+        {(tab === "browse" || user) && state === "ready" && filteredListings.length > 0 && (
           <div className="flex flex-col gap-2">
             {filteredListings.map((l) => (
               <ListingCard key={l.id} listing={l} />

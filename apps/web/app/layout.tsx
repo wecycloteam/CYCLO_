@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   title: "CYCLO — Turning Waste Into Wealth",
   description:
     "CYCLO connects households, businesses, collectors, recycling companies and environmental authorities in one digital ecosystem.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
