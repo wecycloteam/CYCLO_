@@ -13,12 +13,14 @@ async function bootstrapHandler() {
   const app = await createApp(new ExpressAdapter(expressApp));
   await app.init();
 
-  // Netlify invokes this function at /.netlify/functions/api/*, but every existing
-  // controller route (e.g. /auth/otp/request) is unprefixed — basePath strips that
-  // function-path prefix so Express sees the same paths it would locally, no controller
-  // or route changes needed. The matching netlify.toml redirect maps public /api/* traffic
-  // to this function path.
-  return serverlessHttp(expressApp, { basePath: '/.netlify/functions/api' });
+  // The netlify.toml `/api/* -> /.netlify/functions/api/:splat` rule is a rewrite (status
+  // 200), and Netlify's rewrites preserve the *original* request path in the Lambda
+  // event — event.path is still "/api/whatever", never the rewritten
+  // "/.netlify/functions/api/whatever" the `to:` target implies. Every controller route
+  // (e.g. /auth/otp/request) is unprefixed, so basePath must strip "/api" — the prefix
+  // real traffic (NEXT_PUBLIC_API_URL=/api in the web build) actually arrives with — not
+  // the function's own invocation path, which no real request path ever carries.
+  return serverlessHttp(expressApp, { basePath: '/api' });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

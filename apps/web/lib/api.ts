@@ -255,6 +255,16 @@ export interface ClassificationResult {
   handlingInstructions: string[];
   recommendedAction: string;
   mock: boolean;
+  condition?: "EXCELLENT" | "GOOD" | "FAIR" | "POOR";
+  conditionNotes?: string;
+  estimatedCapacity?: string | null;
+  unitPriceTZS?: number;
+  unitPriceUSD?: number;
+}
+
+export interface ChatMessage {
+  role: "user" | "model";
+  parts: string;
 }
 
 export interface ScanResponse {
@@ -415,9 +425,14 @@ export const api = {
   adminRejectListing: (id: string, reason?: string) =>
     request<WasteListing>(`/admin/listings/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
 
-  // AI waste scanning (§11-§13) — mock classifier only for now, see ClassificationResult.mock.
+  // AI waste scanning (§11-§13) — see ClassificationResult.mock for whether this scan
+  // came from the real Gemini classifier or the demo fallback.
   scanWaste: (imageBase64: string) =>
     request<ScanResponse>("/ai/scan", { method: "POST", body: JSON.stringify({ imageBase64 }) }, true),
   confirmScan: (scanId: string, finalMaterialId: string) =>
     request(`/ai/scans/${scanId}/confirm`, { method: "PATCH", body: JSON.stringify({ finalMaterialId }) }, true),
+
+  // Cyclo Assistant — Gemini-backed chat for recycling/sorting/pricing guidance.
+  chatWithAssistant: (message: string, history?: ChatMessage[]) =>
+    request<{ reply: string }>("/ai/chat", { method: "POST", body: JSON.stringify({ message, history }) }, true),
 };

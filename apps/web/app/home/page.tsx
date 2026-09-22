@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ImpactStats, Location, PickupRequest, WasteListing } from "@/lib/api";
 import { BottomNav } from "@/components/BottomNav";
+import { AssistantChat } from "@/components/AssistantChat";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
@@ -326,6 +327,7 @@ export default function HomePage() {
         )}
       </div>
 
+      {user && <AssistantChat />}
       {user && <BottomNav role={user.role} />}
     </main>
   );

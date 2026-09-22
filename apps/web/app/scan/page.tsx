@@ -265,7 +265,11 @@ export default function ScanPage() {
               <div className="text-sm text-[var(--text-2)] mb-3">
                 {Math.round(scan.result.confidence * 100)}% confidence ·{" "}
                 {scan.result.recyclable ? "Recyclable" : "Not recyclable"}
+                {scan.result.condition && <> · {scan.result.condition.charAt(0) + scan.result.condition.slice(1).toLowerCase()} condition</>}
               </div>
+              {scan.result.conditionNotes && (
+                <p className="text-xs text-[var(--text-2)] mb-3 italic">{scan.result.conditionNotes}</p>
+              )}
 
               <label className="flex flex-col gap-1.5 mb-3">
                 <span className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide">Estimated quantity (kg)</span>

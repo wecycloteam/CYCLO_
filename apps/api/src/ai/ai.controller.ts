@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -24,5 +24,18 @@ export class AiController {
   @Get('scans')
   history(@CurrentUser() principal: CurrentUserPayload) {
     return this.ai.history(principal.userId);
+  }
+
+  // NEW: Chat Assistant Route for Help & Guidance
+  @Post('chat')
+  chat(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Body('message') message: string,
+    @Body('history') history?: { role: 'user' | 'model'; parts: string }[],
+  ) {
+    if (!message) {
+      throw new BadRequestException('Message is required.');
+    }
+    return this.ai.chatGuidance(message, history);
   }
 }

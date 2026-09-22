@@ -14,4 +14,12 @@ export interface ClassificationResult {
   // true for every scan today (only MockWasteClassifier is bound) — the UI must show
   // this plainly rather than let a demo classification pass as a real one (§62).
   mock: boolean;
+  // Optional, provider-specific enrichment — only GeminiWasteClassifier populates these
+  // today. Additive so MockWasteClassifier (and any consumer built before this existed)
+  // stays valid without them.
+  condition?: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
+  conditionNotes?: string;
+  estimatedCapacity?: string | null;
+  unitPriceTZS?: number;
+  unitPriceUSD?: number;
 }
