@@ -34,6 +34,15 @@
   # devDependencies — but the build needs several (typescript, @nestjs/cli, ts-loader) to
   # even compile. Without this the build fails with "exit code 2" before anything runs.
   NPM_FLAGS = "--include=dev"
+  # Netlify injects every site env var (not just NEXT_PUBLIC_* ones) into both the web and
+  # API build steps, since they share one `npm install && ... build` command. The web build
+  # never reads GOOGLE_CLIENT_SECRET (only apps/api's ConfigService does), but Next.js/
+  # Turbopack's build cache snapshots process.env internally for cache-key purposes, which
+  # put the raw value inside a .next/cache/turbopack/*.sst file — Netlify's secret scanner
+  # then (correctly, mechanically) flags that file and fails the build. Omitting this one
+  # key from scanning is safe specifically because it's never in the actual shipped bundle,
+  # only an internal build-cache artifact.
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_CLIENT_SECRET"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
