@@ -10,11 +10,17 @@ export interface GoogleProfile {
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  // Deliberately config.get(...) with fallbacks, not getOrThrow — this provider is built
+  // at app bootstrap (every request in the Netlify Function), so a missing env var here
+  // used to throw and take down the *entire* API, not just Google login. An empty
+  // clientID/clientSecret still lets the app boot; hitting /auth/google with no real
+  // credentials configured just fails at Google's end instead, which is the honest
+  // "not configured yet" failure mode rather than a total outage.
   constructor(config: ConfigService) {
     super({
-      clientID: config.getOrThrow<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: config.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: config.getOrThrow<string>('GOOGLE_CALLBACK_URL'),
+      clientID: config.get<string>('GOOGLE_CLIENT_ID', ''),
+      clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET', ''),
+      callbackURL: config.get<string>('GOOGLE_CALLBACK_URL', 'http://localhost:3000/auth/google/callback'),
       scope: ['email', 'profile'],
     } satisfies StrategyOptions);
   }
