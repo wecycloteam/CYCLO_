@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { api, ApiError, UserImpactSummary } from "@/lib/api";
-import { getStoredTheme, getSystemTheme, setTheme as persistTheme, type Theme } from "@/lib/theme";
+import { getStoredTheme, setTheme as persistTheme, type Theme } from "@/lib/theme";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 // Mirrors home/page.tsx's CATEGORY_ICON — kept local since it's a small, stable map; not
@@ -58,10 +58,10 @@ const ACHIEVEMENT_ICONS: Record<string, LucideIcon> = {
 };
 
 function ThemeToggle() {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
-    setThemeState(getStoredTheme() ?? getSystemTheme());
+    setThemeState(getStoredTheme() ?? "dark");
   }, []);
 
   function toggle() {
@@ -102,7 +102,7 @@ export function ImpactDashboard() {
   useEffect(() => {
     // Activates the dark theme that already exists in the design tokens
     // (html[data-theme="dark"]) but nothing in the app applied until this page.
-    const theme = getStoredTheme() ?? getSystemTheme();
+    const theme = getStoredTheme() ?? "dark";
     persistTheme(theme);
   }, []);
 

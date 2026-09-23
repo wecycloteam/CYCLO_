@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Scale } from "lucide-react";
+import { MapPin, Scale, Recycle, Magnet, FileText, Package, GlassWater, Cpu, Leaf, Trash2, type LucideIcon } from "lucide-react";
 import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
@@ -16,36 +16,61 @@ type LoadState = "loading" | "ready" | "error";
 
 const CATEGORIES = ["plastic", "paper", "cardboard", "glass", "metal", "e_waste", "organic", "other"];
 
+// Mirrors home/page.tsx's CATEGORY_ICON — small, stable map duplicated locally rather
+// than factored into a shared module for eight lookup entries.
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  plastic: Recycle,
+  metal: Magnet,
+  paper: FileText,
+  cardboard: Package,
+  glass: GlassWater,
+  e_waste: Cpu,
+  organic: Leaf,
+  other: Trash2,
+};
+
 function ListingCard({ listing }: { listing: WasteListing }) {
+  const photo = listing.photos?.[0];
+  const CategoryIcon = CATEGORY_ICON[listing.material.category] ?? Trash2;
   return (
     <Link
       href={`/marketplace/${listing.id}`}
-      className="block rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4"
+      className="flex gap-3 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-3"
     >
-      <div className="flex items-start justify-between gap-3 mb-1">
-        <span className="text-sm font-extrabold">{listing.material.label}</span>
-        {listing.askingPrice != null && (
-          <span className="text-sm font-extrabold text-[var(--cyclo-teal)] whitespace-nowrap">
-            TZS {listing.askingPrice.toLocaleString()}
-          </span>
+      <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-[var(--r-sm)] bg-[var(--bg)]">
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element -- may be a base64 data URL, not an optimizable remote asset
+          <img src={photo} alt={listing.material.label} className="h-full w-full object-cover" />
+        ) : (
+          <CategoryIcon size={26} strokeWidth={1.5} className="text-[var(--text-2)]" />
         )}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-2)] mb-2">
-        <span className="inline-flex items-center gap-1">
-          <MapPin size={12} /> {listing.location.region ?? listing.location.label}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Scale size={12} /> {listing.estimatedWeightKg} kg
-        </span>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        <StatusBadge status={listing.status} />
-        {listing.status === "ACTIVE" && listing.moderationStatus !== "APPROVED" && (
-          <span className="inline-block rounded-[var(--r-pill)] bg-[#FFF3DC] text-[var(--warning)] px-2.5 py-1 text-[11px] font-bold">
-            {listingStatusLabel(listing)}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <span className="text-sm font-extrabold">{listing.material.label}</span>
+          {listing.askingPrice != null && (
+            <span className="text-sm font-extrabold text-[var(--cyclo-teal)] whitespace-nowrap">
+              TZS {listing.askingPrice.toLocaleString()}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-2)] mb-2">
+          <span className="inline-flex items-center gap-1">
+            <MapPin size={12} /> {listing.location.region ?? listing.location.label}
           </span>
-        )}
-        <VerifiedBadge status={listing.seller.verificationStatus} />
+          <span className="inline-flex items-center gap-1">
+            <Scale size={12} /> {listing.estimatedWeightKg} kg
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <StatusBadge status={listing.status} />
+          {listing.status === "ACTIVE" && listing.moderationStatus !== "APPROVED" && (
+            <span className="inline-block rounded-[var(--r-pill)] bg-[#FFF3DC] text-[var(--warning)] px-2.5 py-1 text-[11px] font-bold">
+              {listingStatusLabel(listing)}
+            </span>
+          )}
+          <VerifiedBadge status={listing.seller.verificationStatus} />
+        </div>
       </div>
     </Link>
   );

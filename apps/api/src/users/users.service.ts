@@ -58,6 +58,14 @@ export class UsersService {
     return this.prisma.user.update({ where: { id: userId }, data: { googleId } });
   }
 
+  // Self-heals accounts created by an earlier version of loginWithGoogle that stuffed a
+  // random `google:<hex>` placeholder into User.phone instead of leaving it unset — that
+  // garbage value was showing up on the profile page in place of a real phone number.
+  // Postgres allows multiple NULLs in a unique column, so this never collides.
+  clearLegacyPlaceholderPhone(userId: string) {
+    return this.prisma.user.update({ where: { id: userId }, data: { phone: null } });
+  }
+
   // §13/§34 — home-dashboard impact stats. Only ever derived from real completed
   // Transaction rows (one per completed pickup, see CollectionService.complete) — never a
   // fabricated number. co2AvoidedKg uses a widely-cited rough recycling-vs-landfill factor

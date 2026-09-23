@@ -143,12 +143,21 @@ export class AuthService {
   // no "add your phone" flow yet.
   async loginWithGoogle(profile: GoogleProfile) {
     let user = await this.users.findByGoogleId(profile.googleId);
+    if (user?.phone?.startsWith('google:')) {
+      // Self-heals accounts created by an earlier, buggy version of this method that
+      // stuffed a random placeholder into User.phone instead of leaving it unset — that
+      // garbage value was showing up on the profile page in place of a real phone number.
+      user = await this.users.clearLegacyPlaceholderPhone(user.id);
+    }
     if (!user) {
       // Someone who already has an account under this email (phone/OTP or email+password)
       // signing in with Google for the first time — link it instead of creating a duplicate.
       const existingByEmail = await this.users.findByEmail(profile.email);
       if (existingByEmail) {
         user = await this.users.linkGoogleId(existingByEmail.id, profile.googleId);
+        if (user.phone?.startsWith('google:')) {
+          user = await this.users.clearLegacyPlaceholderPhone(user.id);
+        }
       } else {
         user = await this.users.create({
           name: profile.name,

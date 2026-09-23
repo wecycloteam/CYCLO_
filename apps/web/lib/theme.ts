@@ -1,8 +1,11 @@
 // Toggles the html[data-theme] attribute the design tokens already define dark values
-// for (packages/design-tokens/src/tokens.css) — that dark theme existed but nothing in
-// the app ever activated it until now. Persists to localStorage per-device; falls back
-// to the OS preference on first load if the user has never chosen explicitly.
+// for (packages/design-tokens/src/tokens.css). Dark is the app-wide default (matches the
+// public landing page's teal/green hero) — set server-side in app/layout.tsx, not here.
+// This module is for the toggle: reading/persisting a user's *explicit* choice to
+// localStorage. DEFAULT_THEME is the fallback when nothing's been chosen yet — kept in
+// sync with the `data-theme="dark"` layout.tsx renders by default.
 const STORAGE_KEY = "cyclo.theme";
+const DEFAULT_THEME: Theme = "dark";
 
 export type Theme = "light" | "dark";
 
@@ -17,7 +20,7 @@ export function getStoredTheme(): Theme | null {
 }
 
 export function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "light";
+  if (typeof window === "undefined") return DEFAULT_THEME;
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
@@ -27,7 +30,7 @@ export function applyTheme(theme: Theme) {
 }
 
 export function initTheme(): Theme {
-  const theme = getStoredTheme() ?? getSystemTheme();
+  const theme = getStoredTheme() ?? DEFAULT_THEME;
   applyTheme(theme);
   return theme;
 }

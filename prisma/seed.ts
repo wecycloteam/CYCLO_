@@ -62,10 +62,14 @@ const DEMO_LISTINGS: Array<{
   label: string;
   estimatedWeightKg: number;
   description: string;
+  // Real photo files under apps/web/public/materials/ — undefined (not a placeholder
+  // URL) where no real, license-clear photo exists yet, rather than hotlinking or
+  // fabricating one. See prisma/seed.ts's main() for how this becomes WasteListing.photos.
+  photo?: string;
 }> = [
-  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household. [DEMO]' },
+  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household. [DEMO]', photo: '/materials/plastic-bottles.png?v=2' },
   { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened. [DEMO]' },
-  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean. [DEMO]' },
+  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean. [DEMO]', photo: '/materials/cardboard.jpg?v=2' },
   { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs. [DEMO]' },
 ];
 
@@ -120,6 +124,7 @@ async function main() {
           description: item.description,
           status: 'ACTIVE',
           moderationStatus: 'APPROVED',
+          photos: item.photo ? JSON.stringify([item.photo]) : undefined,
         },
       });
     }
