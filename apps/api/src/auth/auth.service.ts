@@ -90,12 +90,11 @@ export class AuthService {
     return this.issueTokens(user.id, user.role);
   }
 
-  // Email+password is a second, independent way to reach the same User row the OTP flow
-  // creates — both require a phone (still the unique identity for pickup/contact-seller)
-  // but this path lets someone who already has an email+password skip SMS entirely.
+  // Phone+password is the primary credential-based signup path (alongside Google) — email
+  // is optional now, kept only because Google sign-in links accounts by it.
   async register(dto: RegisterDto) {
     const [existingEmail, existingPhone] = await Promise.all([
-      this.users.findByEmail(dto.email),
+      dto.email ? this.users.findByEmail(dto.email) : null,
       this.users.findByPhone(dto.phone),
     ]);
     if (existingEmail) {
@@ -118,14 +117,14 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.users.findByEmail(dto.email);
+    const user = await this.users.findByPhone(dto.phone);
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Incorrect email or password.');
+      throw new UnauthorizedException('Incorrect phone number or password.');
     }
 
     const matches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!matches) {
-      throw new UnauthorizedException('Incorrect email or password.');
+      throw new UnauthorizedException('Incorrect phone number or password.');
     }
 
     return this.issueTokens(user.id, user.role);

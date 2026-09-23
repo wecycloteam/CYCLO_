@@ -5,8 +5,11 @@ import type { SelfRegisterableRole } from '@cyclo/shared-types';
 const E164 = /^\+[1-9]\d{7,14}$/;
 
 export class RegisterDto {
+  // Optional — phone+password is the primary credential-based path now; email is still
+  // useful (Google sign-in links to it) but no longer required to create an account.
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters.' })

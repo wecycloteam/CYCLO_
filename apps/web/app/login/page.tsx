@@ -5,9 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { api, tokenStore, ApiError, API_URL } from "@/lib/api";
 
-type Method = "phone" | "email";
-type PhoneStep = "phone" | "code";
-type EmailMode = "signin" | "signup";
+type Mode = "signin" | "signup";
 
 const ROLE_OPTIONS = [
   { value: "household", label: "I'm a Household" },
@@ -105,23 +103,13 @@ function LoginContent() {
   const redirectTo = searchParams.get("redirect") || "/home";
 
   const [showSplash, setShowSplash] = useState(true);
-  const [method, setMethod] = useState<Method>("phone");
+  const [mode, setMode] = useState<Mode>("signin");
 
-  // Phone/OTP flow
-  const [phoneStep, setPhoneStep] = useState<PhoneStep>("phone");
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [otpName, setOtpName] = useState("");
-  const [otpRole, setOtpRole] = useState("household");
-  const [devCode, setDevCode] = useState<string | null>(null);
-
-  // Email/password flow
-  const [emailMode, setEmailMode] = useState<EmailMode>("signin");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [emailName, setEmailName] = useState("");
-  const [emailPhone, setEmailPhone] = useState("");
-  const [emailRole, setEmailRole] = useState("household");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("household");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,30 +124,12 @@ function LoginContent() {
     router.push(redirectTo);
   }
 
-  async function handleRequestOtp(e: React.FormEvent) {
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const res = await api.requestOtp(phone);
-      // devCode only ever comes back from the dev SMS stub (never in production) —
-      // see apps/api SmsProvider.exposesCodeInResponse.
-      setDevCode(res.devCode ?? null);
-      setCode(res.devCode ?? "");
-      setPhoneStep("code");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const tokens = await api.verifyOtp({ phone, code, name: otpName || undefined, role: otpRole });
+      const tokens = await api.login({ phone, password });
       finishLogin(tokens);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
@@ -168,31 +138,17 @@ function LoginContent() {
     }
   }
 
-  async function handleEmailSignIn(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const tokens = await api.login({ email, password });
-      finishLogin(tokens);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleEmailSignUp(e: React.FormEvent) {
+  async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
       const tokens = await api.register({
-        email,
+        phone,
         password,
-        phone: emailPhone,
-        name: emailName,
-        role: emailRole,
+        name,
+        role,
+        email: email || undefined,
       });
       finishLogin(tokens);
     } catch (err) {
@@ -253,35 +209,31 @@ function LoginContent() {
             <span className="h-px flex-1 bg-white/15" />
           </div>
 
-          <div className="mb-7 flex rounded-full border border-white/25 p-1">
+          <div className="mb-5 flex justify-center gap-6 text-xs font-bold">
             <button
               type="button"
               onClick={() => {
-                setMethod("phone");
+                setMode("signin");
                 setError(null);
               }}
-              className={`flex-1 rounded-full px-4 py-2 text-xs font-bold transition ${
-                method === "phone" ? "bg-[var(--cyclo-green)] text-[#0E2A1F]" : "text-[#EFFBF3]"
-              }`}
+              className={mode === "signin" ? "text-[var(--cyclo-green)]" : "text-[#8FB6AF]"}
             >
-              Phone
+              Sign in
             </button>
             <button
               type="button"
               onClick={() => {
-                setMethod("email");
+                setMode("signup");
                 setError(null);
               }}
-              className={`flex-1 rounded-full px-4 py-2 text-xs font-bold transition ${
-                method === "email" ? "bg-[var(--cyclo-green)] text-[#0E2A1F]" : "text-[#EFFBF3]"
-              }`}
+              className={mode === "signup" ? "text-[var(--cyclo-green)]" : "text-[#8FB6AF]"}
             >
-              Email &amp; Password
+              Create account
             </button>
           </div>
 
-          {method === "phone" && phoneStep === "phone" && (
-            <form onSubmit={handleRequestOtp} className="flex flex-col gap-3">
+          {mode === "signin" ? (
+            <form onSubmit={handleSignIn} className="flex flex-col gap-3">
               <input
                 type="tel"
                 required
@@ -290,189 +242,77 @@ function LoginContent() {
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
+              <input
+                type="password"
+                required
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+              />
               {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
               >
-                {loading ? "Sending code…" : "Continue"}
+                {loading ? "Signing in…" : "Sign in"}
               </button>
             </form>
-          )}
-
-          {method === "phone" && phoneStep === "code" && (
-            <>
-              <p className="text-sm text-[#B9D6D1] mb-4 leading-relaxed">We sent a 6-digit code to {phone}.</p>
-              {devCode && (
-                <div className="mb-4 rounded-2xl border border-dashed border-[var(--cyclo-green)]/50 bg-black/20 px-4 py-3 text-xs text-[#B9D6D1]">
-                  <span className="font-bold text-[var(--cyclo-green)]">DEV MODE</span> — no SMS is actually sent
-                  locally, so the real code is shown here and pre-filled below:{" "}
-                  <span className="font-mono tracking-widest">{devCode}</span>
-                </div>
-              )}
-              <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
-                <input
-                  type="text"
-                  required
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  placeholder="••••••"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center tracking-[0.4em] text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                />
-                <input
-                  type="text"
-                  placeholder="Your name (first time only)"
-                  value={otpName}
-                  onChange={(e) => setOtpName(e.target.value)}
-                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                />
-                <select
-                  value={otpRole}
-                  onChange={(e) => setOtpRole(e.target.value)}
-                  className="w-full rounded-full border border-white/25 bg-[#1B3E41] px-5 py-3.5 text-center text-white focus:outline-none focus:border-[var(--cyclo-green)]"
-                >
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label} (first time only)
-                    </option>
-                  ))}
-                </select>
-                {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
-                >
-                  {loading ? "Verifying…" : "Verify & Continue"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneStep("phone");
-                    setDevCode(null);
-                    setCode("");
-                  }}
-                  className="w-full rounded-full border border-white/25 text-[#EFFBF3] font-bold text-sm py-3.5"
-                >
-                  Use a different number
-                </button>
-              </form>
-            </>
-          )}
-
-          {method === "email" && (
-            <>
-              <div className="mb-5 flex justify-center gap-6 text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmailMode("signin");
-                    setError(null);
-                  }}
-                  className={emailMode === "signin" ? "text-[var(--cyclo-green)]" : "text-[#8FB6AF]"}
-                >
-                  Sign in
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmailMode("signup");
-                    setError(null);
-                  }}
-                  className={emailMode === "signup" ? "text-[var(--cyclo-green)]" : "text-[#8FB6AF]"}
-                >
-                  Create account
-                </button>
-              </div>
-
-              {emailMode === "signin" ? (
-                <form onSubmit={handleEmailSignIn} className="flex flex-col gap-3">
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                  />
-                  <input
-                    type="password"
-                    required
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                  />
-                  {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
-                  >
-                    {loading ? "Signing in…" : "Sign in"}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleEmailSignUp} className="flex flex-col gap-3">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Full name"
-                    value={emailName}
-                    onChange={(e) => setEmailName(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                  />
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                  />
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+255 7XX XXX XXX"
-                    value={emailPhone}
-                    onChange={(e) => setEmailPhone(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                  />
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    placeholder="Password (min. 8 characters)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-                  />
-                  <select
-                    value={emailRole}
-                    onChange={(e) => setEmailRole(e.target.value)}
-                    className="w-full rounded-full border border-white/25 bg-[#1B3E41] px-5 py-3.5 text-center text-white focus:outline-none focus:border-[var(--cyclo-green)]"
-                  >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-                  {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
-                  >
-                    {loading ? "Creating account…" : "Create account"}
-                  </button>
-                </form>
-              )}
-            </>
+          ) : (
+            <form onSubmit={handleSignUp} className="flex flex-col gap-3">
+              <input
+                type="text"
+                required
+                placeholder="Full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+              />
+              <input
+                type="tel"
+                required
+                placeholder="+255 7XX XXX XXX"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+              />
+              <input
+                type="email"
+                placeholder="Email (optional)"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+              />
+              <input
+                type="password"
+                required
+                minLength={8}
+                placeholder="Password (min. 8 characters)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+              />
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-[#1B3E41] px-5 py-3.5 text-center text-white focus:outline-none focus:border-[var(--cyclo-green)]"
+              >
+                {ROLE_OPTIONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
+              >
+                {loading ? "Creating account…" : "Create account"}
+              </button>
+            </form>
           )}
 
           <div className="mt-7 text-xs text-[#8FB6AF]">

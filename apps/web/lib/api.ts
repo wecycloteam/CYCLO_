@@ -314,13 +314,13 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  register: (input: { email: string; password: string; phone: string; name: string; role?: string }) =>
+  register: (input: { phone: string; password: string; name: string; role?: string; email?: string }) =>
     request<AuthTokens>("/auth/register", {
       method: "POST",
       body: JSON.stringify(input),
     }),
 
-  login: (input: { email: string; password: string }) =>
+  login: (input: { phone: string; password: string }) =>
     request<AuthTokens>("/auth/login", {
       method: "POST",
       body: JSON.stringify(input),
