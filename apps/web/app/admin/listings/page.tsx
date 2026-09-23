@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MapPin, Scale } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, AdminPendingListing } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
@@ -109,8 +110,9 @@ export default function AdminListingsPage() {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-[var(--text-2)] mb-3">
-                    📍 {listing.location.region ?? listing.location.label} · ⚖️ {listing.estimatedWeightKg} kg · submitted{" "}
+                  <div className="flex flex-wrap items-center gap-1 text-xs text-[var(--text-2)] mb-3">
+                    <MapPin size={12} className="inline" /> {listing.location.region ?? listing.location.label} ·{" "}
+                    <Scale size={12} className="inline" /> {listing.estimatedWeightKg} kg · submitted{" "}
                     {new Date(listing.createdAt).toLocaleDateString()}
                   </div>
 

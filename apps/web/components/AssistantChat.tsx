@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Bot, X } from "lucide-react";
 import { api, ApiError, ChatMessage } from "@/lib/api";
 
 interface DisplayMessage extends ChatMessage {
@@ -52,9 +53,9 @@ export function AssistantChat() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close Cyclo Assistant" : "Open Cyclo Assistant"}
-        className="fixed bottom-20 right-5 z-20 grid h-14 w-14 place-items-center rounded-full bg-[var(--cyclo-teal)] text-2xl text-white shadow-[0_10px_24px_rgba(0,0,0,.2)]"
+        className="fixed bottom-20 right-5 z-20 grid h-14 w-14 place-items-center rounded-full bg-[var(--cyclo-teal)] text-white shadow-[0_10px_24px_rgba(0,0,0,.2)]"
       >
-        {open ? "✕" : "🤖"}
+        {open ? <X size={24} /> : <Bot size={24} />}
       </button>
 
       {open && (

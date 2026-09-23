@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { X } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Location, WasteMaterial, WastePrice } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
@@ -300,9 +301,9 @@ function NewListingForm() {
                     <button
                       type="button"
                       onClick={() => removePhoto(i)}
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[var(--critical)] text-white text-[10px] font-bold"
+                      className="absolute -top-1.5 -right-1.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--critical)] text-white"
                     >
-                      ×
+                      <X size={12} strokeWidth={3} />
                     </button>
                   </div>
                 ))}

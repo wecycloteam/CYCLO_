@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MapPin, Scale, User, Clock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, PickupRequest } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
@@ -76,14 +77,23 @@ export default function OpenJobsPage() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-[var(--text-2)] mb-1">
-                  📍 {job.location.region ?? job.location.label} · ⚖️ {job.estimatedWeightKg} kg
-                  {job.producer && ` · 👤 ${job.producer.name}`}
+                <div className="flex flex-wrap items-center gap-1 text-xs text-[var(--text-2)] mb-1">
+                  <MapPin size={12} /> {job.location.region ?? job.location.label} · <Scale size={12} /> {job.estimatedWeightKg} kg
+                  {job.producer && (
+                    <>
+                      · <User size={12} /> {job.producer.name}
+                    </>
+                  )}
                 </div>
-                <div className="text-xs text-[var(--text-2)] mb-3">
-                  {job.preferredTime
-                    ? `🕒 ${new Date(job.preferredTime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`
-                    : "No preferred time set"}
+                <div className="flex items-center gap-1 text-xs text-[var(--text-2)] mb-3">
+                  {job.preferredTime ? (
+                    <>
+                      <Clock size={12} />{" "}
+                      {new Date(job.preferredTime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                    </>
+                  ) : (
+                    "No preferred time set"
+                  )}
                 </div>
                 <button
                   onClick={() => handleAccept(job.id)}

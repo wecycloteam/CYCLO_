@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { MapPin, Scale } from "lucide-react";
 import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
@@ -30,8 +31,12 @@ function ListingCard({ listing }: { listing: WasteListing }) {
         )}
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-2)] mb-2">
-        <span>📍 {listing.location.region ?? listing.location.label}</span>
-        <span>⚖️ {listing.estimatedWeightKg} kg</span>
+        <span className="inline-flex items-center gap-1">
+          <MapPin size={12} /> {listing.location.region ?? listing.location.label}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <Scale size={12} /> {listing.estimatedWeightKg} kg
+        </span>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         <StatusBadge status={listing.status} />

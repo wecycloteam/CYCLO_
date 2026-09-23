@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
+import { Star } from "lucide-react";
 import { getMaterialByCode } from "@/lib/materials-catalog";
 
 export default function MaterialDetailPage({ params }: { params: Promise<{ code: string }> }) {
@@ -47,7 +48,11 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
           <h1 className="text-3xl font-extrabold tracking-tight text-[#275458] sm:text-4xl">{material.title}</h1>
 
           <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars from ${material.reviews} reviews`}>
-            <span className="tracking-[0.12em] text-[#E6A51A]" aria-hidden="true">★★★★★</span>
+            <span className="flex items-center gap-0.5 text-[#E6A51A]" aria-hidden="true">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} size={14} fill="currentColor" strokeWidth={0} />
+              ))}
+            </span>
             <span className="font-extrabold text-[#275458]">{material.rating}</span>
             <span className="text-[#8B9997]">({material.reviews} reviews)</span>
           </div>

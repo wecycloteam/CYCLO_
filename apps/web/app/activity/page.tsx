@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { MapPin, Scale, Receipt } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, PickupRequest } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
@@ -22,9 +23,17 @@ function PickupCard({ pickup }: { pickup: PickupRequest }) {
         <StatusBadge status={pickup.status} />
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-2)]">
-        <span>📍 {pickup.location.region ?? pickup.location.label}</span>
-        <span>⚖️ {pickup.verifiedWeightKg ?? pickup.estimatedWeightKg} kg</span>
-        {pickup.transaction && <span>🧾 {pickup.transaction.reference}</span>}
+        <span className="inline-flex items-center gap-1">
+          <MapPin size={12} /> {pickup.location.region ?? pickup.location.label}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <Scale size={12} /> {pickup.verifiedWeightKg ?? pickup.estimatedWeightKg} kg
+        </span>
+        {pickup.transaction && (
+          <span className="inline-flex items-center gap-1">
+            <Receipt size={12} /> {pickup.transaction.reference}
+          </span>
+        )}
       </div>
     </Link>
   );

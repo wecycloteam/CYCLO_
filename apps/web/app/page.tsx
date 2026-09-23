@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Star, ArrowUpRight } from "lucide-react";
 import { tokenStore } from "@/lib/api";
 import { MATERIALS_CATALOG } from "@/lib/materials-catalog";
 
@@ -95,7 +96,9 @@ export default function RootPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5B6C69]">Today&apos;s value</p>
                     <p className="mt-2 text-3xl font-extrabold tracking-tight text-[#275458]">Keep it moving.</p>
                   </div>
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#CAFFBD] text-2xl">↗</div>
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#CAFFBD] text-[#1B3E41]">
+                    <ArrowUpRight size={22} strokeWidth={2.25} />
+                  </div>
                 </div>
                 <div className="mt-8 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
@@ -160,7 +163,11 @@ export default function RootPage() {
                     <span className="text-xs text-[#8B9997]">Typical listing</span>
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars from ${material.reviews} reviews`}>
-                    <span className="tracking-[0.12em] text-[#E6A51A]" aria-hidden="true">★★★★★</span>
+                    <span className="flex items-center gap-0.5 text-[#E6A51A]" aria-hidden="true">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={13} fill="currentColor" strokeWidth={0} />
+                      ))}
+                    </span>
                     <span className="font-extrabold text-[#275458]">{material.rating}</span>
                     <span className="text-[#8B9997]">({material.reviews})</span>
                   </div>

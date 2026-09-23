@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Camera } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, ScanResponse, WastePrice } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
@@ -160,14 +161,13 @@ export default function ScanPage() {
         {authState === "ready" && step === "capture" && (
           <div className="flex flex-col items-center text-center gap-4">
             <div className="w-full aspect-square rounded-[var(--r-lg)] border-2 border-dashed border-[var(--border)] bg-[var(--surface)] flex flex-col items-center justify-center gap-2 text-[var(--text-2)]">
-              <span className="text-5xl">📷</span>
+              <Camera size={48} strokeWidth={1.5} />
               <span className="text-sm">Point your camera at a material to identify it</span>
             </div>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleFile}
               className="hidden"
             />

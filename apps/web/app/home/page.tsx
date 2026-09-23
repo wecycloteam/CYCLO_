@@ -4,6 +4,25 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import {
+  Recycle,
+  Magnet,
+  FileText,
+  GlassWater,
+  Cpu,
+  Leaf,
+  Package,
+  Trash2,
+  MapPin,
+  Bell,
+  Search,
+  Camera,
+  Tag,
+  Truck,
+  BookOpen,
+  Scale,
+  type LucideIcon,
+} from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ImpactStats, Location, PickupRequest, WasteListing } from "@/lib/api";
 import { BottomNav } from "@/components/BottomNav";
@@ -11,24 +30,24 @@ import { AssistantChat } from "@/components/AssistantChat";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
-const CATEGORY_TILES: { key: string; label: string; icon: string }[] = [
-  { key: "plastic", label: "Plastic", icon: "♻️" },
-  { key: "metal", label: "Metal", icon: "🔩" },
-  { key: "paper", label: "Paper", icon: "📄" },
-  { key: "glass", label: "Glass", icon: "🍾" },
-  { key: "e_waste", label: "Electronics", icon: "💻" },
-  { key: "organic", label: "Organic", icon: "🍃" },
+const CATEGORY_TILES: { key: string; label: string; icon: LucideIcon }[] = [
+  { key: "plastic", label: "Plastic", icon: Recycle },
+  { key: "metal", label: "Metal", icon: Magnet },
+  { key: "paper", label: "Paper", icon: FileText },
+  { key: "glass", label: "Glass", icon: GlassWater },
+  { key: "e_waste", label: "Electronics", icon: Cpu },
+  { key: "organic", label: "Organic", icon: Leaf },
 ];
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  plastic: "♻️",
-  metal: "🔩",
-  paper: "📄",
-  cardboard: "📦",
-  glass: "🍾",
-  e_waste: "💻",
-  organic: "🍃",
-  other: "🗑️",
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  plastic: Recycle,
+  metal: Magnet,
+  paper: FileText,
+  cardboard: Package,
+  glass: GlassWater,
+  e_waste: Cpu,
+  organic: Leaf,
+  other: Trash2,
 };
 
 function StatTile({ label, value }: { label: string; value: string }) {
@@ -42,6 +61,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
 
 function ListingProductCard({ listing }: { listing: WasteListing }) {
   const photo = listing.photos?.[0];
+  const CategoryIcon = CATEGORY_ICON[listing.material.category] ?? Trash2;
   return (
     <Link
       href={`/marketplace/${listing.id}`}
@@ -52,7 +72,7 @@ function ListingProductCard({ listing }: { listing: WasteListing }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={photo} alt={listing.material.label} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-4xl">{CATEGORY_EMOJI[listing.material.category] ?? "🗑️"}</span>
+          <CategoryIcon size={36} strokeWidth={1.5} className="text-[var(--text-2)]" />
         )}
         {listing.askingPrice != null && (
           <span className="absolute right-2 top-2 rounded-full bg-[var(--cyclo-teal-dark)] px-2 py-0.5 text-[10px] font-extrabold text-white">
@@ -63,23 +83,25 @@ function ListingProductCard({ listing }: { listing: WasteListing }) {
       <div className="p-3">
         <div className="truncate text-xs font-extrabold text-[var(--text-1)]">{listing.material.label}</div>
         <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--text-2)]">
-          <span>⚖️ {listing.estimatedWeightKg} kg</span>
+          <Scale size={11} /> {listing.estimatedWeightKg} kg
         </div>
-        <div className="mt-0.5 truncate text-[10px] text-[var(--text-2)]">
-          📍 {listing.location.region ?? listing.location.label}
+        <div className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-[var(--text-2)]">
+          <MapPin size={11} className="shrink-0" /> {listing.location.region ?? listing.location.label}
         </div>
       </div>
     </Link>
   );
 }
 
-function QuickAction({ href, icon, label }: { href: string; icon: string; label: string }) {
+function QuickAction({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
   return (
     <Link
       href={href}
       className="flex flex-col items-center gap-2 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-4 text-center transition hover:-translate-y-0.5 hover:shadow-sm"
     >
-      <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--cyclo-teal)]/10 text-lg">{icon}</span>
+      <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--cyclo-teal)]/10 text-[var(--cyclo-teal)]">
+        <Icon size={18} />
+      </span>
       <span className="text-[11px] font-bold leading-tight text-[var(--text-1)]">{label}</span>
     </Link>
   );
@@ -130,16 +152,16 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={92} height={26} className="h-[26px] w-auto" />
             <Link href="/profile" className="hidden items-center gap-1 rounded-full bg-[var(--bg)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-2)] sm:flex">
-              📍 {locationLabel}
+              <MapPin size={12} /> {locationLabel}
             </Link>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/activity"
               aria-label="Notifications and activity"
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] text-base"
+              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] text-[var(--text-1)]"
             >
-              🔔
+              <Bell size={18} />
             </Link>
             <Link
               href="/profile"
@@ -164,7 +186,7 @@ export default function HomePage() {
           <>
             <form onSubmit={handleSearch} className="mb-5">
               <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm">
-                <span className="text-base">🔎</span>
+                <Search size={16} className="text-[var(--text-2)]" />
                 <input
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
@@ -190,7 +212,7 @@ export default function HomePage() {
                   get an instant price →
                 </div>
                 <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--cyclo-green)] px-4 py-2 text-xs font-extrabold text-[#0E2A1F]">
-                  📷 AI Scan Waste
+                  <Camera size={14} /> AI Scan Waste
                 </span>
               </div>
             </Link>
@@ -205,7 +227,7 @@ export default function HomePage() {
                   href="/marketplace"
                   className="flex flex-col items-center gap-1.5 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] py-4 transition hover:-translate-y-0.5 hover:shadow-sm"
                 >
-                  <span className="text-2xl">{c.icon}</span>
+                  <c.icon size={22} strokeWidth={1.75} className="text-[var(--cyclo-teal)]" />
                   <span className="text-[11px] font-bold text-[var(--text-1)]">{c.label}</span>
                 </Link>
               ))}
@@ -239,10 +261,10 @@ export default function HomePage() {
             <div className="mb-3">
               <h3 className="text-sm font-extrabold mb-3">Quick actions</h3>
               <div className="grid grid-cols-4 gap-2.5">
-                <QuickAction href="/marketplace/new" icon="🏷️" label="Sell Waste" />
-                <QuickAction href="/activity/new" icon="🚚" label="Request Pickup" />
-                <QuickAction href="/scan" icon="📷" label="Scan" />
-                <QuickAction href="/prices" icon="📚" label="Learn" />
+                <QuickAction href="/marketplace/new" icon={Tag} label="Sell Waste" />
+                <QuickAction href="/activity/new" icon={Truck} label="Request Pickup" />
+                <QuickAction href="/scan" icon={Camera} label="Scan" />
+                <QuickAction href="/prices" icon={BookOpen} label="Learn" />
               </div>
             </div>
           </>
