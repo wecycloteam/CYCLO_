@@ -10,6 +10,12 @@
 [build]
   # Builds the web app (for the site itself) and the API (so its compiled dist/ exists
   # before Netlify bundles netlify/functions/api.ts, which requires that compiled output).
+  # `prisma generate` runs explicitly, right after install, rather than relying on
+  # @prisma/client's own postinstall hook to pick up schema.prisma — that implicit path
+  # silently generated a *stale* client on Netlify at least once (missing User.username/
+  # googleId columns added straight to schema.prisma), failing apps/api's `nest build`
+  # with "Object literal may only specify known properties" even though the exact same
+  # schema change had already been regenerated and verified working locally.
   # The trailing prune removes files Netlify's function packager would otherwise ship
   # verbatim: @prisma/client's npm package bundles wasm query-engine variants for every
   # database Prisma supports (MySQL, SQLite, SQL Server, CockroachDB — this app only uses
@@ -21,7 +27,7 @@
   # requires even inside externalized packages, found generator-build's own `require('typescript')`,
   # and pulled in the entire 15MB+ TypeScript compiler package for code that's never reachable
   # from an actual API request.
-  command = "cd ../.. && npm install && npm run build --workspace=apps/web && npm run build --workspace=apps/api && rm -f node_modules/@prisma/client/runtime/*wasm* node_modules/@prisma/client/runtime/*.map node_modules/.prisma/client/*.wasm node_modules/.prisma/client/query_engine-windows.dll.node && rm -rf node_modules/@prisma/client/generator-build node_modules/typescript"
+  command = "cd ../.. && npm install && npx prisma generate --schema=prisma/schema.prisma && npm run build --workspace=apps/web && npm run build --workspace=apps/api && rm -f node_modules/@prisma/client/runtime/*wasm* node_modules/@prisma/client/runtime/*.map node_modules/.prisma/client/*.wasm node_modules/.prisma/client/query_engine-windows.dll.node && rm -rf node_modules/@prisma/client/generator-build node_modules/typescript"
   # Without this, @netlify/plugin-nextjs falls back to a framework-detected default that
   # gets joined against the dashboard's monorepo package_path (apps/web) a second time,
   # doubling to apps/web/apps/web/.next and failing with "publish directory not found".
