@@ -16,6 +16,14 @@
   # googleId columns added straight to schema.prisma), failing apps/api's `nest build`
   # with "Object literal may only specify known properties" even though the exact same
   # schema change had already been regenerated and verified working locally.
+  # `npm ci` (not `npm install`) because Netlify caches node_modules between builds, and
+  # the trailing prune below deletes files from inside it — including one `prisma
+  # generate` itself needs at build time (a wasm loader matched by the `*wasm*` glob).
+  # `npm install` on a cached, already-pruned node_modules just leaves those files
+  # missing (nothing to "update"), so the *next* build's `prisma generate` failed with
+  # "Cannot find module .../query_engine_bg.postgresql.wasm-base64.js" — a build
+  # poisoning its own successor. `npm ci` always wipes node_modules and reinstalls from
+  # package-lock.json first, so no build can inherit a previous build's pruning.
   # The trailing prune removes files Netlify's function packager would otherwise ship
   # verbatim: @prisma/client's npm package bundles wasm query-engine variants for every
   # database Prisma supports (MySQL, SQLite, SQL Server, CockroachDB — this app only uses
@@ -27,7 +35,7 @@
   # requires even inside externalized packages, found generator-build's own `require('typescript')`,
   # and pulled in the entire 15MB+ TypeScript compiler package for code that's never reachable
   # from an actual API request.
-  command = "cd ../.. && npm install && npx prisma generate --schema=prisma/schema.prisma && npm run build --workspace=apps/web && npm run build --workspace=apps/api && rm -f node_modules/@prisma/client/runtime/*wasm* node_modules/@prisma/client/runtime/*.map node_modules/.prisma/client/*.wasm node_modules/.prisma/client/query_engine-windows.dll.node && rm -rf node_modules/@prisma/client/generator-build node_modules/typescript"
+  command = "cd ../.. && npm ci && npx prisma generate --schema=prisma/schema.prisma && npm run build --workspace=apps/web && npm run build --workspace=apps/api && rm -f node_modules/@prisma/client/runtime/*wasm* node_modules/@prisma/client/runtime/*.map node_modules/.prisma/client/*.wasm node_modules/.prisma/client/query_engine-windows.dll.node && rm -rf node_modules/@prisma/client/generator-build node_modules/typescript"
   # Without this, @netlify/plugin-nextjs falls back to a framework-detected default that
   # gets joined against the dashboard's monorepo package_path (apps/web) a second time,
   # doubling to apps/web/apps/web/.next and failing with "publish directory not found".
