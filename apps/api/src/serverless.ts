@@ -10,7 +10,29 @@ let cachedHandler: ReturnType<typeof serverlessHttp> | undefined;
 
 async function bootstrapHandler() {
   const expressApp = express();
-  const app = await createApp(new ExpressAdapter(expressApp));
+
+  // serverless-http reconstructs the request from the Lambda event by pre-populating
+  // req.body with the raw bytes as a Buffer *and* ending the underlying stream — so any
+  // stream-reading body-parser (express.json(), Nest's own default) finds an
+  // already-drained stream and silently leaves req.body as that raw Buffer instead of
+  // parsing it. That Buffer, handed to class-validator as if it were the DTO, gets
+  // iterated index-by-index ("property 0 should not exist", "property 1 should not
+  // exist", ...) instead of validated — every JSON POST was broken in production this
+  // way. Parsing the Buffer directly, instead of asking a stream-based parser to re-read
+  // an already-consumed stream, is what actually needs to happen here.
+  expressApp.use((req, _res, next) => {
+    if (Buffer.isBuffer(req.body)) {
+      const raw = req.body.toString('utf8');
+      try {
+        req.body = raw ? JSON.parse(raw) : {};
+      } catch {
+        req.body = {};
+      }
+    }
+    next();
+  });
+
+  const app = await createApp(new ExpressAdapter(expressApp), { bodyParser: false });
   await app.init();
 
   // The netlify.toml `/api/* -> /.netlify/functions/api/:splat` rule is a rewrite (status

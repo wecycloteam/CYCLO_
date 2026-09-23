@@ -4,8 +4,13 @@ import { AppModule } from './app.module';
 
 // Shared between main.ts (local dev / Render-style long-running server) and serverless.ts
 // (Netlify Functions) so the two entry points can't drift on CORS or validation config.
-export async function createApp(adapter?: AbstractHttpAdapter): Promise<INestApplication> {
-  const app = adapter ? await NestFactory.create(AppModule, adapter) : await NestFactory.create(AppModule);
+export async function createApp(
+  adapter?: AbstractHttpAdapter,
+  options?: { bodyParser?: boolean },
+): Promise<INestApplication> {
+  const app = adapter
+    ? await NestFactory.create(AppModule, adapter, options)
+    : await NestFactory.create(AppModule, options);
 
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:3001', credentials: true });
 
