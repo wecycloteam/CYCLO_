@@ -290,17 +290,22 @@ export default function HomePage() {
         {state === "ready" && user && (
           <>
             {impact && user.role !== "collector" && (
-              <div className="grid grid-cols-3 gap-2 mb-8">
+              <div className="grid grid-cols-3 gap-2 mb-2">
                 <StatTile label="Waste recycled" value={`${impact.asSeller.wasteRecycledKg} kg`} />
                 <StatTile label="Est. earnings" value={`TZS ${Math.round(impact.asSeller.estimatedEarnings).toLocaleString()}`} />
                 <StatTile label="Est. CO₂ avoided" value={`${impact.asSeller.co2AvoidedKg} kg`} />
               </div>
             )}
             {impact && user.role === "collector" && (
-              <div className="grid grid-cols-2 gap-2 mb-8">
+              <div className="grid grid-cols-2 gap-2 mb-2">
                 <StatTile label="Pickups completed" value={`${impact.asCollector.completedCount}`} />
                 <StatTile label="Weight collected" value={`${impact.asCollector.collectedWeightKg} kg`} />
               </div>
+            )}
+            {impact && (
+              <Link href="/impact" className="mb-8 inline-block text-xs font-bold text-[var(--cyclo-teal)]">
+                See full impact & achievements →
+              </Link>
             )}
 
             <div className="flex items-center justify-between mb-3">

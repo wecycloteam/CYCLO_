@@ -288,6 +288,30 @@ export interface SellerContact {
   phone: string | null;
 }
 
+export interface MaterialBreakdown {
+  category: string;
+  weightKg: number;
+}
+
+export interface ImpactAchievement {
+  id: string;
+  label: string;
+  icon: string;
+  achieved: boolean;
+  threshold: number;
+  progress: number;
+}
+
+export interface UserImpactSummary {
+  totalWeightKg: number;
+  materialBreakdown: MaterialBreakdown[];
+  totalEarningsTzs: number;
+  completedTransactionCount: number;
+  estimatedCo2AvoidedKg: number;
+  ecoScore: number;
+  achievements: ImpactAchievement[];
+}
+
 export interface ImpactStats {
   asSeller: {
     completedCount: number;
@@ -330,6 +354,7 @@ export const api = {
 
   me: () => request<CurrentUser>("/users/me", { method: "GET" }, true),
   myImpact: () => request<ImpactStats>("/users/me/impact", { method: "GET" }, true),
+  myImpactSummary: () => request<UserImpactSummary>("/impact/me", { method: "GET" }, true),
 
   logout: (refreshToken: string) =>
     request<{ message: string }>("/auth/logout", {
