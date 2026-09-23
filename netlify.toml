@@ -44,7 +44,7 @@
   # the actual shipped bundle, only an internal build-cache artifact. Add any future
   # backend-only secret here too, or every Gemini/Google-key-shaped addition will fail the
   # build the same way.
-  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_CLIENT_SECRET,GEMINI_API_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_CLIENT_SECRET,GEMINI_API_KEY,NEXT_SMS_API_TOKEN"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

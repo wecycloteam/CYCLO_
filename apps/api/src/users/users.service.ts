@@ -14,6 +14,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  findByGoogleId(googleId: string) {
+    return this.prisma.user.findUnique({ where: { googleId } });
+  }
+
   findById(id: string) {
     return this.prisma.user.findUnique({ where: { id } });
   }
@@ -22,7 +26,10 @@ export class UsersService {
   // fields are all optional), so its CollectorProfile is created here, atomically with
   // the User row — otherwise a collector would exist with no verificationStatus at all,
   // and the admin verification queue (§21) would never see them.
-  create(data: { phone: string; name: string; role: UserRole; email?: string; passwordHash?: string }) {
+  //
+  // phone is optional because a Google-only sign-up never provides one (see
+  // AuthService.loginWithGoogle) — every other path (OTP, register) still always passes one.
+  create(data: { phone?: string; name: string; role: UserRole; email?: string; passwordHash?: string; googleId?: string }) {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({ data });
       if (data.role === 'collector') {
@@ -30,6 +37,13 @@ export class UsersService {
       }
       return user;
     });
+  }
+
+  // Links a Google account to a User row that already exists under the same email
+  // (e.g. someone who first registered by phone/OTP or email+password now signs in with
+  // Google) — so they end up with one account, not two.
+  linkGoogleId(userId: string, googleId: string) {
+    return this.prisma.user.update({ where: { id: userId }, data: { googleId } });
   }
 
   // §13/§34 — home-dashboard impact stats. Only ever derived from real completed

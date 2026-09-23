@@ -188,9 +188,13 @@ export default function ListingDetailPage() {
                   <>
                     <div className="text-xs font-bold text-[var(--text-2)] mb-1">Seller contact</div>
                     <div className="text-sm font-extrabold">{contact.name}</div>
-                    <a href={`tel:${contact.phone}`} className="text-sm text-[var(--cyclo-teal)] font-bold">
-                      {contact.phone}
-                    </a>
+                    {contact.phone ? (
+                      <a href={`tel:${contact.phone}`} className="text-sm text-[var(--cyclo-teal)] font-bold">
+                        {contact.phone}
+                      </a>
+                    ) : (
+                      <p className="text-xs text-[var(--text-2)]">No phone on file for this seller yet.</p>
+                    )}
                   </>
                 ) : user ? (
                   <button

@@ -131,20 +131,27 @@ export class AuthService {
     return this.issueTokens(user.id, user.role);
   }
 
-  // Google never gives us a phone number (the User row's other unique identity, used by
-  // pickup/contact-seller), so a first-time Google sign-in gets a random placeholder —
-  // real, unique, but not a usable phone. The account works immediately for browsing/
-  // buying; selling still needs a real phone, which isn't collectible from Google alone.
+  // googleId is the real identity for a Google sign-in (Google's stable OAuth "sub"), not
+  // a phone placeholder — User.phone stays genuinely optional for these accounts. Google
+  // never gives us a phone at all, so the account works immediately for browsing/buying;
+  // selling still needs a real phone, which isn't collectible from Google alone and has
+  // no "add your phone" flow yet.
   async loginWithGoogle(profile: GoogleProfile) {
-    let user = await this.users.findByEmail(profile.email);
+    let user = await this.users.findByGoogleId(profile.googleId);
     if (!user) {
-      const placeholderPhone = `google:${randomBytes(8).toString('hex')}`;
-      user = await this.users.create({
-        phone: placeholderPhone,
-        name: profile.name,
-        role: 'household',
-        email: profile.email,
-      });
+      // Someone who already has an account under this email (phone/OTP or email+password)
+      // signing in with Google for the first time — link it instead of creating a duplicate.
+      const existingByEmail = await this.users.findByEmail(profile.email);
+      if (existingByEmail) {
+        user = await this.users.linkGoogleId(existingByEmail.id, profile.googleId);
+      } else {
+        user = await this.users.create({
+          name: profile.name,
+          role: 'household',
+          email: profile.email,
+          googleId: profile.googleId,
+        });
+      }
     }
     return this.issueTokens(user.id, user.role);
   }

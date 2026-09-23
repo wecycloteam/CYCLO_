@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Strategy, StrategyOptions, VerifyCallback, Profile } from 'passport-google-oauth20';
 
 export interface GoogleProfile {
+  googleId: string;
   email: string;
   name: string;
 }
@@ -26,14 +27,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   // Attached to req.user by Passport, same as JwtStrategy.validate — kept to just
-  // the two fields AuthService.loginWithGoogle actually needs.
+  // the fields AuthService.loginWithGoogle actually needs. profile.id is Google's stable
+  // account identifier (the OAuth "sub") — the real link to a User row, not the phone
+  // placeholder this used before User.googleId existed.
   validate(_accessToken: string, _refreshToken: string, profile: Profile, done: VerifyCallback) {
     const email = profile.emails?.[0]?.value;
     const name = profile.displayName || profile.name?.givenName || 'CYCLO User';
     if (!email) {
       return done(new Error('Google did not share an email address for this account.'));
     }
-    const googleProfile: GoogleProfile = { email, name };
+    const googleProfile: GoogleProfile = { googleId: profile.id, email, name };
     done(null, googleProfile);
   }
 }

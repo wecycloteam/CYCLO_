@@ -52,7 +52,8 @@ export interface AuthTokens {
 
 export interface CurrentUser {
   id: string;
-  phone: string;
+  // null for a Google-only account — Google never provides a phone number.
+  phone: string | null;
   name: string;
   role: string;
   verificationStatus: string;
@@ -281,7 +282,8 @@ export interface WastePrice {
 
 export interface SellerContact {
   name: string;
-  phone: string;
+  // null for a seller who only ever signed in with Google — they have no phone on file.
+  phone: string | null;
 }
 
 export interface ImpactStats {

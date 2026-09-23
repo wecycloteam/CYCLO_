@@ -44,7 +44,7 @@ export default function ProfilePage() {
                 <div className="text-lg font-extrabold">{user.name}</div>
                 <VerifiedBadge status={user.verificationStatus} />
               </div>
-              <div className="text-sm text-[var(--text-2)]">{user.phone}</div>
+              <div className="text-sm text-[var(--text-2)]">{user.phone ?? "No phone on file"}</div>
             </div>
 
             <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">

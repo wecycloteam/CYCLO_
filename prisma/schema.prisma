@@ -44,28 +44,33 @@ datasource db {
 // WastePrice.category -> see packages/shared-types/src/marketplace.ts WASTE_CATEGORIES
 
 model User {
-  id           String   @id @default(uuid())
-  phone        String   @unique
-  email        String?  @unique
-  passwordHash String?
-  name         String
-  role         String
-  verificationStatus String @default("unverified")
-  locale       String   @default("en")
-  country      String   @default("TZ")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  // Optional because a Google-only sign-up never provides one — see AuthService.loginWithGoogle.
+  phone              String?  @unique
+  email              String?  @unique
+  // Set only for accounts created via Google — the real link back to that Google account,
+  // used instead of a phone (see AuthService.loginWithGoogle). Postgres allows multiple
+  // NULLs in a unique column, so phone-only and email/password accounts are unaffected.
+  googleId           String?  @unique
+  passwordHash       String?
+  name               String
+  role               String
+  verificationStatus String   @default("unverified")
+  locale             String   @default("en")
+  country            String   @default("TZ")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   organizationMemberships OrganizationMember[]
-  ownedOrganizations      Organization[]        @relation("OrganizationOwner")
+  ownedOrganizations      Organization[]       @relation("OrganizationOwner")
   collectorProfile        CollectorProfile?
   locations               Location[]
   refreshTokens           RefreshToken[]
   wasteListings           WasteListing[]
-  pickupRequestsMade      PickupRequest[]        @relation("PickupProducer")
-  pickupRequestsAssigned  PickupRequest[]        @relation("PickupCollector")
-  transactionsAsSeller    Transaction[]          @relation("TransactionSeller")
-  transactionsAsCollector Transaction[]          @relation("TransactionCollector")
+  pickupRequestsMade      PickupRequest[]      @relation("PickupProducer")
+  pickupRequestsAssigned  PickupRequest[]      @relation("PickupCollector")
+  transactionsAsSeller    Transaction[]        @relation("TransactionSeller")
+  transactionsAsCollector Transaction[]        @relation("TransactionCollector")
   wasteEvents             WasteEvent[]
   aiScans                 AiScan[]
 
@@ -86,12 +91,12 @@ model OtpChallenge {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -107,9 +112,9 @@ model Organization {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  owner      User                 @relation("OrganizationOwner", fields: [ownerUserId], references: [id])
-  members    OrganizationMember[]
-  locations  Location[]
+  owner     User                 @relation("OrganizationOwner", fields: [ownerUserId], references: [id])
+  members   OrganizationMember[]
+  locations Location[]
 
   @@index([type])
 }
@@ -141,9 +146,9 @@ model Location {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  wasteListings WasteListing[]
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  wasteListings  WasteListing[]
   pickupRequests PickupRequest[]
 
   @@index([userId])
@@ -162,10 +167,10 @@ model WasteMaterial {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  wasteListings   WasteListing[]
-  pickupRequests  PickupRequest[]
-  transactions    Transaction[]
-  aiScans         AiScan[]
+  wasteListings  WasteListing[]
+  pickupRequests PickupRequest[]
+  transactions   Transaction[]
+  aiScans        AiScan[]
 
   @@unique([category, subtype])
   @@index([category])
@@ -175,33 +180,33 @@ model WasteMaterial {
 // machine (see packages/shared-types marketplace.ts), never a boolean, enforced in
 // MarketplaceService before any write.
 model WasteListing {
-  id               String    @id @default(uuid())
-  sellerId         String
-  materialId       String
-  locationId       String
+  id                String    @id @default(uuid())
+  sellerId          String
+  materialId        String
+  locationId        String
   estimatedWeightKg Float
   verifiedWeightKg  Float?
-  condition        String?
-  grade            String?
-  purity           Float?
-  photos           String? // JSON-encoded array of storage refs/URLs
-  askingPrice      Float?
+  condition         String?
+  grade             String?
+  purity            Float?
+  photos            String? // JSON-encoded array of storage refs/URLs
+  askingPrice       Float?
   // Display-only unit label chosen by the seller (kg | tonnes | pieces | litres, see
   // shared-types QUANTITY_UNITS) — estimatedWeightKg/verifiedWeightKg stay the single
   // numeric quantity the rest of the system (pricing, transactions) operates on.
-  quantityUnit     String    @default("kg")
-  pickupOption     String
-  description      String?
-  status           String    @default("DRAFT")
+  quantityUnit      String    @default("kg")
+  pickupOption      String
+  description       String?
+  status            String    @default("DRAFT")
   // Orthogonal to `status` on purpose — admin moderation gate, not part of the
   // operational state machine, so it never touches the already-tested transition table.
   // A listing only needs to reach ACTIVE (the seller's "publish"/submit action) to enter
   // the admin queue; browseActive() requires both status=ACTIVE and moderationStatus=APPROVED.
-  moderationStatus String    @default("PENDING")
-  moderationReason String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  expiresAt        DateTime?
+  moderationStatus  String    @default("PENDING")
+  moderationReason  String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  expiresAt         DateTime?
 
   seller         User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   material       WasteMaterial   @relation(fields: [materialId], references: [id])
@@ -236,11 +241,11 @@ model PickupRequest {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  producer  User           @relation("PickupProducer", fields: [producerId], references: [id], onDelete: Cascade)
-  collector User?          @relation("PickupCollector", fields: [assignedCollectorId], references: [id])
-  location  Location       @relation(fields: [locationId], references: [id])
-  material  WasteMaterial  @relation(fields: [materialId], references: [id])
-  listing   WasteListing?  @relation(fields: [listingId], references: [id])
+  producer    User          @relation("PickupProducer", fields: [producerId], references: [id], onDelete: Cascade)
+  collector   User?         @relation("PickupCollector", fields: [assignedCollectorId], references: [id])
+  location    Location      @relation(fields: [locationId], references: [id])
+  material    WasteMaterial @relation(fields: [materialId], references: [id])
+  listing     WasteListing? @relation(fields: [listingId], references: [id])
   wasteEvents WasteEvent[]
   transaction Transaction?
 
@@ -325,26 +330,26 @@ model CollectorProfile {
 }
 
 model Verification {
-  id             String    @id @default(uuid())
-  subjectType    String
-  subjectId      String
-  status         String    @default("pending")
-  documents      String? // JSON-encoded array of storage refs
+  id               String    @id @default(uuid())
+  subjectType      String
+  subjectId        String
+  status           String    @default("pending")
+  documents        String? // JSON-encoded array of storage refs
   reviewedByUserId String?
-  reviewedAt     DateTime?
-  createdAt      DateTime  @default(now())
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
 
   @@index([subjectType, subjectId])
 }
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  actorId   String?
-  action    String
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
   targetType String
-  targetId  String
-  metadata  String? // JSON-encoded
-  createdAt DateTime @default(now())
+  targetId   String
+  metadata   String? // JSON-encoded
+  createdAt  DateTime @default(now())
 
   @@index([targetType, targetId])
 }
