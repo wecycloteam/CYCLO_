@@ -6,6 +6,10 @@ import { UserRole } from '@cyclo/shared-types';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  findByUsername(username: string) {
+    return this.prisma.user.findUnique({ where: { username } });
+  }
+
   findByPhone(phone: string) {
     return this.prisma.user.findUnique({ where: { phone } });
   }
@@ -29,7 +33,15 @@ export class UsersService {
   //
   // phone is optional because a Google-only sign-up never provides one (see
   // AuthService.loginWithGoogle) — every other path (OTP, register) still always passes one.
-  create(data: { phone?: string; name: string; role: UserRole; email?: string; passwordHash?: string; googleId?: string }) {
+  create(data: {
+    phone?: string;
+    name: string;
+    role: UserRole;
+    email?: string;
+    passwordHash?: string;
+    googleId?: string;
+    username?: string;
+  }) {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({ data });
       if (data.role === 'collector') {

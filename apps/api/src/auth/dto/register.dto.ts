@@ -3,10 +3,15 @@ import { SELF_REGISTERABLE_ROLES } from '@cyclo/shared-types';
 import type { SelfRegisterableRole } from '@cyclo/shared-types';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
+const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
 
 export class RegisterDto {
-  // Optional — phone+password is the primary credential-based path now; email is still
-  // useful (Google sign-in links to it) but no longer required to create an account.
+  // The identity used to log in (AuthService.login) — chosen here, matched exactly at
+  // login. Not the phone number: phone stays contact info for pickup/marketplace.
+  @Matches(USERNAME, { message: 'username must be 3-20 characters: letters, numbers, underscore only.' })
+  username: string;
+
+  // Optional — email is still useful (Google sign-in links to it) but not required.
   @IsOptional()
   @IsEmail()
   email?: string;

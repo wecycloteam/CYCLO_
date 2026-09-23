@@ -90,13 +90,18 @@ export class AuthService {
     return this.issueTokens(user.id, user.role);
   }
 
-  // Phone+password is the primary credential-based signup path (alongside Google) — email
-  // is optional now, kept only because Google sign-in links accounts by it.
+  // Username+password is the primary credential-based signup path (alongside Google) —
+  // phone is still collected (contact info for pickup/marketplace) but no longer used to
+  // log in; email is optional, kept only because Google sign-in links accounts by it.
   async register(dto: RegisterDto) {
-    const [existingEmail, existingPhone] = await Promise.all([
+    const [existingUsername, existingEmail, existingPhone] = await Promise.all([
+      this.users.findByUsername(dto.username),
       dto.email ? this.users.findByEmail(dto.email) : null,
       this.users.findByPhone(dto.phone),
     ]);
+    if (existingUsername) {
+      throw new BadRequestException('That username is already taken.');
+    }
     if (existingEmail) {
       throw new BadRequestException('An account with this email already exists.');
     }
@@ -106,6 +111,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.users.create({
+      username: dto.username,
       phone: dto.phone,
       name: dto.name.trim(),
       role: dto.role ?? 'household',
@@ -117,14 +123,14 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.users.findByPhone(dto.phone);
+    const user = await this.users.findByUsername(dto.username);
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Incorrect phone number or password.');
+      throw new UnauthorizedException('Incorrect username or password.');
     }
 
     const matches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!matches) {
-      throw new UnauthorizedException('Incorrect phone number or password.');
+      throw new UnauthorizedException('Incorrect username or password.');
     }
 
     return this.issueTokens(user.id, user.role);

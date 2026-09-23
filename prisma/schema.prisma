@@ -45,6 +45,10 @@ datasource db {
 
 model User {
   id                 String   @id @default(uuid())
+  // Chosen at signup, the real identity for phone+password login (AuthService.login) —
+  // phone is kept only as contact info for pickup/marketplace, not for logging in.
+  // Optional because a Google-only sign-up never sets one.
+  username           String?  @unique
   // Optional because a Google-only sign-up never provides one — see AuthService.loginWithGoogle.
   phone              String?  @unique
   email              String?  @unique

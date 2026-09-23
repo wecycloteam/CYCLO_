@@ -1,10 +1,10 @@
 import { IsString, Matches, MinLength } from 'class-validator';
 
-const E164 = /^\+[1-9]\d{7,14}$/;
+const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
 
 export class LoginDto {
-  @Matches(E164, { message: 'phone must be in E.164 format, e.g. +255712345678' })
-  phone: string;
+  @Matches(USERNAME, { message: 'username must be 3-20 characters: letters, numbers, underscore only.' })
+  username: string;
 
   @IsString()
   @MinLength(1)

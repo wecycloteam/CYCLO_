@@ -105,6 +105,7 @@ function LoginContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [mode, setMode] = useState<Mode>("signin");
 
+  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -129,7 +130,7 @@ function LoginContent() {
     setError(null);
     setLoading(true);
     try {
-      const tokens = await api.login({ phone, password });
+      const tokens = await api.login({ username, password });
       finishLogin(tokens);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
@@ -144,6 +145,7 @@ function LoginContent() {
     setLoading(true);
     try {
       const tokens = await api.register({
+        username,
         phone,
         password,
         name,
@@ -235,11 +237,11 @@ function LoginContent() {
           {mode === "signin" ? (
             <form onSubmit={handleSignIn} className="flex flex-col gap-3">
               <input
-                type="tel"
+                type="text"
                 required
-                placeholder="+255 7XX XXX XXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
               <input
@@ -267,6 +269,18 @@ function LoginContent() {
                 placeholder="Full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+              />
+              <input
+                type="text"
+                required
+                minLength={3}
+                maxLength={20}
+                pattern="[a-zA-Z0-9_]+"
+                title="Letters, numbers and underscore only"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
               <input

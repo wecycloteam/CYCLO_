@@ -52,6 +52,8 @@ export interface AuthTokens {
 
 export interface CurrentUser {
   id: string;
+  // null for a Google-only account — Google never sets a username.
+  username: string | null;
   // null for a Google-only account — Google never provides a phone number.
   phone: string | null;
   name: string;
@@ -314,13 +316,13 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  register: (input: { phone: string; password: string; name: string; role?: string; email?: string }) =>
+  register: (input: { username: string; phone: string; password: string; name: string; role?: string; email?: string }) =>
     request<AuthTokens>("/auth/register", {
       method: "POST",
       body: JSON.stringify(input),
     }),
 
-  login: (input: { phone: string; password: string }) =>
+  login: (input: { username: string; password: string }) =>
     request<AuthTokens>("/auth/login", {
       method: "POST",
       body: JSON.stringify(input),
