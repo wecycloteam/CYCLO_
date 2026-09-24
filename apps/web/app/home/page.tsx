@@ -286,16 +286,6 @@ export default function HomePage() {
               {nearbyState === "ready" && nearbyListings.map((l) => <ListingProductCard key={l.id} listing={l} />)}
             </div>
 
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">Nearby collectors &amp; recycling centers</h3>
-            </div>
-            <div className="mb-6 rounded-[var(--r-md)] border border-dashed border-[var(--border)] bg-[var(--surface)] p-5 text-center">
-              <p className="text-sm font-bold text-[var(--text-1)] mb-1">Coming soon</p>
-              <p className="text-xs text-[var(--text-2)]">
-                We&rsquo;re building a live map of verified collectors and recycling centers near you.
-              </p>
-            </div>
-
             <div className="mb-3">
               <h3 className="text-sm font-extrabold text-[var(--text-on-bg)] mb-3">Quick actions</h3>
               <div className="grid grid-cols-4 gap-2.5">

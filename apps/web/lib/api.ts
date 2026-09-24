@@ -27,7 +27,38 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}, auth = false): Promise<T> {
+// Access tokens are short-lived (JWT_ACCESS_TTL=15m) and nothing was refreshing them —
+// any session left open past 15 minutes (very ordinary for a chat thread) started failing
+// every authenticated call with a silent 401 until the user was bounced to /login by
+// useCurrentUser's own 401 handling. A single in-flight refresh is shared across
+// concurrent 401s so a burst of requests doesn't each fire their own /auth/refresh.
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = tokenStore.getRefresh();
+  if (!refreshToken) return false;
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    })
+      .then(async (res) => {
+        if (!res.ok) return false;
+        const body = await res.json().catch(() => null);
+        if (!body?.accessToken || !body?.refreshToken) return false;
+        tokenStore.set(body.accessToken, body.refreshToken);
+        return true;
+      })
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+async function request<T>(path: string, options: RequestInit = {}, auth = false, isRetry = false): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
   if (auth) {
@@ -36,6 +67,12 @@ async function request<T>(path: string, options: RequestInit = {}, auth = false)
   }
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+
+  if (res.status === 401 && auth && !isRetry) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return request<T>(path, options, auth, true);
+  }
+
   const body = await res.json().catch(() => null);
 
   if (!res.ok) {
