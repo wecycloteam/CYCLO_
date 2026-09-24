@@ -22,6 +22,8 @@ import {
   Truck,
   BookOpen,
   Scale,
+  ShoppingBag,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -300,6 +302,8 @@ export default function HomePage() {
                 <QuickAction href="/marketplace/new" icon={Tag} label="Sell Waste" />
                 <QuickAction href="/activity/new" icon={Truck} label="Request Pickup" />
                 <QuickAction href="/scan" icon={Camera} label="Scan" />
+                <QuickAction href="/orders" icon={ShoppingBag} label="Orders" />
+                <QuickAction href="/chat" icon={MessageCircle} label="Chat" />
                 <QuickAction href="/prices" icon={BookOpen} label="Learn" />
               </div>
             </div>

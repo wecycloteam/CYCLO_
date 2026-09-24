@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { api, ApiError, CurrentUser, WasteListing, SellerContact, listingStatusLabel, tokenStore } from "@/lib/api";
+import { MessageCircle, ShoppingBag } from "lucide-react";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -54,9 +55,10 @@ export default function ListingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
-  const [contact, setContact] = useState<SellerContact | null>(null);
-  const [contactError, setContactError] = useState<string | null>(null);
-  const [contactLoading, setContactLoading] = useState(false);
+  const [messaging, setMessaging] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
@@ -103,15 +105,29 @@ export default function ListingDetailPage() {
     }
   }
 
-  async function handleContact() {
-    setContactLoading(true);
-    setContactError(null);
+  async function handleMessageSeller() {
+    setMessaging(true);
+    setMessageError(null);
     try {
-      setContact(await api.contactSeller(id));
+      const conversation = await api.startConversation({ listingId: id });
+      router.push(`/chat/${conversation.id}`);
     } catch (err) {
-      setContactError(err instanceof ApiError ? err.message : "Couldn't load contact details.");
+      setMessageError(err instanceof ApiError ? err.message : "Couldn't start a conversation.");
     } finally {
-      setContactLoading(false);
+      setMessaging(false);
+    }
+  }
+
+  async function handleBuyNow() {
+    setBuying(true);
+    setBuyError(null);
+    try {
+      const order = await api.createOrder(id);
+      router.push(`/orders/${order.id}`);
+    } catch (err) {
+      setBuyError(err instanceof ApiError ? err.message : "Couldn't start this purchase.");
+    } finally {
+      setBuying(false);
     }
   }
 
@@ -191,38 +207,38 @@ export default function ListingDetailPage() {
 
             {listing.description && <p className="text-sm text-[var(--text-on-bg-2)] mb-6">{listing.description}</p>}
 
-            {!isOwner && (
-              <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4 mb-4">
-                {contact ? (
-                  <>
-                    <div className="text-xs font-bold text-[var(--text-2)] mb-1">Seller contact</div>
-                    <div className="text-sm font-extrabold">{contact.name}</div>
-                    {contact.phone ? (
-                      <a href={`tel:${contact.phone}`} className="text-sm text-[var(--cyclo-teal)] font-bold">
-                        {contact.phone}
-                      </a>
-                    ) : (
-                      <p className="text-xs text-[var(--text-2)]">No phone on file for this seller yet.</p>
-                    )}
-                  </>
-                ) : user ? (
+            {!isOwner && user && (
+              <div className="mb-4 flex flex-col gap-2">
+                {listing.status === "ACTIVE" && listing.askingPrice != null && (
                   <button
-                    onClick={handleContact}
-                    disabled={contactLoading}
-                    className="w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 disabled:opacity-60"
+                    onClick={handleBuyNow}
+                    disabled={buying}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 disabled:opacity-60"
                   >
-                    {contactLoading ? "Loading…" : "Contact Seller / Make Offer"}
+                    <ShoppingBag size={16} />
+                    {buying ? "Starting…" : "Buy Now"}
                   </button>
-                ) : (
-                  <Link
-                    href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
-                    className="block w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 text-center"
-                  >
-                    Log in to Contact Seller / Buy
-                  </Link>
                 )}
-                {contactError && <p className="text-xs text-[var(--critical)] mt-2">{contactError}</p>}
+                <button
+                  onClick={handleMessageSeller}
+                  disabled={messaging}
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 disabled:opacity-60"
+                >
+                  <MessageCircle size={16} />
+                  {messaging ? "Opening chat…" : "Message Seller"}
+                </button>
+                {messageError && <p className="text-xs text-[var(--critical)]">{messageError}</p>}
+                {buyError && <p className="text-xs text-[var(--critical)]">{buyError}</p>}
               </div>
+            )}
+
+            {!isOwner && !user && (
+              <Link
+                href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
+                className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 text-center mb-4"
+              >
+                Log in to Message Seller / Buy
+              </Link>
             )}
 
             {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}

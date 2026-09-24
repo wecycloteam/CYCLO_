@@ -231,6 +231,53 @@ export interface ReviewableTransaction {
   seller: { name: string };
 }
 
+export interface ConversationParty {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+export interface ChatMessageRecord {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface Conversation {
+  id: string;
+  listingId: string | null;
+  buyerId: string;
+  sellerId: string;
+  createdAt: string;
+  updatedAt: string;
+  buyer: ConversationParty;
+  seller: ConversationParty;
+  listing: { id: string; askingPrice: number | null; photos: string[]; material: { label: string } } | null;
+  lastMessage?: ChatMessageRecord | null;
+  unreadCount?: number;
+}
+
+export type OrderPaymentStatus = "PENDING" | "AWAITING_CONFIRMATION" | "PAID" | "CANCELLED";
+
+export interface Order {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  agreedPrice: number;
+  paymentMethod: string;
+  paymentReference: string | null;
+  paymentStatus: OrderPaymentStatus;
+  createdAt: string;
+  updatedAt: string;
+  listing: { id: string; photos: string[]; material: { label: string } };
+  buyer: { id: string; name: string; phone: string | null };
+  seller: { id: string; name: string; phone: string | null };
+}
+
 export interface AuditLogEntry {
   id: string;
   actorId: string | null;
@@ -462,6 +509,26 @@ export const api = {
     request<Review>("/reviews", { method: "POST", body: JSON.stringify(input) }, true),
   sellerReviews: (sellerId: string) => request<SellerReviews>(`/reviews/seller/${sellerId}`, { method: "GET" }),
   reviewableTransactions: () => request<ReviewableTransaction[]>("/reviews/reviewable", { method: "GET" }, true),
+
+  // Chat
+  startConversation: (input: { sellerId?: string; listingId?: string }) =>
+    request<Conversation>("/chat/conversations", { method: "POST", body: JSON.stringify(input) }, true),
+  myConversations: () => request<Conversation[]>("/chat/conversations", { method: "GET" }, true),
+  conversationMessages: (id: string) =>
+    request<ChatMessageRecord[]>(`/chat/conversations/${id}/messages`, { method: "GET" }, true),
+  sendChatMessage: (id: string, body: string) =>
+    request<ChatMessageRecord>(`/chat/conversations/${id}/messages`, { method: "POST", body: JSON.stringify({ body }) }, true),
+  markConversationRead: (id: string) =>
+    request<{ message: string }>(`/chat/conversations/${id}/read`, { method: "PATCH" }, true),
+
+  // Orders / in-app payment (manual mobile-money confirmation — see apps/api/src/orders)
+  createOrder: (listingId: string) =>
+    request<Order>("/orders", { method: "POST", body: JSON.stringify({ listingId }) }, true),
+  myOrders: () => request<Order[]>("/orders/mine", { method: "GET" }, true),
+  submitOrderPayment: (id: string, reference: string) =>
+    request<Order>(`/orders/${id}/submit-payment`, { method: "PATCH", body: JSON.stringify({ reference }) }, true),
+  confirmOrderPayment: (id: string) => request<Order>(`/orders/${id}/confirm-payment`, { method: "PATCH" }, true),
+  cancelOrder: (id: string) => request<Order>(`/orders/${id}/cancel`, { method: "PATCH" }, true),
 
   // Admin
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),

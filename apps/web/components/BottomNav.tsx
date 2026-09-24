@@ -14,6 +14,7 @@ import {
   Tag,
   Shield,
   Wallet,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ const PRODUCER_ITEMS: NavItem[] = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
   { href: "/scan", label: "Scan", icon: Camera },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/activity", label: "Activity", icon: Truck },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -40,6 +42,7 @@ const PRODUCER_ITEMS: NavItem[] = [
 const COLLECTOR_ITEMS: NavItem[] = [
   { href: "/jobs", label: "Jobs", icon: ClipboardList },
   { href: "/activity", label: "Active", icon: Compass },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
