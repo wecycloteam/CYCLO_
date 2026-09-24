@@ -605,7 +605,7 @@ export const api = {
   confirmScan: (scanId: string, finalMaterialId: string) =>
     request(`/ai/scans/${scanId}/confirm`, { method: "PATCH", body: JSON.stringify({ finalMaterialId }) }, true),
 
-  // Cyclo Assistant — Gemini-backed chat for recycling/sorting/pricing guidance.
+  // CYCLO AI — Gemini-backed chat for recycling/sorting/pricing guidance.
   chatWithAssistant: (message: string, history?: ChatMessage[]) =>
     request<{ reply: string }>("/ai/chat", { method: "POST", body: JSON.stringify({ message, history }) }, true),
 };

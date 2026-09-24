@@ -98,10 +98,14 @@ export class AiService {
   async chatGuidance(message: string, history: { role: 'user' | 'model'; parts: string }[] = []) {
     try {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        // gemini-3.6-flash's free tier is capped at 20 requests/day, and this project's
+        // own testing exhausted it; gemini-2.5-flash turned out to be fully deprecated
+        // ("no longer available to new users"). gemini-3.5-flash is a distinct, still-
+        // current model with its own separate quota bucket that hasn't been touched.
+        model: 'gemini-3.5-flash',
         config: {
           systemInstruction:
-            'You are Cyclo Assistant, an AI recycling and waste management guide for the Cyclo App in Tanzania. ' +
+            'You are CYCLO AI, an AI recycling and waste management guide for the Cyclo App in Tanzania. ' +
             'You help with sorting waste (Plastic, Cardboard, Textile, Glass, Metal, E-waste), cleaning items ' +
             'before disposal, and estimated local scrap prices in TZS and USD. ' +
             'Reply in plain text only: no markdown (no **bold**, no *, no #, no bullet lists), no emoji. ' +
@@ -130,7 +134,7 @@ export class AiService {
       return { reply: sanitizeAssistantReply(response.text ?? '') };
     } catch (error) {
       console.error('Gemini Chat Error:', error);
-      throw new InternalServerErrorException('Failed to generate response from Cyclo AI assistant.');
+      throw new InternalServerErrorException('Failed to generate a response from CYCLO AI.');
     }
   }
 }

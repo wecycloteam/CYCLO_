@@ -8,7 +8,7 @@ interface DisplayMessage extends ChatMessage {
   error?: boolean;
 }
 
-// Floating Cyclo Assistant — a real Gemini-backed chat (POST /ai/chat) for recycling
+// Floating CYCLO AI — a real Gemini-backed chat (POST /ai/chat) for recycling
 // sorting/pricing questions, not a decorative widget. Kept self-contained so it can be
 // dropped onto any authenticated page without touching that page's own state.
 export function AssistantChat() {
@@ -52,7 +52,7 @@ export function AssistantChat() {
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close Cyclo Assistant" : "Open Cyclo Assistant"}
+        aria-label={open ? "Close CYCLO AI" : "Open CYCLO AI"}
         className="fixed bottom-20 right-5 z-20 grid h-14 w-14 place-items-center rounded-full bg-[var(--cyclo-teal)] text-white shadow-[0_10px_24px_rgba(0,0,0,.2)]"
       >
         {open ? <X size={24} /> : <Bot size={24} />}
@@ -61,7 +61,7 @@ export function AssistantChat() {
       {open && (
         <div className="fixed bottom-36 right-5 z-20 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-2xl">
           <div className="border-b border-[var(--border)] px-4 py-3">
-            <div className="text-sm font-extrabold">Cyclo Assistant</div>
+            <div className="text-sm font-extrabold">CYCLO AI</div>
             <div className="text-[11px] text-[var(--text-2)]">Ask about sorting, cleaning or pricing recyclables</div>
           </div>
 
@@ -92,7 +92,7 @@ export function AssistantChat() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Cyclo Assistant…"
+              placeholder="Ask CYCLO AI…"
               className="flex-1 rounded-full border border-[var(--border)] px-4 py-2 text-sm outline-none"
             />
             <button

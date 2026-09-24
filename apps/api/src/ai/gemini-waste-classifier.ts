@@ -72,7 +72,10 @@ export class GeminiWasteClassifier implements WasteClassifier {
 
   private async classifyOnce(imageBase64: string): Promise<ClassificationResult> {
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      // Same quota reasoning as AiService.chatGuidance — gemini-3.6-flash's 20/day free
+      // quota was exhausted and gemini-2.5-flash turned out to be deprecated entirely;
+      // gemini-3.5-flash is current and has its own separate, untouched quota bucket.
+      model: 'gemini-3.5-flash',
       // Same fix as AiService.chatGuidance: gemini-3.6-flash spends part of its output
       // budget on invisible "thinking" tokens before the visible reply — disabling it
       // keeps this call fast and focused on the actual classification task.
