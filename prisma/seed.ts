@@ -75,6 +75,8 @@ const DEMO_LISTINGS: Array<{
   { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', photo: '/materials/aluminum-cans.jpg' },
   { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', photo: '/materials/cardboard.jpg?v=2' },
   { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', photo: '/materials/steel-tin.jpg' },
+  { category: 'paper', subtype: 'OFFICE', label: 'Office Paper', estimatedWeightKg: 20, description: 'Sorted office paper and newspaper bundles, kept dry.', photo: '/materials/paper.jpg?v=2' },
+  { category: 'textile', subtype: 'CLOTHING', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', photo: '/materials/textiles.jpg?v=2' },
 ];
 
 async function main() {

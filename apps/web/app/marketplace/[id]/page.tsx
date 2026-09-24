@@ -222,7 +222,7 @@ export default function ListingDetailPage() {
                 <button
                   onClick={handleMessageSeller}
                   disabled={messaging}
-                  className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--cyclo-green)] text-[var(--cyclo-green)] font-bold text-sm py-2.5 disabled:opacity-60"
                 >
                   <MessageCircle size={16} />
                   {messaging ? "Opening chat…" : "Message Seller"}
