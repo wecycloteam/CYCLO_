@@ -72,9 +72,9 @@ const DEMO_LISTINGS: Array<{
   photo?: string;
 }> = [
   { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household.', photo: '/materials/plastic-bottles.png?v=2' },
-  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.' },
+  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', photo: '/materials/aluminum-cans.jpg' },
   { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', photo: '/materials/cardboard.jpg?v=2' },
-  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.' },
+  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', photo: '/materials/steel-tin.jpg' },
 ];
 
 async function main() {
