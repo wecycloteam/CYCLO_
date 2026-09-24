@@ -16,7 +16,16 @@ export class AiService {
 
   // 1. Existing Image Scan Logic
   async scan(userId: string, dto: ScanImageDto) {
-    const result = await this.classifier.classify(dto.imageBase64);
+    let result;
+    try {
+      result = await this.classifier.classify(dto.imageBase64);
+    } catch (error) {
+      // Unlike chatGuidance, this call previously had no error handling at all — any
+      // classifier failure (bad/missing GEMINI_API_KEY, Gemini API outage, malformed
+      // response) surfaced as an opaque, unlogged 500 with nothing to debug from.
+      console.error('Waste classifier error:', error);
+      throw new InternalServerErrorException('Failed to analyze this image. Please try again.');
+    }
 
     const scan = await this.prisma.aiScan.create({
       data: {
