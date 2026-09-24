@@ -138,6 +138,11 @@ model Order {
   listingId         String
   buyerId           String
   sellerId          String
+  // How much of the listing's available quantity this specific order is for — the buyer
+  // chooses this at "Buy Now" time, and agreedPrice is derived from it (listing.askingPrice
+  // / listing.estimatedWeightKg gives a per-unit rate, multiplied by this), never entered
+  // directly by the buyer.
+  quantityKg        Float
   agreedPrice       Float
   paymentMethod     String   @default("mobile_money")
   // The confirmation code/reference the buyer received from their mobile money provider

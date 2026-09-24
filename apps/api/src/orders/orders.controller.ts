@@ -13,7 +13,7 @@ export class OrdersController {
 
   @Post()
   create(@CurrentUser() principal: CurrentUserPayload, @Body() dto: CreateOrderDto) {
-    return this.orders.create(principal.userId, dto.listingId);
+    return this.orders.create(principal.userId, principal.role, dto.listingId, dto.quantityKg);
   }
 
   @Get('mine')

@@ -59,6 +59,8 @@ export default function ListingDetailPage() {
   const [messageError, setMessageError] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
+  const [showBuyForm, setShowBuyForm] = useState(false);
+  const [buyQuantity, setBuyQuantity] = useState("");
 
   function load() {
     setState("loading");
@@ -118,11 +120,16 @@ export default function ListingDetailPage() {
     }
   }
 
-  async function handleBuyNow() {
+  async function handleConfirmPurchase() {
+    const quantity = Number(buyQuantity);
+    if (!quantity || quantity <= 0) {
+      setBuyError("Enter a quantity greater than 0.");
+      return;
+    }
     setBuying(true);
     setBuyError(null);
     try {
-      const order = await api.createOrder(id);
+      const order = await api.createOrder(id, quantity);
       router.push(`/orders/${order.id}`);
     } catch (err) {
       setBuyError(err instanceof ApiError ? err.message : "Couldn't start this purchase.");
@@ -132,6 +139,13 @@ export default function ListingDetailPage() {
   }
 
   const isOwner = user && listing && listing.sellerId === user.id;
+  // household is "seller mode" in the self-service buyer/seller switch (see
+  // profile page) — buying is blocked server-side for that role, so the button is
+  // hidden rather than shown and then erroring.
+  const canBuy = user && user.role !== "household";
+  const pricePerKg = listing && listing.askingPrice != null ? listing.askingPrice / listing.estimatedWeightKg : 0;
+  const quantityNum = Number(buyQuantity) || 0;
+  const computedPrice = Math.round(pricePerKg * quantityNum);
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
@@ -188,7 +202,7 @@ export default function ListingDetailPage() {
               <VerifiedBadge status={listing.seller.verificationStatus} />
             </div>
             <div className="mb-2">
-              <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} />
+              <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} seed={listing.seller.id} />
             </div>
             {listing.askingPrice != null && (
               <div className="text-2xl font-extrabold text-[var(--cyclo-green)] mb-4">
@@ -209,15 +223,53 @@ export default function ListingDetailPage() {
 
             {!isOwner && user && (
               <div className="mb-4 flex flex-col gap-2">
-                {listing.status === "ACTIVE" && listing.askingPrice != null && (
+                {listing.status === "ACTIVE" && listing.askingPrice != null && canBuy && !showBuyForm && (
                   <button
-                    onClick={handleBuyNow}
-                    disabled={buying}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 disabled:opacity-60"
+                    onClick={() => {
+                      setShowBuyForm(true);
+                      setBuyQuantity(String(listing.estimatedWeightKg));
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3"
                   >
                     <ShoppingBag size={16} />
-                    {buying ? "Starting…" : "Buy Now"}
+                    Buy Now
                   </button>
+                )}
+
+                {showBuyForm && (
+                  <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
+                    <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">
+                      How much do you want to buy? (max {listing.estimatedWeightKg} {listing.quantityUnit})
+                    </label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      max={listing.estimatedWeightKg}
+                      step="0.1"
+                      value={buyQuantity}
+                      onChange={(e) => setBuyQuantity(e.target.value)}
+                      className="mb-3 w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2.5 text-sm"
+                    />
+                    <div className="mb-3 flex items-center justify-between text-sm">
+                      <span className="text-[var(--text-2)]">Total price</span>
+                      <span className="font-extrabold text-[var(--text-1)]">TZS {computedPrice.toLocaleString()}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowBuyForm(false)}
+                        className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-2.5"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleConfirmPurchase}
+                        disabled={buying}
+                        className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
+                      >
+                        {buying ? "Starting…" : "Confirm Purchase"}
+                      </button>
+                    </div>
+                  </div>
                 )}
                 <button
                   onClick={handleMessageSeller}

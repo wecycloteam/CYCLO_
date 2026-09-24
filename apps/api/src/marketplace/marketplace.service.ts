@@ -26,7 +26,14 @@ export class MarketplaceService {
     private readonly materials: WasteMaterialsService,
   ) {}
 
-  async create(sellerId: string, dto: CreateListingDto) {
+  async create(sellerId: string, sellerRole: string, dto: CreateListingDto) {
+    // collector is the "buyer" side of the self-service mode switch (see
+    // UsersController.updateMe's SELF_SWITCHABLE_ROLES) — listing waste for sale is a
+    // household action. Not enforced for business/recycler/authority/admin, which sit
+    // outside that switch.
+    if (sellerRole === 'collector') {
+      throw new BadRequestException('Switch to seller mode in your profile to list waste for sale.');
+    }
     await this.materials.assertExists(dto.materialId);
     await this.locations.assertOwnedBy(dto.locationId, sellerId);
 

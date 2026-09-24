@@ -67,7 +67,7 @@ function ListingCard({ listing }: { listing: WasteListing }) {
           </span>
         </div>
         <div className="mb-2">
-          <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} />
+          <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} seed={listing.seller.id} />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <StatusBadge status={listing.status} />

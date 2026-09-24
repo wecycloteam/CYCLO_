@@ -8,6 +8,7 @@ const ORDER_SELECT = {
   listingId: true,
   buyerId: true,
   sellerId: true,
+  quantityKg: true,
   agreedPrice: true,
   paymentMethod: true,
   paymentReference: true,
@@ -34,12 +35,25 @@ function mapOrder<T extends { listing: { photos?: string | null } }>(order: T) {
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(buyerId: string, listingId: string) {
+  async create(buyerId: string, buyerRole: string, listingId: string, quantityKg: number) {
+    // household is the "seller" side of the self-service mode switch (see
+    // UsersController.updateMe's SELF_SWITCHABLE_ROLES) — buying is a collector action.
+    // Not enforced for business/recycler/authority/admin, which sit outside that switch.
+    if (buyerRole === 'household') {
+      throw new BadRequestException('Switch to buyer mode in your profile to purchase waste.');
+    }
+
     const listing = await this.prisma.wasteListing.findUnique({ where: { id: listingId } });
     if (!listing) throw new NotFoundException('Listing not found.');
     if (listing.sellerId === buyerId) throw new BadRequestException('You cannot buy your own listing.');
     if (listing.askingPrice == null) throw new BadRequestException('This listing has no asking price set.');
+    if (quantityKg <= 0 || quantityKg > listing.estimatedWeightKg) {
+      throw new BadRequestException(`Quantity must be between 0 and ${listing.estimatedWeightKg} kg (the listed amount).`);
+    }
     assertValidListingTransition(listing.status as ListingStatus, 'RESERVED');
+
+    const pricePerKg = listing.askingPrice / listing.estimatedWeightKg;
+    const agreedPrice = Math.round(pricePerKg * quantityKg);
 
     return this.prisma.$transaction(
       async (tx) => {
@@ -48,7 +62,8 @@ export class OrdersService {
             listingId,
             buyerId,
             sellerId: listing.sellerId,
-            agreedPrice: listing.askingPrice!,
+            quantityKg,
+            agreedPrice,
           },
           select: ORDER_SELECT,
         });

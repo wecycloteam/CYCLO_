@@ -25,7 +25,7 @@ export class MarketplaceController {
     @CurrentUser() principal: CurrentUserPayload,
     @Body() dto: CreateListingDto,
   ) {
-    return this.marketplace.create(principal.userId, dto);
+    return this.marketplace.create(principal.userId, principal.role, dto);
   }
 
   @UseGuards(JwtAuthGuard)

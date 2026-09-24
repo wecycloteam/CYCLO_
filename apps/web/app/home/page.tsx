@@ -294,7 +294,7 @@ export default function HomePage() {
                 <QuickAction href="/scan" icon={Camera} label="Scan" />
                 <QuickAction href="/orders" icon={ShoppingBag} label="Orders" />
                 <QuickAction href="/chat" icon={MessageCircle} label="Chat" />
-                <QuickAction href="/prices" icon={BookOpen} label="Learn" />
+                <QuickAction href="/learn" icon={BookOpen} label="Learn" />
               </div>
             </div>
           </>

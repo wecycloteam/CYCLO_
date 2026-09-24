@@ -304,6 +304,7 @@ export interface Order {
   listingId: string;
   buyerId: string;
   sellerId: string;
+  quantityKg: number;
   agreedPrice: number;
   paymentMethod: string;
   paymentReference: string | null;
@@ -559,8 +560,8 @@ export const api = {
     request<{ message: string }>(`/chat/conversations/${id}/read`, { method: "PATCH" }, true),
 
   // Orders / in-app payment (manual mobile-money confirmation — see apps/api/src/orders)
-  createOrder: (listingId: string) =>
-    request<Order>("/orders", { method: "POST", body: JSON.stringify({ listingId }) }, true),
+  createOrder: (listingId: string, quantityKg: number) =>
+    request<Order>("/orders", { method: "POST", body: JSON.stringify({ listingId, quantityKg }) }, true),
   myOrders: () => request<Order[]>("/orders/mine", { method: "GET" }, true),
   submitOrderPayment: (id: string, reference: string) =>
     request<Order>(`/orders/${id}/submit-payment`, { method: "PATCH", body: JSON.stringify({ reference }) }, true),

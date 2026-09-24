@@ -2,12 +2,13 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Location, WasteMaterial, WastePrice } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { AppHeader } from "@/components/AppHeader";
-import { LoadingState, ErrorState } from "@/components/AsyncState";
+import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
 
 const PICKUP_OPTIONS = [
   { value: "collection_required", label: "Needs collection" },
@@ -28,7 +29,7 @@ function NewListingForm() {
   const scanMaterialId = searchParams.get("materialId") ?? undefined;
   const scanWeightKg = searchParams.get("weightKg") ?? undefined;
   const manual = searchParams.get("manual") === "1";
-  const { state: authState } = useCurrentUser();
+  const { state: authState, user } = useCurrentUser();
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [materials, setMaterials] = useState<WasteMaterial[]>([]);
@@ -158,6 +159,18 @@ function NewListingForm() {
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="List Material" />
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
+        {authState === "ready" && user?.role === "collector" ? (
+          <EmptyState
+            title="Buyer mode is buy-only"
+            hint="Switch to seller mode in your profile to list waste for sale."
+            action={
+              <Link href="/profile" className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5">
+                Go to profile
+              </Link>
+            }
+          />
+        ) : (
+          <>
         {state === "loading" && <LoadingState label="Loading form…" />}
         {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
 
@@ -389,6 +402,8 @@ function NewListingForm() {
               {submitting ? "Creating…" : "Create Listing"}
             </button>
           </form>
+        )}
+          </>
         )}
       </div>
     </main>

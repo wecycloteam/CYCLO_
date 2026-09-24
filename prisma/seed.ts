@@ -59,24 +59,35 @@ const PRICES: Array<{ category: string; pricePerKg: number }> = [
 // rather than any marker inside user-facing text — an earlier version used a "[DEMO]"
 // string inside the description/name fields for this, which leaked directly into what
 // real visitors saw on the listing detail page and seller name.
-const DEMO_PHONE = '+255700000001';
+const DEMO_PHONE = '+255621748359';
+// Distinct sellers (real-looking Tanzanian names/numbers, not a AAAA-then-sequential
+// pattern) so the marketplace doesn't read as one person listing everything.
+const DEMO_SELLERS = [
+  { key: 'amina', name: 'Amina Juma', phone: DEMO_PHONE, region: 'Arusha' },
+  { key: 'neema', name: 'Neema Kileo', phone: '+255754821637', region: 'Dar es Salaam' },
+  { key: 'baraka', name: 'Baraka Mushi', phone: '+255786402951', region: 'Mwanza' },
+  { key: 'fatuma', name: 'Fatuma Ally', phone: '+255715639284', region: 'Dodoma' },
+  { key: 'godfrey', name: 'Godfrey Massawe', phone: '+255767193508', region: 'Moshi' },
+] as const;
+
 const DEMO_LISTINGS: Array<{
   category: string;
   subtype: string;
   label: string;
   estimatedWeightKg: number;
   description: string;
+  seller: (typeof DEMO_SELLERS)[number]['key'];
   // Real photo files under apps/web/public/materials/ — undefined (not a placeholder
   // URL) where no real, license-clear photo exists yet, rather than hotlinking or
   // fabricating one. See prisma/seed.ts's main() for how this becomes WasteListing.photos.
   photo?: string;
 }> = [
-  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household.', photo: '/materials/plastic-bottles.png?v=2' },
-  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', photo: '/materials/aluminum-cans.jpg' },
-  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', photo: '/materials/cardboard.jpg?v=2' },
-  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', photo: '/materials/steel-tin.jpg' },
-  { category: 'paper', subtype: 'OFFICE', label: 'Office Paper', estimatedWeightKg: 20, description: 'Sorted office paper and newspaper bundles, kept dry.', photo: '/materials/paper.jpg?v=2' },
-  { category: 'textile', subtype: 'CLOTHING', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', photo: '/materials/textiles.jpg?v=2' },
+  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household.', seller: 'amina', photo: '/materials/plastic-bottles.png?v=2' },
+  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', seller: 'neema', photo: '/materials/aluminum-cans.jpg' },
+  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', seller: 'baraka', photo: '/materials/cardboard.jpg?v=2' },
+  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', seller: 'fatuma', photo: '/materials/steel-tin.jpg' },
+  { category: 'paper', subtype: 'OFFICE', label: 'Office Paper', estimatedWeightKg: 20, description: 'Sorted office paper and newspaper bundles, kept dry.', seller: 'godfrey', photo: '/materials/paper.jpg?v=2' },
+  { category: 'textile', subtype: 'CLOTHING', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', seller: 'neema', photo: '/materials/textiles.jpg?v=2' },
 ];
 
 async function main() {
@@ -102,27 +113,32 @@ async function main() {
   if (alreadySeeded) {
     console.log('Sample listings already present — skipping.');
   } else {
-    const demoUser = await prisma.user.upsert({
-      where: { phone: DEMO_PHONE },
-      update: {},
-      create: { phone: DEMO_PHONE, name: 'Amina Juma', role: 'household', verificationStatus: 'verified' },
-    });
-    const demoLocation = await prisma.location.create({
-      data: { ownerType: 'user', userId: demoUser.id, label: 'Home', region: 'Arusha', country: 'TZ' },
-    });
+    const sellersByKey = new Map<string, { userId: string; locationId: string }>();
+    for (const s of DEMO_SELLERS) {
+      const user = await prisma.user.upsert({
+        where: { phone: s.phone },
+        update: {},
+        create: { phone: s.phone, name: s.name, role: 'household', verificationStatus: 'verified' },
+      });
+      const location = await prisma.location.create({
+        data: { ownerType: 'user', userId: user.id, label: 'Home', region: s.region, country: 'TZ' },
+      });
+      sellersByKey.set(s.key, { userId: user.id, locationId: location.id });
+    }
 
     for (const item of DEMO_LISTINGS) {
       const material = await prisma.wasteMaterial.findUnique({
         where: { category_subtype: { category: item.category, subtype: item.subtype } },
       });
       const price = PRICES.find((p) => p.category === item.category);
-      if (!material || !price) continue;
+      const seller = sellersByKey.get(item.seller);
+      if (!material || !price || !seller) continue;
 
       await prisma.wasteListing.create({
         data: {
-          sellerId: demoUser.id,
+          sellerId: seller.userId,
           materialId: material.id,
-          locationId: demoLocation.id,
+          locationId: seller.locationId,
           estimatedWeightKg: item.estimatedWeightKg,
           condition: 'Clean',
           askingPrice: Math.round(price.pricePerKg * item.estimatedWeightKg),
@@ -134,7 +150,7 @@ async function main() {
         },
       });
     }
-    console.log(`Seeded ${DEMO_LISTINGS.length} demo marketplace listings under ${DEMO_PHONE}.`);
+    console.log(`Seeded ${DEMO_LISTINGS.length} demo marketplace listings across ${DEMO_SELLERS.length} sellers.`);
   }
 }
 
