@@ -17,10 +17,16 @@ export class CreateLocationDto {
   @MaxLength(120)
   label: string;
 
+  // Street address / landmark — the most specific level.
   @IsOptional()
   @IsString()
   @MaxLength(240)
   addressLine?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  district?: string;
 
   @IsOptional()
   @IsString()

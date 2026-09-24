@@ -11,14 +11,19 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
 
+// No websocket/realtime infra exists in this app (see chat/[id]/page.tsx) — polling this
+// list too, at the same interval as an open thread, so a new incoming message shows up
+// (and moves that conversation to the top) without the user having to manually refresh.
+const POLL_MS = 2000;
+
 export default function ChatListPage() {
   const { state: authState, user } = useCurrentUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
 
-  function load() {
-    setState("loading");
+  function load(initial: boolean) {
+    if (initial) setState("loading");
     api
       .myConversations()
       .then((res) => {
@@ -26,13 +31,18 @@ export default function ChatListPage() {
         setState("ready");
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "We couldn't load your chats.");
-        setState("error");
+        if (initial) {
+          setError(err instanceof ApiError ? err.message : "We couldn't load your chats.");
+          setState("error");
+        }
       });
   }
 
   useEffect(() => {
-    if (authState === "ready") Promise.resolve().then(load);
+    if (authState !== "ready") return;
+    load(true);
+    const interval = setInterval(() => load(false), POLL_MS);
+    return () => clearInterval(interval);
   }, [authState]);
 
   return (
@@ -40,7 +50,7 @@ export default function ChatListPage() {
       <AppHeader title="Chats" />
       <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
         {state === "loading" && <LoadingState label="Loading your chats…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(true)} />}
 
         {state === "ready" && conversations.length === 0 && (
           <EmptyState

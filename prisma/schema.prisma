@@ -224,6 +224,7 @@ model Location {
   organizationId String?
   label          String
   addressLine    String?
+  district       String?
   region         String?
   country        String   @default("TZ")
   latitude       Float?

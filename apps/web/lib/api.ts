@@ -106,6 +106,7 @@ export interface Location {
   id: string;
   label: string;
   addressLine: string | null;
+  district: string | null;
   region: string | null;
   country: string;
 }
@@ -482,7 +483,7 @@ export const api = {
     }),
 
   // Locations
-  createLocation: (input: { label: string; addressLine?: string; region?: string; country?: string }) =>
+  createLocation: (input: { label: string; addressLine?: string; district?: string; region?: string; country?: string }) =>
     request<Location>("/locations", { method: "POST", body: JSON.stringify(input) }, true),
   myLocations: () => request<Location[]>("/locations/mine", { method: "GET" }, true),
 

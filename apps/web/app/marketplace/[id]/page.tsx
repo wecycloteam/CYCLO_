@@ -214,7 +214,14 @@ export default function ListingDetailPage() {
               <Row k="Quantity" v={`${listing.estimatedWeightKg} ${listing.quantityUnit}`} />
               {listing.verifiedWeightKg != null && <Row k="Verified weight" v={`${listing.verifiedWeightKg} kg`} />}
               {listing.condition && <Row k="Condition" v={listing.condition} />}
-              <Row k="Location" v={listing.location.region ?? listing.location.label} />
+              <Row
+                k="Location"
+                v={
+                  [listing.location.addressLine, listing.location.district, listing.location.region]
+                    .filter(Boolean)
+                    .join(", ") || listing.location.label
+                }
+              />
               <Row k="Pickup" v={listing.pickupOption.replace(/_/g, " ")} />
               <Row k="Listing status" v={listing.status.replace(/_/g, " ")} />
             </div>

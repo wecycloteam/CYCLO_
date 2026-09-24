@@ -10,10 +10,12 @@ import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
 
-// No websocket/realtime infra exists in this app yet — polling every 4s while the thread
-// is open is the honest, simple version of "live" chat rather than a fake instant-looking
+// No websocket/realtime infra exists in this app (Netlify's serverless functions can't
+// hold a persistent connection open the way a WebSocket server or a service like Pusher/
+// Ably/Supabase Realtime would) — polling every 2s while the thread is open is the honest,
+// simple version of "live" chat: fast enough to feel responsive, not a fake instant-looking
 // UI backed by nothing. Same tradeoff as AssistantChat's request/response pattern.
-const POLL_MS = 4000;
+const POLL_MS = 2000;
 
 export default function ConversationPage() {
   const { id } = useParams<{ id: string }>();

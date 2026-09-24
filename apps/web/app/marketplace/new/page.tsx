@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { X, Camera, Upload } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Location, WasteMaterial, WastePrice } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
@@ -40,6 +40,9 @@ function NewListingForm() {
   const [locationId, setLocationId] = useState("");
   const [newLocationLabel, setNewLocationLabel] = useState("");
   const [newLocationRegion, setNewLocationRegion] = useState("");
+  const [newLocationDistrict, setNewLocationDistrict] = useState("");
+  const [newLocationStreet, setNewLocationStreet] = useState("");
+  const [showAddLocation, setShowAddLocation] = useState(false);
   const [estimatedWeightKg, setEstimatedWeightKg] = useState(scanWeightKg ?? "");
   const [quantityUnit, setQuantityUnit] = useState("kg");
   const [condition, setCondition] = useState(CONDITIONS[0]);
@@ -49,7 +52,8 @@ function NewListingForm() {
   const [description, setDescription] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -115,11 +119,19 @@ function NewListingForm() {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const loc = await api.createLocation({ label: newLocationLabel, region: newLocationRegion || undefined });
+      const loc = await api.createLocation({
+        label: newLocationLabel,
+        region: newLocationRegion || undefined,
+        district: newLocationDistrict || undefined,
+        addressLine: newLocationStreet || undefined,
+      });
       setLocations((prev) => [loc, ...prev]);
       setLocationId(loc.id);
       setNewLocationLabel("");
       setNewLocationRegion("");
+      setNewLocationDistrict("");
+      setNewLocationStreet("");
+      setShowAddLocation(false);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't save that location.");
     } finally {
@@ -187,9 +199,9 @@ function NewListingForm() {
           </div>
         )}
 
-        {state === "ready" && locations.length === 0 && (
+        {state === "ready" && (locations.length === 0 || showAddLocation) && (
           <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-6">
-            <h3 className="text-sm font-extrabold mb-1">Add a location first</h3>
+            <h3 className="text-sm font-extrabold mb-1">{locations.length === 0 ? "Add a location first" : "Add a new location"}</h3>
             <p className="text-xs text-[var(--text-2)] mb-4">Where is this material? You can reuse this location for future listings.</p>
             <form onSubmit={handleAddLocation} className="flex flex-col gap-3">
               <input
@@ -205,19 +217,42 @@ function NewListingForm() {
                 onChange={(e) => setNewLocationRegion(e.target.value)}
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
               />
+              <input
+                placeholder="District (e.g. Arusha Urban)"
+                value={newLocationDistrict}
+                onChange={(e) => setNewLocationDistrict(e.target.value)}
+                className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+              />
+              <input
+                placeholder="Street / address"
+                value={newLocationStreet}
+                onChange={(e) => setNewLocationStreet(e.target.value)}
+                className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+              />
               {submitError && <p className="text-xs text-[var(--critical)]">{submitError}</p>}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
-              >
-                {submitting ? "Saving…" : "Save location"}
-              </button>
+              <div className="flex gap-2">
+                {locations.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddLocation(false)}
+                    className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-2.5"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
+                >
+                  {submitting ? "Saving…" : "Save location"}
+                </button>
+              </div>
             </form>
           </div>
         )}
 
-        {state === "ready" && locations.length > 0 && materials.length > 0 && (
+        {state === "ready" && locations.length > 0 && materials.length > 0 && !showAddLocation && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Material</span>
@@ -244,10 +279,19 @@ function NewListingForm() {
                 {locations.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.label}
-                    {l.region ? ` — ${l.region}` : ""}
+                    {[l.addressLine, l.district, l.region].filter(Boolean).length > 0
+                      ? ` — ${[l.addressLine, l.district, l.region].filter(Boolean).join(", ")}`
+                      : ""}
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={() => setShowAddLocation(true)}
+                className="self-start text-xs font-bold text-[var(--cyclo-teal)]"
+              >
+                + Add new location
+              </button>
             </label>
 
             <div className="flex gap-3">
@@ -321,20 +365,45 @@ function NewListingForm() {
                   </div>
                 ))}
                 {photos.length < MAX_PHOTOS && (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-16 w-16 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-on-bg-2)] text-xs flex items-center justify-center"
-                  >
-                    + Add
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      aria-label="Take a photo"
+                      className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-on-bg-2)] text-[10px] font-bold"
+                    >
+                      <Camera size={18} />
+                      Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      aria-label="Upload from device"
+                      className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-on-bg-2)] text-[10px] font-bold"
+                    >
+                      <Upload size={18} />
+                      Upload
+                    </button>
+                  </>
                 )}
               </div>
+              {/* Two separate inputs rather than one with capture="environment" — that
+                  attribute forces the camera-only UI on most mobile browsers and removes
+                  the gallery option entirely. This one always opens the camera... */}
               <input
-                ref={fileInputRef}
+                ref={cameraInputRef}
                 type="file"
                 accept="image/*"
                 capture="environment"
+                onChange={handlePhotoAdd}
+                className="hidden"
+              />
+              {/* ...and this one (no capture attribute) always opens the device's normal
+                  file/gallery picker. */}
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
                 multiple
                 onChange={handlePhotoAdd}
                 className="hidden"
