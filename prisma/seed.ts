@@ -25,6 +25,7 @@ const MATERIALS: Array<{
   { category: 'paper', subtype: 'OFFICE', label: 'Office/Printer Paper', recyclable: true },
   { category: 'paper', subtype: 'NEWSPAPER', label: 'Newspaper', recyclable: true },
   { category: 'cardboard', subtype: 'CORRUGATED', label: 'Corrugated Cardboard', recyclable: true },
+  { category: 'textile', subtype: 'CLOTHING', label: 'Used Clothing/Textiles', recyclable: true },
   { category: 'glass', subtype: 'CLEAR', label: 'Clear Glass', recyclable: true },
   { category: 'glass', subtype: 'COLORED', label: 'Colored Glass', recyclable: true },
   { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminum (cans)', recyclable: true },
@@ -45,6 +46,7 @@ const PRICES: Array<{ category: string; pricePerKg: number }> = [
   { category: 'plastic', pricePerKg: 500 },
   { category: 'paper', pricePerKg: 200 },
   { category: 'cardboard', pricePerKg: 150 },
+  { category: 'textile', pricePerKg: 300 },
   { category: 'glass', pricePerKg: 100 },
   { category: 'metal', pricePerKg: 1200 },
   { category: 'e_waste', pricePerKg: 2000 },
@@ -52,9 +54,11 @@ const PRICES: Array<{ category: string; pricePerKg: number }> = [
   { category: 'other', pricePerKg: 100 },
 ];
 
-// §14 — DEMO DATA so the marketplace is never empty for a live demo. Tagged with a
-// "[DEMO]" marker in the description so the block below is safely re-runnable: it checks
-// for that marker instead of blindly re-inserting on every `npm run db:seed`.
+// §14 — sample listings so the marketplace is never empty on a fresh database. Idempotency
+// is keyed off DEMO_PHONE (a reserved, obviously-fake number no real signup would ever use)
+// rather than any marker inside user-facing text — an earlier version used a "[DEMO]"
+// string inside the description/name fields for this, which leaked directly into what
+// real visitors saw on the listing detail page and seller name.
 const DEMO_PHONE = '+255700000001';
 const DEMO_LISTINGS: Array<{
   category: string;
@@ -67,10 +71,10 @@ const DEMO_LISTINGS: Array<{
   // fabricating one. See prisma/seed.ts's main() for how this becomes WasteListing.photos.
   photo?: string;
 }> = [
-  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household. [DEMO]', photo: '/materials/plastic-bottles.png?v=2' },
-  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened. [DEMO]' },
-  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean. [DEMO]', photo: '/materials/cardboard.jpg?v=2' },
-  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs. [DEMO]' },
+  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household.', photo: '/materials/plastic-bottles.png?v=2' },
+  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.' },
+  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', photo: '/materials/cardboard.jpg?v=2' },
+  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.' },
 ];
 
 async function main() {
@@ -92,14 +96,14 @@ async function main() {
   }
   console.log(`Seeded ${PRICES.length} reference prices.`);
 
-  const alreadySeeded = await prisma.wasteListing.findFirst({ where: { description: { contains: '[DEMO]' } } });
+  const alreadySeeded = await prisma.user.findUnique({ where: { phone: DEMO_PHONE } });
   if (alreadySeeded) {
-    console.log('Demo listings already present — skipping.');
+    console.log('Sample listings already present — skipping.');
   } else {
     const demoUser = await prisma.user.upsert({
       where: { phone: DEMO_PHONE },
       update: {},
-      create: { phone: DEMO_PHONE, name: 'Amina (Demo Household)', role: 'household', verificationStatus: 'verified' },
+      create: { phone: DEMO_PHONE, name: 'Amina Juma', role: 'household', verificationStatus: 'verified' },
     });
     const demoLocation = await prisma.location.create({
       data: { ownerType: 'user', userId: demoUser.id, label: 'Home', region: 'Arusha', country: 'TZ' },

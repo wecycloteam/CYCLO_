@@ -180,23 +180,23 @@ export default function ScanPage() {
             {cameraError && <p className="text-xs text-[var(--critical)]">{cameraError}</p>}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full rounded-full border border-[var(--border)] text-[var(--text-1)] font-bold text-sm py-3"
+              className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-3"
             >
               Upload a Photo Instead
             </button>
 
             <div className="w-full flex items-center gap-3 my-1">
               <div className="flex-1 h-px bg-[var(--border)]" />
-              <span className="text-[11px] font-bold text-[var(--text-2)]">OR</span>
+              <span className="text-[11px] font-bold text-[var(--text-on-bg-2)]">OR</span>
               <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
             <button
               onClick={() => router.push("/marketplace/new?manual=1")}
-              className="w-full rounded-full border border-[var(--border)] text-[var(--text-1)] font-bold text-sm py-3.5"
+              className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-3.5"
             >
               Select Waste Manually
             </button>
-            <p className="text-xs text-[var(--text-2)]">
+            <p className="text-xs text-[var(--text-on-bg-2)]">
               AI identification can misread a material — choose the category yourself instead.
             </p>
           </div>
@@ -215,7 +215,7 @@ export default function ScanPage() {
             </button>
             <button
               onClick={cancelLiveCamera}
-              className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3"
+              className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3"
             >
               Cancel
             </button>
@@ -240,7 +240,7 @@ export default function ScanPage() {
             </button>
             <button
               onClick={() => router.push("/marketplace/new?manual=1")}
-              className="w-full rounded-full border border-[var(--border)] text-[var(--text-1)] font-bold text-sm py-3.5"
+              className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-3.5"
             >
               Select Waste Manually Instead
             </button>
@@ -310,13 +310,13 @@ export default function ScanPage() {
             </button>
             <button
               onClick={useForPickup}
-              className="w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-3.5"
+              className="w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-green)] font-bold text-sm py-3.5"
             >
               Request Pickup
             </button>
             <button
               onClick={reset}
-              className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3.5"
+              className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3.5"
             >
               Scan Again
             </button>

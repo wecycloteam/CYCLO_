@@ -102,11 +102,13 @@ export default function AdminUsersPage() {
 
           {state === "ready" && accounts.length > 0 && (
             <>
-              <h3 className="text-xs font-extrabold text-[var(--text-2)] uppercase tracking-wide mb-2">Households &amp; other accounts</h3>
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Households &amp; other accounts</h3>
               <div className="flex flex-col gap-2 mb-6">
                 {accounts.map((a) => (
                   <div key={a.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
-                    <div className="text-sm font-extrabold">{a.name}</div>
+                    <div className="text-sm font-extrabold">
+                      {a.name} {a.username && <span className="font-semibold text-[var(--cyclo-teal)]">@{a.username}</span>}
+                    </div>
                     <div className="text-xs text-[var(--text-2)] mb-3">
                       {a.phone} · {a.role} · joined {new Date(a.createdAt).toLocaleDateString()}
                     </div>
@@ -141,11 +143,13 @@ export default function AdminUsersPage() {
 
           {state === "ready" && collectors.length > 0 && (
             <>
-              <h3 className="text-xs font-extrabold text-[var(--text-2)] uppercase tracking-wide mb-2">Collectors</h3>
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Collectors</h3>
               <div className="flex flex-col gap-2 mb-6">
                 {collectors.map((c) => (
                   <div key={c.userId} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
-                    <div className="text-sm font-extrabold">{c.user.name}</div>
+                    <div className="text-sm font-extrabold">
+                      {c.user.name} {c.user.username && <span className="font-semibold text-[var(--cyclo-teal)]">@{c.user.username}</span>}
+                    </div>
                     <div className="text-xs text-[var(--text-2)] mb-3">
                       {c.user.phone} · joined {new Date(c.user.createdAt).toLocaleDateString()}
                     </div>
@@ -180,13 +184,14 @@ export default function AdminUsersPage() {
 
           {state === "ready" && organizations.length > 0 && (
             <>
-              <h3 className="text-xs font-extrabold text-[var(--text-2)] uppercase tracking-wide mb-2">Businesses &amp; recyclers</h3>
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Businesses &amp; recyclers</h3>
               <div className="flex flex-col gap-2">
                 {organizations.map((o) => (
                   <div key={o.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
                     <div className="text-sm font-extrabold">{o.name}</div>
                     <div className="text-xs text-[var(--text-2)] mb-3">
-                      {o.type} · owner {o.owner.name} ({o.owner.phone})
+                      {o.type} · owner {o.owner.name}
+                      {o.owner.username && <> @{o.owner.username}</>} ({o.owner.phone})
                     </div>
                     <div className="flex gap-2">
                       <button

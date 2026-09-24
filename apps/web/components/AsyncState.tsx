@@ -1,8 +1,13 @@
 // Shared loading/error/empty presentation so every list/detail page implements the same
 // three states the same way (§46/§47) instead of reinventing them per page.
+//
+// LoadingState and EmptyState are always used bare, directly on the page background
+// (--bg) — neither renders its own solid surface fill — so they use --text-on-bg*, not
+// --text-1/2 (which assume a light --surface card behind them). ErrorState does have its
+// own bg-[var(--surface)] card, so its text stays on --text-2 as before.
 
 export function LoadingState({ label = "Loading…" }: { label?: string }) {
-  return <p className="text-sm text-[var(--text-2)] py-8 text-center">{label}</p>;
+  return <p className="text-sm text-[var(--text-on-bg-2)] py-8 text-center">{label}</p>;
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -19,8 +24,8 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
 export function EmptyState({ title, hint, action }: { title: string; hint?: string; action?: React.ReactNode }) {
   return (
     <div className="rounded-[var(--r-lg)] border border-dashed border-[var(--border)] p-8 text-center">
-      <p className="text-sm font-bold text-[var(--text-1)] mb-1">{title}</p>
-      {hint && <p className="text-xs text-[var(--text-2)] mb-4">{hint}</p>}
+      <p className="text-sm font-bold text-[var(--text-on-bg)] mb-1">{title}</p>
+      {hint && <p className="text-xs text-[var(--text-on-bg-2)] mb-4">{hint}</p>}
       {action}
     </div>
   );

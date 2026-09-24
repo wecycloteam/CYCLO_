@@ -25,7 +25,7 @@ function CountBreakdown({ title, counts }: { title: string; counts: Record<strin
   if (entries.length === 0) return null;
   return (
     <div className="mb-5">
-      <h3 className="text-xs font-extrabold text-[var(--text-2)] uppercase tracking-wide mb-2">{title}</h3>
+      <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{title}</h3>
       <div className="flex flex-wrap gap-2">
         {entries.map(([key, value]) => (
           <span
@@ -75,6 +75,18 @@ export default function AdminDashboardPage() {
 
           {state === "ready" && dashboard && (
             <>
+              <div className="rounded-[var(--r-lg)] bg-[var(--cyclo-teal)] p-5 mb-4">
+                <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--cyclo-mint)]">
+                  Total platform revenue
+                </div>
+                <div className="text-2xl font-extrabold text-white">
+                  TZS {Math.round(dashboard.totalPlatformRevenueTzs).toLocaleString()}
+                </div>
+                <div className="mt-1 text-[10px] text-[var(--cyclo-mint)]">
+                  Real platform fees collected across all transactions — TZS 0 until a fee schedule is set.
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <StatTile label="Total Users" value={dashboard.totalUsers} />
                 <StatTile label="Pending Listing Reviews" value={dashboard.pendingListingModerationCount} />
@@ -96,8 +108,8 @@ export default function AdminDashboardPage() {
               <CountBreakdown title="Listings by status" counts={dashboard.listingsByStatus} />
               <CountBreakdown title="Pickups by status" counts={dashboard.pickupsByStatus} />
 
-              <h3 className="text-xs font-extrabold text-[var(--text-2)] uppercase tracking-wide mb-2">Recent activity</h3>
-              {activity.length === 0 && <p className="text-xs text-[var(--text-2)]">No admin actions yet.</p>}
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Recent activity</h3>
+              {activity.length === 0 && <p className="text-xs text-[var(--text-on-bg-2)]">No admin actions yet.</p>}
               <div className="flex flex-col gap-2">
                 {activity.map((a) => (
                   <div key={a.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-3">

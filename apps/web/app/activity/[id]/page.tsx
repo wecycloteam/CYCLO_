@@ -6,6 +6,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, PickupRequest, WasteEvent } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { StarRatingInput } from "@/components/StarRating";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
@@ -33,13 +34,20 @@ export default function PickupDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [weightInput, setWeightInput] = useState("");
+  const [reviewable, setReviewable] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   function load() {
     setState("loading");
-    Promise.all([api.getPickupRequest(id), api.pickupEvents(id)])
-      .then(([p, e]) => {
+    Promise.all([api.getPickupRequest(id), api.pickupEvents(id), api.reviewableTransactions().catch(() => [])])
+      .then(([p, e, reviewable]) => {
         setPickup(p);
         setEvents(e);
+        setReviewable(!!p.transaction && reviewable.some((t) => t.id === p.transaction!.id));
         setState("ready");
       })
       .catch((err) => {
@@ -83,6 +91,21 @@ export default function PickupDetailPage() {
   const isAssignedCollector = user && pickup && pickup.assignedCollectorId === user.id;
   const cancellable = pickup && !["WEIGHED", "COMPLETED", "CANCELLED", "DISPUTED"].includes(pickup.status);
 
+  async function handleSubmitReview() {
+    if (!pickup?.transaction) return;
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      await api.createReview({ transactionId: pickup.transaction.id, rating: reviewRating, comment: reviewComment.trim() || undefined });
+      setReviewSubmitted(true);
+      setReviewable(false);
+    } catch (err) {
+      setReviewError(err instanceof ApiError ? err.message : "Couldn't submit your review.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
+
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Pickup" />
@@ -94,8 +117,8 @@ export default function PickupDetailPage() {
           <>
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <h1 className="text-lg font-extrabold">{pickup.material.label}</h1>
-                <div className="text-xs text-[var(--text-2)]">{pickup.location.region ?? pickup.location.label}</div>
+                <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{pickup.material.label}</h1>
+                <div className="text-xs text-[var(--text-on-bg-2)]">{pickup.location.region ?? pickup.location.label}</div>
               </div>
               <StatusBadge status={pickup.status} />
             </div>
@@ -119,6 +142,31 @@ export default function PickupDetailPage() {
               </div>
             )}
 
+            {isAssignedCollector && reviewable && !reviewSubmitted && (
+              <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4 mb-6">
+                <div className="text-sm font-extrabold text-[var(--text-1)] mb-2">Rate this seller</div>
+                <StarRatingInput value={reviewRating} onChange={setReviewRating} />
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Optional comment…"
+                  rows={2}
+                  className="mt-3 w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-sm"
+                />
+                {reviewError && <p className="mt-2 text-xs font-bold text-[var(--critical)]">{reviewError}</p>}
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={reviewSubmitting || reviewRating === 0}
+                  className="mt-3 w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
+                >
+                  {reviewSubmitting ? "Submitting…" : "Submit rating"}
+                </button>
+              </div>
+            )}
+            {reviewSubmitted && (
+              <p className="text-xs font-bold text-[var(--success)] mb-6">Thanks — your rating was submitted.</p>
+            )}
+
             {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}
 
             {isAssignedCollector && pickup.status === "ACCEPTED" && (
@@ -139,7 +187,7 @@ export default function PickupDetailPage() {
                 className="flex flex-col gap-3 mb-2"
               >
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-[var(--text-2)]">Verified weight (kg)</span>
+                  <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Verified weight (kg)</span>
                   <input
                     required
                     type="number"
@@ -167,13 +215,13 @@ export default function PickupDetailPage() {
               <button
                 onClick={() => runAction(() => api.cancelPickup(id))}
                 disabled={acting}
-                className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3 mb-6 disabled:opacity-60"
+                className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3 mb-6 disabled:opacity-60"
               >
                 {acting ? "Cancelling…" : "Cancel Pickup"}
               </button>
             )}
 
-            <h3 className="text-sm font-extrabold mb-3">History</h3>
+            <h3 className="text-sm font-extrabold text-[var(--text-on-bg)] mb-3">History</h3>
             <div className="flex flex-col">
               {events.map((ev, i) => (
                 <div key={ev.id} className="flex gap-3">
@@ -182,14 +230,14 @@ export default function PickupDetailPage() {
                     {i < events.length - 1 && <div className="w-px flex-1 bg-[var(--border)]" />}
                   </div>
                   <div className="pb-4">
-                    <div className="text-sm font-bold">{EVENT_LABELS[ev.eventType] ?? ev.eventType}</div>
-                    <div className="text-xs text-[var(--text-2)]">{new Date(ev.createdAt).toLocaleString()}</div>
+                    <div className="text-sm font-bold text-[var(--text-on-bg)]">{EVENT_LABELS[ev.eventType] ?? ev.eventType}</div>
+                    <div className="text-xs text-[var(--text-on-bg-2)]">{new Date(ev.createdAt).toLocaleString()}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <button onClick={() => router.back()} className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3 mt-2">
+            <button onClick={() => router.back()} className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3 mt-2">
               Back
             </button>
           </>

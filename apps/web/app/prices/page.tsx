@@ -40,7 +40,7 @@ export default function WastePricesPage() {
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Waste Prices" />
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
-        <p className="text-xs text-[var(--text-2)] mb-4">
+        <p className="text-xs text-[var(--text-on-bg-2)] mb-4">
           Reference prices per kg, set by CYCLO admins. Used to estimate a listing&apos;s market value — not a
           guaranteed buying price.
         </p>

@@ -57,6 +57,7 @@ export interface CurrentUser {
   // null for a Google-only account — Google never provides a phone number.
   phone: string | null;
   name: string;
+  avatarUrl: string | null;
   role: string;
   verificationStatus: string;
   locale: string;
@@ -93,10 +94,16 @@ export type ListingStatus =
   | "EXPIRED"
   | "DISPUTED";
 
+export interface SellerRating {
+  average: number;
+  count: number;
+}
+
 export interface PublicSeller {
   id: string;
   name: string;
   verificationStatus: string;
+  rating?: SellerRating;
 }
 
 export type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -198,6 +205,30 @@ export interface AdminDashboard {
   listingsByStatus: Record<string, number>;
   pendingListingModerationCount: number;
   pickupsByStatus: Record<string, number>;
+  totalPlatformRevenueTzs: number;
+}
+
+export interface Review {
+  id: string;
+  transactionId: string;
+  reviewerId: string;
+  revieweeId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface SellerReviews {
+  average: number;
+  count: number;
+  reviews: (Review & { reviewer: { id: string; name: string } })[];
+}
+
+export interface ReviewableTransaction {
+  id: string;
+  reference: string;
+  sellerId: string;
+  seller: { name: string };
 }
 
 export interface AuditLogEntry {
@@ -214,6 +245,7 @@ export interface AuditLogEntry {
 export interface PendingAccount {
   id: string;
   name: string;
+  username: string | null;
   phone: string;
   role: string;
   verificationStatus: string;
@@ -225,7 +257,7 @@ export interface PendingCollector {
   verificationStatus: string;
   vehicleType: string | null;
   createdAt: string;
-  user: { id: string; name: string; phone: string; createdAt: string };
+  user: { id: string; name: string; username: string | null; phone: string; createdAt: string };
 }
 
 export interface PendingOrganization {
@@ -235,7 +267,7 @@ export interface PendingOrganization {
   verificationStatus: string;
   ownerUserId: string;
   createdAt: string;
-  owner: { id: string; name: string; phone: string };
+  owner: { id: string; name: string; username: string | null; phone: string };
 }
 
 export interface AdminPendingListing extends Omit<WasteListing, "seller"> {
@@ -353,6 +385,8 @@ export const api = {
     }),
 
   me: () => request<CurrentUser>("/users/me", { method: "GET" }, true),
+  updateProfile: (input: { name?: string; phone?: string; username?: string; avatarUrl?: string; role?: "household" | "collector" }) =>
+    request<CurrentUser>("/users/me", { method: "PATCH", body: JSON.stringify(input) }, true),
   myImpact: () => request<ImpactStats>("/users/me/impact", { method: "GET" }, true),
   myImpactSummary: () => request<UserImpactSummary>("/impact/me", { method: "GET" }, true),
 
@@ -422,6 +456,12 @@ export const api = {
     request<Transaction>(`/pickup-requests/${id}/complete`, { method: "PATCH" }, true),
   cancelPickup: (id: string) =>
     request<PickupRequest>(`/pickup-requests/${id}/cancel`, { method: "PATCH" }, true),
+
+  // Reviews
+  createReview: (input: { transactionId: string; rating: number; comment?: string }) =>
+    request<Review>("/reviews", { method: "POST", body: JSON.stringify(input) }, true),
+  sellerReviews: (sellerId: string) => request<SellerReviews>(`/reviews/seller/${sellerId}`, { method: "GET" }),
+  reviewableTransactions: () => request<ReviewableTransaction[]>("/reviews/reviewable", { method: "GET" }, true),
 
   // Admin
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),

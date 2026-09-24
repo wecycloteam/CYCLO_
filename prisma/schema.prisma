@@ -29,7 +29,7 @@ datasource db {
 // Organization.type -> business | recycler | authority
 // VerificationStatus -> unverified | pending | verified | rejected | suspended
 // CollectorAvailability -> online | offline
-// WasteMaterial.category -> plastic | paper | cardboard | glass | metal | e_waste | organic | other
+// WasteMaterial.category -> plastic | paper | cardboard | textile | glass | metal | e_waste | organic | other
 // WasteListing.status -> see packages/shared-types/src/marketplace.ts LISTING_STATUSES/LISTING_TRANSITIONS
 // WasteListing.pickupOption -> seller_dropoff | collection_required | flexible
 // PickupRequest.status -> see packages/shared-types/src/collection.ts PICKUP_STATUSES/PICKUP_TRANSITIONS
@@ -58,6 +58,10 @@ model User {
   googleId           String?  @unique
   passwordHash       String?
   name               String
+  // Data-URL (base64, resized client-side — same pattern as WasteListing.photos)
+  // or an external image URL. No storage abstraction exists yet, so this is the
+  // profile-photo equivalent of that same shortcut, not a separate one.
+  avatarUrl          String?
   role               String
   verificationStatus String   @default("unverified")
   locale             String   @default("en")
@@ -77,6 +81,8 @@ model User {
   transactionsAsCollector Transaction[]        @relation("TransactionCollector")
   wasteEvents             WasteEvent[]
   aiScans                 AiScan[]
+  reviewsGiven            Review[]             @relation("ReviewAuthor")
+  reviewsReceived         Review[]             @relation("ReviewSubject")
 
   @@index([role])
   @@index([verificationStatus])
@@ -284,8 +290,30 @@ model Transaction {
   collector     User?         @relation("TransactionCollector", fields: [collectorId], references: [id])
   material      WasteMaterial @relation(fields: [materialId], references: [id])
   wasteEvents   WasteEvent[]
+  review        Review?
 
   @@index([sellerId])
+}
+
+// A buyer/collector rates the seller once their Transaction exists (§25) — one review per
+// transaction, enforced by the unique transactionId, so a rating always traces back to a
+// real completed exchange (never fabricated, never editable into a second vote). Ratings
+// are shown aggregated on the SELLER (their listings display their overall average),
+// not per-listing, since a listing itself has no buyer until it's already sold.
+model Review {
+  id            String   @id @default(uuid())
+  transactionId String   @unique
+  reviewerId    String
+  revieweeId    String
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation("ReviewAuthor", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee    User        @relation("ReviewSubject", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  @@index([revieweeId])
 }
 
 // §23/§24 — the append-only traceability chain. Every PickupRequest status transition

@@ -7,6 +7,7 @@ export const WASTE_CATEGORIES = [
   "plastic",
   "paper",
   "cardboard",
+  "textile",
   "glass",
   "metal",
   "e_waste",

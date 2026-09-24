@@ -15,6 +15,7 @@ import { AdminModule } from './admin/admin.module';
 import { AiModule } from './ai/ai.module';
 import { PricingModule } from './pricing/pricing.module';
 import { ImpactModule } from './impact/impact.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ImpactModule } from './impact/impact.module';
     AiModule,
     PricingModule,
     ImpactModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

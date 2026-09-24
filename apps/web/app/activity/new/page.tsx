@@ -90,7 +90,7 @@ function NewPickupRequestForm() {
         {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
 
         {state === "ready" && locations.length === 0 && (
-          <p className="text-sm text-[var(--text-2)]">
+          <p className="text-sm text-[var(--text-on-bg-2)]">
             You need a saved location first — add one from the Marketplace &rarr; List Material flow, then come back here.
           </p>
         )}
@@ -106,7 +106,7 @@ function NewPickupRequestForm() {
             ) : (
               <>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-[var(--text-2)]">Material</span>
+                  <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Material</span>
                   <select
                     value={materialId}
                     onChange={(e) => setMaterialId(e.target.value)}
@@ -120,7 +120,7 @@ function NewPickupRequestForm() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-[var(--text-2)]">Estimated weight (kg)</span>
+                  <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Estimated weight (kg)</span>
                   <input
                     required
                     type="number"
@@ -135,7 +135,7 @@ function NewPickupRequestForm() {
             )}
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Pickup location</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Pickup location</span>
               <select
                 value={locationId}
                 onChange={(e) => setLocationId(e.target.value)}
@@ -152,7 +152,7 @@ function NewPickupRequestForm() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Notes (optional)</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Notes (optional)</span>
               <textarea
                 rows={3}
                 placeholder="Anything the collector should know"

@@ -64,23 +64,32 @@ export class AiService {
     });
   }
 
-  // 4. NEW: AI Chat Agent Guidance
+  // 4. AI Chat Agent Guidance. The system prompt goes in `systemInstruction` (sent once,
+  // not replayed as a fake "user" turn on every call — that was doubling prompt size on
+  // every message, the main cause of the slow replies) and explicitly bans markdown/emoji
+  // and caps length, since the app's plain <div>{text}</div> renderer shows literal "**"
+  // characters and the rest of the UI has no emoji anywhere (lucide icons only).
   async chatGuidance(message: string, history: { role: 'user' | 'model'; parts: string }[] = []) {
     try {
       const response = await this.ai.models.generateContent({
         model: 'gemini-3.6-flash',
+        config: {
+          systemInstruction:
+            'You are Cyclo Assistant, an AI recycling and waste management guide for the Cyclo App in Tanzania. ' +
+            'You help with sorting waste (Plastic, Cardboard, Textile, Glass, Metal, E-waste), cleaning items ' +
+            'before disposal, and estimated local scrap prices in TZS and USD. ' +
+            'Reply in plain text only: no markdown (no **bold**, no *, no #, no bullet lists), no emoji. ' +
+            'Keep answers short and direct — 2 to 4 sentences unless the user asks for more detail.',
+          // gemini-3.6-flash spends part of maxOutputTokens on invisible "thinking" tokens
+          // before the visible reply — at 300 that silently ate almost the whole budget and
+          // cut real answers off mid-sentence ("Hello! I am Cyclo Assistant, your"). Turning
+          // thinking off removes that hidden cost entirely (also the main fix for slow
+          // replies) and a higher cap is now a genuine ceiling on the visible text, not a
+          // shared pool with reasoning.
+          thinkingConfig: { thinkingBudget: 0 },
+          maxOutputTokens: 500,
+        },
         contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: `You are Cyclo Assistant, an AI recycling and waste management guide for the Cyclo App in Tanzania.
-                       You provide users with helpful guidance on sorting waste (Plastic, Cardboard, Textile, Glass, Metal, E-waste), 
-                       cleaning items prior to disposal, and estimated local scrap prices in both TZS (Tanzanian Shilling) and USD.
-                       Keep your answers friendly, clear, and concise.`,
-              },
-            ],
-          },
           ...history.map((h) => ({
             role: h.role,
             parts: [{ text: h.parts }],
@@ -92,10 +101,22 @@ export class AiService {
         ],
       });
 
-      return { reply: response.text };
+      return { reply: sanitizeAssistantReply(response.text ?? '') };
     } catch (error) {
       console.error('Gemini Chat Error:', error);
       throw new InternalServerErrorException('Failed to generate response from Cyclo AI assistant.');
     }
   }
+}
+
+// Safety net in case the model still emits markdown/emoji despite the system instruction
+// — strips bold/italic/heading/bullet markers and common emoji ranges without touching
+// normal punctuation.
+function sanitizeAssistantReply(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/(^|\n)\s*[*-]\s+/g, '$1')
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}]/gu, '')
+    .trim();
 }

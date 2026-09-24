@@ -207,7 +207,7 @@ function NewListingForm() {
         {state === "ready" && locations.length > 0 && materials.length > 0 && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Material</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Material</span>
               <select
                 value={materialId}
                 onChange={(e) => setMaterialId(e.target.value)}
@@ -222,7 +222,7 @@ function NewListingForm() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Location</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Location</span>
               <select
                 value={locationId}
                 onChange={(e) => setLocationId(e.target.value)}
@@ -239,7 +239,7 @@ function NewListingForm() {
 
             <div className="flex gap-3">
               <label className="flex-1 flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-2)]">Quantity</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Quantity</span>
                 <input
                   required
                   type="number"
@@ -251,7 +251,7 @@ function NewListingForm() {
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-2)]">Unit</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Unit</span>
                 <select
                   value={quantityUnit}
                   onChange={(e) => setQuantityUnit(e.target.value)}
@@ -277,7 +277,7 @@ function NewListingForm() {
             )}
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Condition</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Condition</span>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
@@ -292,7 +292,7 @@ function NewListingForm() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Photos (optional, up to {MAX_PHOTOS})</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Photos (optional, up to {MAX_PHOTOS})</span>
               <div className="flex flex-wrap gap-2">
                 {photos.map((p, i) => (
                   <div key={i} className="relative h-16 w-16">
@@ -311,7 +311,7 @@ function NewListingForm() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-16 w-16 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-2)] text-xs flex items-center justify-center"
+                    className="h-16 w-16 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-on-bg-2)] text-xs flex items-center justify-center"
                   >
                     + Add
                   </button>
@@ -330,7 +330,7 @@ function NewListingForm() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Pickup</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Pickup</span>
               <select
                 value={pickupOption}
                 onChange={(e) => setPickupOption(e.target.value)}
@@ -346,7 +346,7 @@ function NewListingForm() {
 
             <div className="flex gap-3">
               <label className="flex-1 flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-2)]">Price per {quantityUnit} — TZS (optional)</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Price per {quantityUnit} — TZS (optional)</span>
                 <input
                   type="number"
                   min="0"
@@ -357,7 +357,7 @@ function NewListingForm() {
                 />
               </label>
               <label className="flex-1 flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-2)]">Total asking price — TZS</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Total asking price — TZS</span>
                 <input
                   type="number"
                   min="0"
@@ -370,7 +370,7 @@ function NewListingForm() {
             </div>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-2)]">Description (optional)</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Description (optional)</span>
               <textarea
                 rows={3}
                 value={description}

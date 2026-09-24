@@ -27,6 +27,21 @@
   --text-3: #8B9997;
   --on-primary: #FFFFFF;
 
+  /* Text sitting directly on --bg with no card behind it. In light mode --bg is already
+     light, so this is the same as --text-1/2 — only the dark theme below redefines these
+     to something different (light text, since --bg is dark teal there). */
+  --text-on-bg: var(--text-1);
+  --text-on-bg-2: var(--text-2);
+
+  /* App chrome — the sticky header and bottom nav bar. In light mode this is just
+     --surface/--text-1/--border (identical to before); the dark theme below makes these
+     bars part of the dark shell instead of staying white cards, per explicit feedback
+     that the nav chrome should follow the theme too. */
+  --chrome-bg: var(--surface);
+  --chrome-border: var(--border);
+  --chrome-text: var(--text-1);
+  --chrome-text-muted: var(--text-3);
+
   --success: #0ca30c;
   --warning: #fab219;
   --serious: #ec835a;
@@ -47,22 +62,45 @@
   --shadow-lg: 0 16px 40px rgba(16,22,26,0.14);
 }
 
+/* CYCLO's actual brand pattern (see the landing page hero, app/page.tsx): a dark teal
+   page background with LIGHT cards floating on it — never uniformly dark. --bg is the
+   dark teal; --surface/--surface-2 stay light (the same values as :root, so an
+   existing bg-[var(--surface)] card looks identical to how it always did). --text-1/2/3
+   are for text ON those light cards and stay dark-on-light, unchanged from :root — the
+   two new --text-on-bg* tokens are for the (much rarer) text sitting directly on --bg
+   with no card behind it, which needs to be light instead. */
 html[data-theme="dark"]{
-  --bg: #0E2624;
-  --surface: #163634;
-  --surface-2: #1C403D;
-  --border: #2A4C49;
-  --text-1: #F2FBF6;
-  --text-2: #AFCAC5;
-  --text-3: #7FA29C;
-  --on-primary: #0E2624;
+  --bg: #1B3E41;
+  --surface: #F6F9F8;
+  --surface-2: #EEF3F2;
+  --border: #E2E9E7;
+  --text-1: #10161A;
+  --text-2: #5B6C69;
+  --text-3: #8B9997;
+  --on-primary: #FFFFFF;
 
-  --cyclo-teal: #6FD3C6;
-  --cyclo-teal-dark: #58B3A8;
+  --text-on-bg: #EFFBF3;
+  --text-on-bg-2: #B9D6D1;
+
+  --chrome-bg: #16302F;
+  --chrome-border: rgba(255,255,255,0.08);
+  --chrome-text: #EFFBF3;
+  --chrome-text-muted: #B9D6D1;
+
+  --cyclo-teal: #275458;
+  --cyclo-teal-dark: #1B3E41;
   --cyclo-mint: #CAFFBD;
   --cyclo-green: #48F53B;
 
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
-  --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.18);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.32);
 }
+
+/* AppHeader's logo needs the light-background wordmark on the light chrome bar and the
+   dark-background wordmark once the header itself goes dark — swapped in pure CSS off the
+   same data-theme attribute theme.ts already toggles, so no extra JS/state is needed. */
+.cyclo-header-logo-light { display: block; }
+.cyclo-header-logo-dark { display: none; }
+html[data-theme="dark"] .cyclo-header-logo-light { display: none; }
+html[data-theme="dark"] .cyclo-header-logo-dark { display: block; }

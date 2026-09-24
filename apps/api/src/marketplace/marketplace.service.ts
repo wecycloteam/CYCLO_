@@ -57,7 +57,7 @@ export class MarketplaceService {
       include: { material: true, location: true, seller: { select: PUBLIC_SELLER_SELECT } },
       orderBy: { createdAt: 'desc' },
     });
-    return listings.map(mapListing);
+    return this.attachSellerRatings(listings.map(mapListing));
   }
 
   // Public marketplace browse — only ACTIVE *and admin-approved* listings are
@@ -71,7 +71,30 @@ export class MarketplaceService {
       take: BROWSE_PAGE_SIZE,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
-    return listings.map(mapListing);
+    return this.attachSellerRatings(listings.map(mapListing));
+  }
+
+  // Ratings live on the SELLER (real reviews left by the collector/buyer on a completed
+  // Transaction — see ReviewsService), not the listing itself, since a listing has no
+  // buyer until it's sold. Attached here as { average, count } so the marketplace card/
+  // detail view can show real stars without ever fabricating a number — count 0 means
+  // "no ratings yet", shown as such, not hidden behind a made-up default.
+  private async attachSellerRatings<T extends { seller: { id: string } }>(listings: T[]) {
+    const sellerIds = [...new Set(listings.map((l) => l.seller.id))];
+    if (sellerIds.length === 0) return listings as (T & { seller: { rating: { average: number; count: number } } })[];
+
+    const grouped = await this.prisma.review.groupBy({
+      by: ['revieweeId'],
+      where: { revieweeId: { in: sellerIds } },
+      _avg: { rating: true },
+      _count: true,
+    });
+    const ratingBySeller = new Map(grouped.map((g) => [g.revieweeId, { average: Math.round((g._avg.rating ?? 0) * 10) / 10, count: g._count }]));
+
+    return listings.map((l) => ({
+      ...l,
+      seller: { ...l.seller, rating: ratingBySeller.get(l.seller.id) ?? { average: 0, count: 0 } },
+    }));
   }
 
   // Used by the collection module when a producer requests a pickup against one of their
@@ -112,7 +135,8 @@ export class MarketplaceService {
     ) {
       throw new NotFoundException('Listing not found.');
     }
-    return mapListing(listing);
+    const [withRating] = await this.attachSellerRatings([mapListing(listing)]);
+    return withRating;
   }
 
   // Deliberate, narrow privacy decision (flagged as unmade in CYCLO_IMPLEMENTATION_PLAN.md

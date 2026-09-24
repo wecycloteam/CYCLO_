@@ -1,14 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
 import { Star } from "lucide-react";
 import { getMaterialByCode } from "@/lib/materials-catalog";
+import { api, WasteListing } from "@/lib/api";
 
 export default function MaterialDetailPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const material = getMaterialByCode(code);
+  const [matchingListing, setMatchingListing] = useState<WasteListing | null>(null);
+  const [checkedListings, setCheckedListings] = useState(false);
+
+  useEffect(() => {
+    if (!material) return;
+    api
+      .browseListings()
+      .then((listings) => {
+        const match = listings.find((l) => l.material.category === material.realCategory);
+        setMatchingListing(match ?? null);
+      })
+      .catch(() => undefined)
+      .finally(() => setCheckedListings(true));
+  }, [material]);
 
   if (!material) {
     return (
@@ -21,6 +37,11 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
       </main>
     );
   }
+
+  // Links straight to a real, active listing in this category when one exists; only
+  // falls back to the general browse page when there genuinely isn't one to buy yet.
+  const buyHref = matchingListing ? `/marketplace/${matchingListing.id}` : "/marketplace";
+  const buyLabel = !checkedListings ? "Buy this material" : matchingListing ? "Buy this material" : "Browse this category";
 
   return (
     <main className="min-h-screen bg-[#F6F9F8] text-[#10161A]">
@@ -78,10 +99,10 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
 
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
-              href="/marketplace"
+              href={buyHref}
               className="rounded-full bg-[#48F53B] px-6 py-3.5 text-sm font-extrabold text-[#0E2A1F] shadow-[0_12px_28px_rgba(72,245,59,.22)] transition hover:bg-[#CAFFBD]"
             >
-              Buy this material
+              {buyLabel}
             </Link>
             <Link
               href={`/login?redirect=${encodeURIComponent("/marketplace/new")}`}

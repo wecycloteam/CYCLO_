@@ -7,6 +7,8 @@ import Link from "next/link";
 import { api, ApiError, CurrentUser, WasteListing, SellerContact, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { StarRatingDisplay } from "@/components/StarRating";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
@@ -120,16 +122,20 @@ export default function ListingDetailPage() {
       {user ? (
         <AppHeader title="Listing" />
       ) : (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
           <Link href="/" aria-label="CYCLO home">
-            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="h-[34px] w-auto" />
+            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-light h-[34px] w-auto" />
+            <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
           </Link>
-          <Link
-            href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
-            className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
-          >
-            Log in
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
+              className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
+            >
+              Log in
+            </Link>
+          </div>
         </header>
       )}
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
@@ -148,7 +154,7 @@ export default function ListingDetailPage() {
             )}
 
             <div className="flex items-start justify-between gap-3 mb-2">
-              <h1 className="text-lg font-extrabold">{listing.material.label}</h1>
+              <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{listing.material.label}</h1>
               <span
                 className={`inline-block rounded-[var(--r-pill)] px-2.5 py-1 text-[11px] font-bold ${
                   listing.moderationStatus === "PENDING"
@@ -161,12 +167,15 @@ export default function ListingDetailPage() {
                 {listingStatusLabel(listing)}
               </span>
             </div>
-            <div className="flex items-center gap-2 mb-2 text-xs text-[var(--text-2)]">
+            <div className="flex items-center gap-2 mb-2 text-xs text-[var(--text-on-bg-2)]">
               <span>{listing.seller.name}</span>
               <VerifiedBadge status={listing.seller.verificationStatus} />
             </div>
+            <div className="mb-2">
+              <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} />
+            </div>
             {listing.askingPrice != null && (
-              <div className="text-2xl font-extrabold text-[var(--cyclo-teal)] mb-4">
+              <div className="text-2xl font-extrabold text-[var(--cyclo-green)] mb-4">
                 TZS {listing.askingPrice.toLocaleString()}
               </div>
             )}
@@ -180,7 +189,7 @@ export default function ListingDetailPage() {
               <Row k="Listing status" v={listing.status.replace(/_/g, " ")} />
             </div>
 
-            {listing.description && <p className="text-sm text-[var(--text-2)] mb-6">{listing.description}</p>}
+            {listing.description && <p className="text-sm text-[var(--text-on-bg-2)] mb-6">{listing.description}</p>}
 
             {!isOwner && (
               <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4 mb-4">
@@ -241,7 +250,7 @@ export default function ListingDetailPage() {
               <button
                 onClick={handleCancel}
                 disabled={acting}
-                className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3 disabled:opacity-60"
+                className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3 disabled:opacity-60"
               >
                 {acting ? "Cancelling…" : "Cancel Listing"}
               </button>
@@ -250,7 +259,7 @@ export default function ListingDetailPage() {
             {!isOwner && (
               <button
                 onClick={() => router.back()}
-                className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3"
+                className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3"
               >
                 Back
               </button>

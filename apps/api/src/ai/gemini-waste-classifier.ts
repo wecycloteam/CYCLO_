@@ -10,7 +10,7 @@ import { WasteClassifier } from './domain/waste-classifier.interface';
 // lookup on the scan page (which matches on WastePrice.category).
 const CATEGORY_MAP: Record<string, string> = {
   PLASTIC: 'plastic',
-  TEXTILE: 'other',
+  TEXTILE: 'textile',
   PAPER: 'paper',
   CARDBOARD: 'cardboard',
   METAL: 'metal',

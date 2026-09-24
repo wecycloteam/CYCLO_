@@ -56,7 +56,7 @@ export default function AdminPricingPage() {
       <AppHeader title="Reference Prices" />
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
         <AdminGate authState={authState} user={user}>
-          <p className="text-xs text-[var(--text-2)] mb-4">
+          <p className="text-xs text-[var(--text-on-bg-2)] mb-4">
             Sets the price/kg used everywhere &quot;Estimated Market Value&quot; is shown to users.
           </p>
 

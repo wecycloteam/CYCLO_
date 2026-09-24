@@ -12,6 +12,7 @@ import {
   Cpu,
   Leaf,
   Package,
+  Shirt,
   Trash2,
   MapPin,
   Bell,
@@ -28,12 +29,14 @@ import { api, ImpactStats, Location, PickupRequest, WasteListing } from "@/lib/a
 import { BottomNav } from "@/components/BottomNav";
 import { AssistantChat } from "@/components/AssistantChat";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 const CATEGORY_TILES: { key: string; label: string; icon: LucideIcon }[] = [
   { key: "plastic", label: "Plastic", icon: Recycle },
   { key: "metal", label: "Metal", icon: Magnet },
   { key: "paper", label: "Paper", icon: FileText },
+  { key: "textile", label: "Textile", icon: Shirt },
   { key: "glass", label: "Glass", icon: GlassWater },
   { key: "e_waste", label: "Electronics", icon: Cpu },
   { key: "organic", label: "Organic", icon: Leaf },
@@ -44,6 +47,7 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   metal: Magnet,
   paper: FileText,
   cardboard: Package,
+  textile: Shirt,
   glass: GlassWater,
   e_waste: Cpu,
   organic: Leaf,
@@ -130,7 +134,11 @@ export default function HomePage() {
       api
         .browseListings()
         .then((res) => {
-          setNearbyListings(res.slice(0, 8));
+          // Listings with a real photo feel more like the landing page's product
+          // grid — shown first; ones with no photo yet (icon placeholder) sink to
+          // the end rather than being interleaved.
+          const sorted = [...res].sort((a, b) => Number(b.photos.length > 0) - Number(a.photos.length > 0));
+          setNearbyListings(sorted.slice(0, 8));
           setNearbyState("ready");
         })
         .catch(() => setNearbyState("error"));
@@ -148,18 +156,32 @@ export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       {state === "ready" && user && user.role !== "collector" ? (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-5 py-3">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-5 py-3">
           <div className="flex items-center gap-2">
-            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={92} height={26} className="h-[26px] w-auto" />
-            <Link href="/profile" className="hidden items-center gap-1 rounded-full bg-[var(--bg)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-2)] sm:flex">
+            <Image
+              src="/brand/cyclo-logo-light.png"
+              alt="CYCLO"
+              width={92}
+              height={26}
+              className="cyclo-header-logo-light h-[26px] w-auto"
+            />
+            <Image
+              src="/brand/cyclo-logo-dark.png"
+              alt="CYCLO"
+              width={92}
+              height={26}
+              className="cyclo-header-logo-dark h-[26px] w-auto"
+            />
+            <Link href="/profile" className="hidden items-center gap-1 rounded-full bg-[var(--cyclo-teal)] px-2.5 py-1 text-[11px] font-bold text-white sm:flex">
               <MapPin size={12} /> {locationLabel}
             </Link>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link
               href="/activity"
               aria-label="Notifications and activity"
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] text-[var(--text-1)]"
+              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--chrome-border)] text-[var(--chrome-text)]"
             >
               <Bell size={18} />
             </Link>
@@ -173,8 +195,22 @@ export default function HomePage() {
           </div>
         </header>
       ) : (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
-          <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={140} height={40} className="h-[42px] w-auto" />
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
+          <Image
+            src="/brand/cyclo-logo-light.png"
+            alt="CYCLO"
+            width={140}
+            height={40}
+            className="cyclo-header-logo-light h-[42px] w-auto"
+          />
+          <Image
+            src="/brand/cyclo-logo-dark.png"
+            alt="CYCLO"
+            width={140}
+            height={40}
+            className="cyclo-header-logo-dark h-[42px] w-auto"
+          />
+          <ThemeToggle />
         </header>
       )}
 
@@ -218,13 +254,13 @@ export default function HomePage() {
             </Link>
 
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold">Browse by category</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">Browse by category</h3>
             </div>
             <div className="mb-6 grid grid-cols-3 gap-2.5">
               {CATEGORY_TILES.map((c) => (
                 <Link
                   key={c.key}
-                  href="/marketplace"
+                  href={`/marketplace?category=${c.key}`}
                   className="flex flex-col items-center gap-1.5 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] py-4 transition hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <c.icon size={22} strokeWidth={1.75} className="text-[var(--cyclo-teal)]" />
@@ -234,8 +270,8 @@ export default function HomePage() {
             </div>
 
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold">Available materials near you</h3>
-              <Link href="/marketplace" className="text-xs font-bold text-[var(--cyclo-teal)]">
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">Available materials near you</h3>
+              <Link href="/marketplace" className="text-xs font-bold text-[var(--cyclo-green)]">
                 See all
               </Link>
             </div>
@@ -249,7 +285,7 @@ export default function HomePage() {
             </div>
 
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold">Nearby collectors &amp; recycling centers</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">Nearby collectors &amp; recycling centers</h3>
             </div>
             <div className="mb-6 rounded-[var(--r-md)] border border-dashed border-[var(--border)] bg-[var(--surface)] p-5 text-center">
               <p className="text-sm font-bold text-[var(--text-1)] mb-1">Coming soon</p>
@@ -259,7 +295,7 @@ export default function HomePage() {
             </div>
 
             <div className="mb-3">
-              <h3 className="text-sm font-extrabold mb-3">Quick actions</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)] mb-3">Quick actions</h3>
               <div className="grid grid-cols-4 gap-2.5">
                 <QuickAction href="/marketplace/new" icon={Tag} label="Sell Waste" />
                 <QuickAction href="/activity/new" icon={Truck} label="Request Pickup" />
@@ -273,8 +309,8 @@ export default function HomePage() {
         {state === "ready" && user && user.role === "collector" && (
           <>
             <div className="mb-6">
-              <div className="text-sm text-[var(--text-2)]">Good to see you</div>
-              <div className="text-xl font-extrabold">{user.name}</div>
+              <div className="text-sm text-[var(--text-on-bg-2)]">Good to see you</div>
+              <div className="text-xl font-extrabold text-[var(--text-on-bg)]">{user.name}</div>
             </div>
             <Link
               href="/jobs"
@@ -303,22 +339,22 @@ export default function HomePage() {
               </div>
             )}
             {impact && (
-              <Link href="/impact" className="mb-8 inline-block text-xs font-bold text-[var(--cyclo-teal)]">
+              <Link href="/impact" className="mb-8 inline-block text-xs font-bold text-[var(--cyclo-green)]">
                 See full impact & achievements →
               </Link>
             )}
 
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-extrabold">
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">
                 {user.role === "collector" ? "Your active jobs" : "Your recent activity"}
               </h3>
-              <Link href="/activity" className="text-xs font-bold text-[var(--cyclo-teal)]">
+              <Link href="/activity" className="text-xs font-bold text-[var(--cyclo-green)]">
                 See all
               </Link>
             </div>
 
             {recentPickups.length === 0 && recentListings.length === 0 && (
-              <p className="text-xs text-[var(--text-2)]">Nothing here yet — get started above.</p>
+              <p className="text-xs text-[var(--text-on-bg-2)]">Nothing here yet — get started above.</p>
             )}
 
             <div className="flex flex-col gap-2">

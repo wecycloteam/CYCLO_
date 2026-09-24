@@ -12,6 +12,7 @@ const CO2_FACTORS_BY_CATEGORY: Record<string, number> = {
   metal: 2.2,
   paper: 1.1,
   cardboard: 1.1,
+  textile: 3.0,
   glass: 0.3,
   e_waste: 1.0,
   organic: 0.5,

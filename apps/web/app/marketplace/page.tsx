@@ -1,28 +1,32 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Scale, Recycle, Magnet, FileText, Package, GlassWater, Cpu, Leaf, Trash2, type LucideIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { MapPin, Scale, Recycle, Magnet, FileText, Package, Shirt, GlassWater, Cpu, Leaf, Trash2, type LucideIcon } from "lucide-react";
 import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { StarRatingDisplay } from "@/components/StarRating";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
 
 type Tab = "browse" | "mine";
 type LoadState = "loading" | "ready" | "error";
 
-const CATEGORIES = ["plastic", "paper", "cardboard", "glass", "metal", "e_waste", "organic", "other"];
+const CATEGORIES = ["plastic", "paper", "cardboard", "textile", "glass", "metal", "e_waste", "organic", "other"];
 
 // Mirrors home/page.tsx's CATEGORY_ICON — small, stable map duplicated locally rather
-// than factored into a shared module for eight lookup entries.
+// than factored into a shared module for nine lookup entries.
 const CATEGORY_ICON: Record<string, LucideIcon> = {
   plastic: Recycle,
   metal: Magnet,
   paper: FileText,
   cardboard: Package,
+  textile: Shirt,
   glass: GlassWater,
   e_waste: Cpu,
   organic: Leaf,
@@ -61,6 +65,9 @@ function ListingCard({ listing }: { listing: WasteListing }) {
           <span className="inline-flex items-center gap-1">
             <Scale size={12} /> {listing.estimatedWeightKg} kg
           </span>
+        </div>
+        <div className="mb-2">
+          <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <StatusBadge status={listing.status} />
@@ -110,18 +117,36 @@ function useOptionalCurrentUser() {
 }
 
 export default function MarketplacePage() {
+  return (
+    <Suspense fallback={null}>
+      <MarketplaceContent />
+    </Suspense>
+  );
+}
+
+function MarketplaceContent() {
   const { user, checked } = useOptionalCurrentUser();
+  const searchParams = useSearchParams();
+  const categoryFromUrl = searchParams.get("category") ?? "";
   const [tab, setTab] = useState<Tab>("browse");
   const [listings, setListings] = useState<WasteListing[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(categoryFromUrl);
   const [location, setLocation] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [minQty, setMinQty] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!categoryFromUrl);
+
+  // A category tapped from the home page's "Browse by category" tiles arrives as
+  // ?category=plastic — applied here so a link change is picked up even if this page
+  // instance was already mounted (Next reuses the component across query-only navigations).
+  useEffect(() => {
+    if (categoryFromUrl) setCategory(categoryFromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFromUrl]);
 
   function load(t: Tab) {
     setState("loading");
@@ -145,7 +170,7 @@ export default function MarketplacePage() {
 
   const filteredListings = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return listings.filter((l) => {
+    const filtered = listings.filter((l) => {
       if (q && !l.material.label.toLowerCase().includes(q) && !(l.description ?? "").toLowerCase().includes(q)) return false;
       if (category && l.material.category !== category) return false;
       if (location && !(l.location.region ?? l.location.label).toLowerCase().includes(location.toLowerCase())) return false;
@@ -154,6 +179,9 @@ export default function MarketplacePage() {
       if (minQty && l.estimatedWeightKg < Number(minQty)) return false;
       return true;
     });
+    // Listings with a real photo first, ones still showing the icon placeholder last —
+    // same ordering as the home page's "Available materials near you" row.
+    return filtered.sort((a, b) => Number(b.photos.length > 0) - Number(a.photos.length > 0));
   }, [listings, search, category, location, minPrice, maxPrice, minQty]);
 
   return (
@@ -161,16 +189,20 @@ export default function MarketplacePage() {
       {user ? (
         <AppHeader title="Marketplace" />
       ) : (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--surface)] border-b border-[var(--border)]">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
           <Link href="/" aria-label="CYCLO home">
-            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="h-[34px] w-auto" />
+            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-light h-[34px] w-auto" />
+            <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
           </Link>
-          <Link
-            href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
-            className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
-          >
-            Log in
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
+              className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
+            >
+              Log in
+            </Link>
+          </div>
         </header>
       )}
 
@@ -180,7 +212,7 @@ export default function MarketplacePage() {
             <button
               onClick={() => setTab("browse")}
               className={`rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold ${
-                tab === "browse" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-2)]"
+                tab === "browse" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-on-bg-2)]"
               }`}
             >
               Browse
@@ -189,7 +221,7 @@ export default function MarketplacePage() {
               <button
                 onClick={() => setTab("mine")}
                 className={`rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold ${
-                  tab === "mine" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-2)]"
+                  tab === "mine" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-on-bg-2)]"
                 }`}
               >
                 My Listings
@@ -197,7 +229,7 @@ export default function MarketplacePage() {
             ) : (
               <Link
                 href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
-                className="rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold text-[var(--text-2)]"
+                className="rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold text-[var(--text-on-bg-2)]"
               >
                 My Listings
               </Link>
@@ -211,7 +243,7 @@ export default function MarketplacePage() {
           </Link>
         </div>
 
-        <Link href="/prices" className="inline-block text-xs font-bold text-[var(--cyclo-teal)] mb-4">
+        <Link href="/prices" className="inline-block text-xs font-bold text-[var(--cyclo-green)] mb-4">
           View transparent reference prices →
         </Link>
 
@@ -227,7 +259,7 @@ export default function MarketplacePage() {
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
-                className="rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2.5 text-xs font-bold text-[var(--text-2)]"
+                className="rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2.5 text-xs font-bold text-[var(--text-on-bg-2)]"
               >
                 {showFilters ? "Hide filters" : "Filters"}
               </button>

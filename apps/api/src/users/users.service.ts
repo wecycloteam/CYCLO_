@@ -66,6 +66,26 @@ export class UsersService {
     return this.prisma.user.update({ where: { id: userId }, data: { phone: null } });
   }
 
+  // Switching into 'collector' needs a CollectorProfile to exist — the same row
+  // UsersService.create makes at signup — otherwise every @Roles('collector') pickup
+  // action (accept/weigh/complete, see CollectionController) would 500 on the missing
+  // profile the first time this user tries to act as a buyer.
+  updateProfile(
+    userId: string,
+    data: { name?: string; phone?: string; username?: string; avatarUrl?: string; role?: string },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      if (data.role === 'collector') {
+        await tx.collectorProfile.upsert({
+          where: { userId },
+          create: { userId },
+          update: {},
+        });
+      }
+      return tx.user.update({ where: { id: userId }, data });
+    });
+  }
+
   // §13/§34 — home-dashboard impact stats. Only ever derived from real completed
   // Transaction rows (one per completed pickup, see CollectionService.complete) — never a
   // fabricated number. co2AvoidedKg uses a widely-cited rough recycling-vs-landfill factor

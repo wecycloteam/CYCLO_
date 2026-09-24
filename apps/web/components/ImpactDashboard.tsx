@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
-  Sun,
-  Moon,
   Recycle,
   Magnet,
   FileText,
   Package,
+  Shirt,
   GlassWater,
   Cpu,
   Leaf,
@@ -21,8 +20,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { api, ApiError, UserImpactSummary } from "@/lib/api";
-import { getStoredTheme, setTheme as persistTheme, type Theme } from "@/lib/theme";
+import { getStoredTheme, setTheme as persistTheme } from "@/lib/theme";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Mirrors home/page.tsx's CATEGORY_ICON — kept local since it's a small, stable map; not
 // worth a shared module for eight lookup entries used in two places.
@@ -31,6 +31,7 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   metal: Magnet,
   paper: FileText,
   cardboard: Package,
+  textile: Shirt,
   glass: GlassWater,
   e_waste: Cpu,
   organic: Leaf,
@@ -42,6 +43,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   metal: "Metal",
   paper: "Paper",
   cardboard: "Cardboard",
+  textile: "Textile",
   glass: "Glass",
   e_waste: "Electronics",
   organic: "Organic",
@@ -56,30 +58,6 @@ const ACHIEVEMENT_ICONS: Record<string, LucideIcon> = {
   repeat: Repeat,
   trophy: Trophy,
 };
-
-function ThemeToggle() {
-  const [theme, setThemeState] = useState<Theme>("dark");
-
-  useEffect(() => {
-    setThemeState(getStoredTheme() ?? "dark");
-  }, []);
-
-  function toggle() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setThemeState(next);
-    persistTheme(next);
-  }
-
-  return (
-    <button
-      onClick={toggle}
-      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--text-1)]"
-    >
-      {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
-  );
-}
 
 function TopCard({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint?: string }) {
   return (

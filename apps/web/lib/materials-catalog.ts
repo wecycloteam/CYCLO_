@@ -2,6 +2,11 @@ export interface CatalogMaterial {
   code: string;
   title: string;
   category: string;
+  // The real taxonomy category (see prisma/seed.ts's MATERIALS / WasteMaterial.category)
+  // this catalog entry corresponds to — used to find and link to an actual matching
+  // listing, distinct from `category` above (a marketing display label, e.g. cardboard's
+  // display category is "Paper" but its real taxonomy category is "cardboard").
+  realCategory: string;
   detail: string;
   description: string;
   price: string;
@@ -19,6 +24,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     code: "PET",
     title: "Plastic bottles & containers",
     category: "Plastic",
+    realCategory: "plastic",
     detail: "Water bottles, cooking oil containers and clean packaging.",
     description:
       "Clean PET and HDPE plastic — water bottles, cooking oil containers and food-safe packaging. Rinsed and cap-off material earns the best rate. This is one of the highest-demand materials on CYCLO because recyclers can bale and export it directly.",
@@ -32,6 +38,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     code: "BOX",
     title: "Cardboard",
     category: "Paper",
+    realCategory: "cardboard",
     detail: "Boxes, cartons and flattened packaging ready for reuse or recycling.",
     description:
       "Boxes, cartons and flattened packaging ready for reuse or recycling. Dry, uncontaminated cardboard (no food grease, no wet material) is collected in bulk and moves fastest through the marketplace.",
@@ -45,6 +52,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     code: "TEE",
     title: "Textiles",
     category: "Textiles",
+    realCategory: "textile",
     detail: "Second-hand clothes, shoes, bags and fabric in wearable condition.",
     description:
       "Second-hand clothes, shoes, bags and fabric in wearable or repairable condition. Sorted, clean textiles are priced per item rather than by weight since condition varies more than for other materials.",
@@ -58,6 +66,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     code: "PPR",
     title: "Paper",
     category: "Paper",
+    realCategory: "paper",
     detail: "Office paper, newspapers, magazines and sorted paper bundles.",
     description:
       "Office paper, newspapers, magazines and sorted paper bundles. Keeping paper dry and separated from cardboard and plastic gets you the transparent reference price shown here, updated by CYCLO's pricing team.",

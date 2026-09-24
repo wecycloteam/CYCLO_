@@ -45,6 +45,7 @@ export class AdminService {
       pendingListings,
       pickupsByStatus,
       totalUsers,
+      platformFeeAgg,
     ] = await Promise.all([
       this.prisma.user.groupBy({ by: ['role'], _count: true }),
       this.prisma.user.groupBy({ by: ['verificationStatus'], _count: true }),
@@ -62,6 +63,10 @@ export class AdminService {
       }),
       this.prisma.pickupRequest.groupBy({ by: ['status'], _count: true }),
       this.prisma.user.count(),
+      // §17/§26 — platformFee is 0 on every Transaction until a real fee schedule exists
+      // (see CollectionService.complete); this sums whatever is actually on record, so it
+      // honestly reads TZS 0 today rather than showing a fabricated "profit" figure.
+      this.prisma.transaction.aggregate({ _sum: { platformFee: true } }),
     ]);
 
     return {
@@ -73,6 +78,7 @@ export class AdminService {
       listingsByStatus: toCountRecord(listingsByStatus),
       pendingListingModerationCount: pendingListings,
       pickupsByStatus: toCountRecord(pickupsByStatus),
+      totalPlatformRevenueTzs: platformFeeAgg._sum.platformFee ?? 0,
     };
   }
 
@@ -104,21 +110,21 @@ export class AdminService {
     const [pendingAccounts, pendingCollectors, pendingOrganizations] = await Promise.all([
       this.prisma.user.findMany({
         where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
-        select: { id: true, name: true, phone: true, role: true, verificationStatus: true, createdAt: true },
+        select: { id: true, name: true, username: true, phone: true, role: true, verificationStatus: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.collectorProfile.findMany({
         where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
         include: {
           user: {
-            select: { id: true, name: true, phone: true, createdAt: true },
+            select: { id: true, name: true, username: true, phone: true, createdAt: true },
           },
         },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.organization.findMany({
         where: { verificationStatus: { in: PENDING_VERIFICATION_STATUSES } },
-        include: { owner: { select: { id: true, name: true, phone: true } } },
+        include: { owner: { select: { id: true, name: true, username: true, phone: true } } },
         orderBy: { createdAt: 'asc' },
       }),
     ]);
