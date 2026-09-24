@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, Trash2, Smile } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, ChatMessageRecord, Conversation } from "@/lib/api";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 type LoadState = "loading" | "ready" | "error";
+
+const QUICK_EMOJI = ["😀", "😂", "👍", "🙏", "❤️", "😍", "😢", "🔥", "👋", "🎉"];
 
 // No websocket/realtime infra exists in this app (Netlify's serverless functions can't
 // hold a persistent connection open the way a WebSocket server or a service like Pusher/
@@ -28,6 +30,7 @@ export default function ConversationPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   const conversation = conversations.find((c) => c.id === id) ?? null;
@@ -69,14 +72,32 @@ export default function ConversationPage() {
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || sending) return;
+    if (!text || sending || !user) return;
     setSending(true);
     setInput("");
+    setShowEmoji(false);
+
+    // Optimistic append — shows the message the instant it's sent instead of waiting for
+    // the next poll cycle to reflect it back. A temporary id/timestamp is replaced wholesale
+    // by the next successful load(), which returns the real persisted row.
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: ChatMessageRecord = {
+      id: tempId,
+      conversationId: id,
+      senderId: user.id,
+      body: text,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+      deletedForEveryone: false,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    scrollToBottom();
+
     try {
       await api.sendChatMessage(id, text);
       load(false);
-      scrollToBottom();
     } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setInput(text);
     } finally {
       setSending(false);
@@ -121,10 +142,12 @@ export default function ConversationPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-md flex-1 px-4 py-4">
-        {state === "loading" && <LoadingState label="Loading conversation…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(true)} />}
-      </div>
+      {state !== "ready" && (
+        <div className="mx-auto w-full max-w-md flex-1 px-4 py-4">
+          {state === "loading" && <LoadingState label="Loading conversation…" />}
+          {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(true)} />}
+        </div>
+      )}
 
       {state === "ready" && user && (
         <>
@@ -178,22 +201,46 @@ export default function ConversationPage() {
             })}
           </div>
 
-          <form onSubmit={handleSend} className="sticky bottom-0 flex items-center gap-2 border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)] p-3">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message…"
-              className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--text-1)] outline-none"
-            />
-            <button
-              type="submit"
-              disabled={sending || !input.trim()}
-              aria-label="Send"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] disabled:opacity-50"
-            >
-              <Send size={16} />
-            </button>
-          </form>
+          <div className="sticky bottom-0 border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)]">
+            {showEmoji && (
+              <div className="flex flex-wrap gap-1 border-b border-[var(--chrome-border)] px-3 py-2">
+                {QUICK_EMOJI.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setInput((prev) => prev + e)}
+                    className="grid h-9 w-9 place-items-center rounded-[var(--r-md)] text-lg hover:bg-white/10"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+            <form onSubmit={handleSend} className="flex items-center gap-2 p-3">
+              <button
+                type="button"
+                onClick={() => setShowEmoji((v) => !v)}
+                aria-label="Emoji"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[var(--chrome-text)]"
+              >
+                <Smile size={20} />
+              </button>
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message…"
+                className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--text-1)] outline-none"
+              />
+              <button
+                type="submit"
+                disabled={sending || !input.trim()}
+                aria-label="Send"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] disabled:opacity-50"
+              >
+                <Send size={16} />
+              </button>
+            </form>
+          </div>
         </>
       )}
     </main>
