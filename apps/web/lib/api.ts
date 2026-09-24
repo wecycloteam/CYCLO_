@@ -178,6 +178,24 @@ export function listingStatusLabel(listing: Pick<WasteListing, "status" | "moder
   return listing.status.replace(/_/g, " ");
 }
 
+const UNIT_SUFFIX: Record<string, string> = {
+  kg: "/kg",
+  tonnes: "/tonne",
+  pieces: "/piece",
+  litres: "/litre",
+};
+
+// askingPrice is always the TOTAL for the listing's whole estimatedWeightKg/quantity —
+// showing that bare number next to a material name reads like a per-unit price (e.g. a
+// 20kg paper listing at TZS 4,000 total looks like TZS 4,000/kg, ~20x the real rate).
+// This derives the actual per-unit rate so it's never ambiguous.
+export function formatUnitPrice(listing: Pick<WasteListing, "askingPrice" | "estimatedWeightKg" | "quantityUnit">): string | null {
+  if (listing.askingPrice == null || listing.estimatedWeightKg <= 0) return null;
+  const perUnit = listing.askingPrice / listing.estimatedWeightKg;
+  const suffix = UNIT_SUFFIX[listing.quantityUnit] ?? `/${listing.quantityUnit}`;
+  return `TZS ${Math.round(perUnit).toLocaleString()}${suffix}`;
+}
+
 // Mirrors packages/shared-types/src/collection.ts PICKUP_STATUSES.
 export type PickupStatus =
   | "CREATED"
@@ -282,6 +300,7 @@ export interface ChatMessageRecord {
   body: string;
   createdAt: string;
   readAt: string | null;
+  deletedForEveryone: boolean;
 }
 
 export interface Conversation {
@@ -559,6 +578,10 @@ export const api = {
     request<ChatMessageRecord>(`/chat/conversations/${id}/messages`, { method: "POST", body: JSON.stringify({ body }) }, true),
   markConversationRead: (id: string) =>
     request<{ message: string }>(`/chat/conversations/${id}/read`, { method: "PATCH" }, true),
+  deleteMessageForMe: (id: string) =>
+    request<{ message: string }>(`/chat/messages/${id}/delete-for-me`, { method: "PATCH" }, true),
+  deleteMessageForEveryone: (id: string) =>
+    request<{ message: string }>(`/chat/messages/${id}/delete-for-everyone`, { method: "PATCH" }, true),
 
   // Orders / in-app payment (manual mobile-money confirmation — see apps/api/src/orders)
   createOrder: (listingId: string, quantityKg: number) =>

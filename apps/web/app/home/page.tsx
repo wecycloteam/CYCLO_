@@ -27,7 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ImpactStats, Location, PickupRequest, WasteListing } from "@/lib/api";
+import { api, ImpactStats, Location, PickupRequest, WasteListing, formatUnitPrice } from "@/lib/api";
 import { BottomNav } from "@/components/BottomNav";
 import { AssistantChat } from "@/components/AssistantChat";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -80,9 +80,9 @@ function ListingProductCard({ listing }: { listing: WasteListing }) {
         ) : (
           <CategoryIcon size={36} strokeWidth={1.5} className="text-[var(--text-2)]" />
         )}
-        {listing.askingPrice != null && (
+        {formatUnitPrice(listing) && (
           <span className="absolute right-2 top-2 rounded-full bg-[var(--cyclo-teal-dark)] px-2 py-0.5 text-[10px] font-extrabold text-white">
-            TZS {listing.askingPrice.toLocaleString()}
+            {formatUnitPrice(listing)}
           </span>
         )}
       </div>

@@ -8,9 +8,9 @@ import { api, tokenStore, ApiError, API_URL } from "@/lib/api";
 type Mode = "signin" | "signup";
 
 const ROLE_OPTIONS = [
-  { value: "household", label: "I'm a Household" },
+  { value: "household", label: "Household — I want to sell waste" },
   { value: "business", label: "I'm a Business" },
-  { value: "collector", label: "I'm a Waste Collector" },
+  { value: "collector", label: "Waste Collector — I want to buy waste" },
   { value: "recycler", label: "I'm a Recycling Company" },
 ];
 
@@ -122,7 +122,7 @@ function LoginContent() {
 
   function finishLogin(tokens: { accessToken: string; refreshToken: string }) {
     tokenStore.set(tokens.accessToken, tokens.refreshToken);
-    router.push(redirectTo);
+    router.push(`/choose-mode?redirect=${encodeURIComponent(redirectTo)}`);
   }
 
   async function handleSignIn(e: React.FormEvent) {
@@ -286,7 +286,7 @@ function LoginContent() {
               <input
                 type="tel"
                 required
-                placeholder="+255 7XX XXX XXX"
+                placeholder="+255 7XX XXX XXX or 07XX XXX XXX"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"

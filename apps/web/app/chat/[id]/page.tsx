@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Trash2 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, ChatMessageRecord, Conversation } from "@/lib/api";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
@@ -27,6 +27,7 @@ export default function ConversationPage() {
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const conversation = conversations.find((c) => c.id === id) ?? null;
@@ -84,6 +85,26 @@ export default function ConversationPage() {
 
   const other = conversation && user ? (conversation.buyerId === user.id ? conversation.seller : conversation.buyer) : null;
 
+  async function handleDeleteForMe(messageId: string) {
+    setOpenMenuId(null);
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    try {
+      await api.deleteMessageForMe(messageId);
+    } catch {
+      load(false);
+    }
+  }
+
+  async function handleDeleteForEveryone(messageId: string) {
+    setOpenMenuId(null);
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, deletedForEveryone: true, body: "This message was deleted" } : m)));
+    try {
+      await api.deleteMessageForEveryone(messageId);
+    } catch {
+      load(false);
+    }
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-[var(--bg)]">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-4 py-3">
@@ -113,16 +134,48 @@ export default function ConversationPage() {
                 Say hello — start the conversation about this listing.
               </p>
             )}
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`max-w-[80%] rounded-[var(--r-md)] px-3 py-2 text-sm ${
-                  m.senderId === user.id ? "ml-auto bg-[var(--cyclo-teal)] text-white" : "bg-[var(--surface)] text-[var(--text-1)]"
-                }`}
-              >
-                {m.body}
-              </div>
-            ))}
+            {messages.map((m) => {
+              const isMine = m.senderId === user.id;
+              const isDeleted = m.deletedForEveryone;
+              return (
+                <div key={m.id} className={`relative max-w-[80%] ${isMine ? "ml-auto" : ""}`}>
+                  <button
+                    type="button"
+                    onClick={() => !isDeleted && setOpenMenuId(openMenuId === m.id ? null : m.id)}
+                    className={`w-full rounded-[var(--r-md)] px-3 py-2 text-left text-sm ${
+                      isMine ? "bg-[var(--cyclo-teal)] text-white" : "bg-[var(--surface)] text-[var(--text-1)]"
+                    } ${isDeleted ? "italic opacity-70" : ""}`}
+                  >
+                    {m.body}
+                  </button>
+
+                  {openMenuId === m.id && !isDeleted && (
+                    <div
+                      className={`absolute top-full z-10 mt-1 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] shadow-lg ${
+                        isMine ? "right-0" : "left-0"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteForMe(m.id)}
+                        className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold text-[var(--text-1)] hover:bg-[var(--surface-2)]"
+                      >
+                        <Trash2 size={14} /> Delete for me
+                      </button>
+                      {isMine && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteForEveryone(m.id)}
+                          className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold text-[var(--critical)] hover:bg-[var(--surface-2)]"
+                        >
+                          <Trash2 size={14} /> Delete for everyone
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <form onSubmit={handleSend} className="sticky bottom-0 flex items-center gap-2 border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)] p-3">

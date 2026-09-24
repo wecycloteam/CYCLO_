@@ -18,7 +18,7 @@ function GoogleCallbackContent() {
 
     if (accessToken && refreshToken) {
       tokenStore.set(accessToken, refreshToken);
-      router.replace(redirect);
+      router.replace(`/choose-mode?redirect=${encodeURIComponent(redirect)}`);
     } else {
       router.replace("/login");
     }

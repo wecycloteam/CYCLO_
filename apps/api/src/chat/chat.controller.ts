@@ -35,4 +35,14 @@ export class ChatController {
   markRead(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string) {
     return this.chat.markRead(principal.userId, id);
   }
+
+  @Patch('messages/:id/delete-for-me')
+  deleteForMe(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string) {
+    return this.chat.deleteForMe(principal.userId, id);
+  }
+
+  @Patch('messages/:id/delete-for-everyone')
+  deleteForEveryone(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string) {
+    return this.chat.deleteForEveryone(principal.userId, id);
+  }
 }

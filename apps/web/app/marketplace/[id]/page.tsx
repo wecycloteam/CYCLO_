@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { MessageCircle, ShoppingBag } from "lucide-react";
-import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -205,8 +205,11 @@ export default function ListingDetailPage() {
               <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} seed={listing.seller.id} />
             </div>
             {listing.askingPrice != null && (
-              <div className="text-2xl font-extrabold text-[var(--cyclo-green)] mb-4">
-                TZS {listing.askingPrice.toLocaleString()}
+              <div className="mb-4">
+                <div className="text-2xl font-extrabold text-[var(--cyclo-green)]">{formatUnitPrice(listing)}</div>
+                <div className="text-xs text-[var(--text-on-bg-2)]">
+                  TZS {listing.askingPrice.toLocaleString()} total for {listing.estimatedWeightKg} {listing.quantityUnit}
+                </div>
               </div>
             )}
 

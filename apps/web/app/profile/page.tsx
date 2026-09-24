@@ -243,7 +243,7 @@ export default function ProfilePage() {
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+255712345678"
+                placeholder="+255712345678 or 0712345678"
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)]"
               />
             </div>

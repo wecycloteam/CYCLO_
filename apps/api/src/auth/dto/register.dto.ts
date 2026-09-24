@@ -1,6 +1,8 @@
 import { IsEmail, IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { SELF_REGISTERABLE_ROLES } from '@cyclo/shared-types';
 import type { SelfRegisterableRole } from '@cyclo/shared-types';
+import { normalizeTanzanianPhone } from '../../common/normalize-phone';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
 const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
@@ -20,7 +22,10 @@ export class RegisterDto {
   @MinLength(8, { message: 'Password must be at least 8 characters.' })
   password: string;
 
-  @Matches(E164, { message: 'phone must be in E.164 format, e.g. +255712345678' })
+  // Accepts +255712345678 or the local 0712345678 form — normalized to E.164 before
+  // validation, so either input a Tanzanian user would actually type works.
+  @Transform(({ value }) => normalizeTanzanianPhone(value))
+  @Matches(E164, { message: 'phone must be in E.164 format, e.g. +255712345678 (or start with 0, e.g. 0712345678)' })
   phone: string;
 
   @IsString()

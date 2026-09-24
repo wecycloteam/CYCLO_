@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Scale, Recycle, Magnet, FileText, Package, Shirt, GlassWater, Cpu, Leaf, Trash2, type LucideIcon } from "lucide-react";
-import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, tokenStore } from "@/lib/api";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -52,9 +52,9 @@ function ListingCard({ listing }: { listing: WasteListing }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3 mb-1">
           <span className="text-sm font-extrabold">{listing.material.label}</span>
-          {listing.askingPrice != null && (
+          {formatUnitPrice(listing) && (
             <span className="text-sm font-extrabold text-[var(--cyclo-teal)] whitespace-nowrap">
-              TZS {listing.askingPrice.toLocaleString()}
+              {formatUnitPrice(listing)}
             </span>
           )}
         </div>

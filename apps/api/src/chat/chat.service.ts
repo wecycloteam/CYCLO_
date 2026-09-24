@@ -94,11 +94,19 @@ export class ChatService {
 
   async getMessages(userId: string, conversationId: string) {
     await this.assertParticipant(conversationId, userId);
-    return this.prisma.message.findMany({
+    const messages = await this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
       take: 200,
     });
+    // "Delete for me" hides a message from just that one viewer — filtered here rather
+    // than in the query above so the same row still exists (and is still visible to the
+    // other participant) exactly like WhatsApp's per-device delete.
+    return messages
+      .filter((m) => !m.deletedForUserIds.includes(userId))
+      .map(({ deletedForUserIds: _deletedForUserIds, ...m }) =>
+        m.deletedForEveryone ? { ...m, body: 'This message was deleted' } : m,
+      );
   }
 
   async sendMessage(userId: string, conversationId: string, body: string) {
@@ -108,6 +116,38 @@ export class ChatService {
       this.prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } }),
     ]);
     return message;
+  }
+
+  private async getOwnMessage(userId: string, messageId: string) {
+    const message = await this.prisma.message.findUnique({ where: { id: messageId } });
+    if (!message) throw new NotFoundException('Message not found.');
+    await this.assertParticipant(message.conversationId, userId);
+    return message;
+  }
+
+  // Hides this one message from just the caller — the other participant's copy is
+  // untouched. Works on any message in the conversation (yours or theirs), same as
+  // WhatsApp's "Delete for me".
+  async deleteForMe(userId: string, messageId: string) {
+    const message = await this.getOwnMessage(userId, messageId);
+    if (!message.deletedForUserIds.includes(userId)) {
+      await this.prisma.message.update({
+        where: { id: messageId },
+        data: { deletedForUserIds: { push: userId } },
+      });
+    }
+    return { message: 'Deleted for you.' };
+  }
+
+  // Replaces the body for both participants — only the original sender may do this,
+  // same restriction WhatsApp applies to "Delete for everyone".
+  async deleteForEveryone(userId: string, messageId: string) {
+    const message = await this.getOwnMessage(userId, messageId);
+    if (message.senderId !== userId) {
+      throw new ForbiddenException('Only the sender can delete this message for everyone.');
+    }
+    await this.prisma.message.update({ where: { id: messageId }, data: { deletedForEveryone: true } });
+    return { message: 'Deleted for everyone.' };
   }
 
   async markRead(userId: string, conversationId: string) {

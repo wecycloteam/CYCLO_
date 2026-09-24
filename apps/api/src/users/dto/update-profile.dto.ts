@@ -1,4 +1,6 @@
 import { IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { normalizeTanzanianPhone } from '../../common/normalize-phone';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
 const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
@@ -13,8 +15,11 @@ export class UpdateProfileDto {
   @MinLength(2)
   name?: string;
 
+  // Accepts +255712345678 or the local 0712345678 form — normalized to E.164 before
+  // validation, so the profile page always ends up storing/showing the same format.
   @IsOptional()
-  @Matches(E164, { message: 'phone must be in E.164 format, e.g. +255712345678' })
+  @Transform(({ value }) => normalizeTanzanianPhone(value))
+  @Matches(E164, { message: 'phone must be in E.164 format, e.g. +255712345678 (or start with 0, e.g. 0712345678)' })
   phone?: string;
 
   @IsOptional()
