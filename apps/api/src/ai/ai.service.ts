@@ -1,4 +1,11 @@
-import { Inject, Injectable, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  InternalServerErrorException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
 import { WASTE_CLASSIFIER } from './domain/waste-classifier.interface';
@@ -24,6 +31,16 @@ export class AiService {
       // classifier failure (bad/missing GEMINI_API_KEY, Gemini API outage, malformed
       // response) surfaced as an opaque, unlogged 500 with nothing to debug from.
       console.error('Waste classifier error:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      // GeminiWasteClassifier already retries this specific error a few times — reaching
+      // here means Google's own vision model is still overloaded, a real external outage
+      // (their message literally says "usually temporary"), not a bug on our side. 503,
+      // not 500, so the client can tell the two apart and word its own message honestly.
+      if (message.includes('"code":503') || message.includes('UNAVAILABLE') || message.includes('high demand')) {
+        throw new ServiceUnavailableException(
+          "CYCLO's AI scanning service is temporarily overloaded on Google's end. Please try again in a minute.",
+        );
+      }
       throw new InternalServerErrorException('Failed to analyze this image. Please try again.');
     }
 

@@ -32,13 +32,51 @@ const HANDLING_INSTRUCTIONS_NON_RECYCLABLE = [
   'Check with your local authority for safe disposal',
 ];
 
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1500;
+
+function isRetryableGeminiError(error: unknown): boolean {
+  // Gemini periodically returns 503 UNAVAILABLE ("This model is currently experiencing
+  // high demand... usually temporary") — a real, external capacity issue, not a bug in
+  // this app. Retrying a couple of times with a short delay is the honest fix: it doesn't
+  // paper over a real failure, it just doesn't give up on the very first transient blip.
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('"code":503') || message.includes('UNAVAILABLE') || message.includes('high demand');
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 @Injectable()
 export class GeminiWasteClassifier implements WasteClassifier {
   private ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   async classify(imageBase64: string): Promise<ClassificationResult> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        return await this.classifyOnce(imageBase64);
+      } catch (error) {
+        lastError = error;
+        if (attempt < MAX_ATTEMPTS && isRetryableGeminiError(error)) {
+          console.warn(`Gemini classify attempt ${attempt} failed (retrying):`, error);
+          await delay(RETRY_DELAY_MS * attempt);
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw lastError;
+  }
+
+  private async classifyOnce(imageBase64: string): Promise<ClassificationResult> {
     const response = await this.ai.models.generateContent({
       model: 'gemini-3.6-flash',
+      // Same fix as AiService.chatGuidance: gemini-3.6-flash spends part of its output
+      // budget on invisible "thinking" tokens before the visible reply — disabling it
+      // keeps this call fast and focused on the actual classification task.
+      config: { thinkingConfig: { thinkingBudget: 0 } },
       contents: [
         {
           role: 'user',
