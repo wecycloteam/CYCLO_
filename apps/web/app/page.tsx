@@ -237,10 +237,12 @@ export default function RootPage() {
         </div>
       </section>
 
-      <footer className="border-t border-[#E2E9E7] px-6 py-8 lg:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-[#5B6C69] sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-extrabold text-[#275458]">CYCLO</span>
-          <span>{t("Turning waste into wealth.")}</span>
+      <footer className="bg-[#1B3E41] px-6 py-10 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 text-center">
+          <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={130} height={38} className="h-auto w-[130px]" />
+          <p className="text-sm font-extrabold text-white">{t("CYCLO — Turning Waste Into Value")}</p>
+          <p className="text-xs text-[#CAFFBD]/80">{t("© 2026 CYCLO. All rights reserved.")}</p>
+          <p className="text-xs text-[#CAFFBD]/80">{t("Built in Tanzania for a greener future")}</p>
         </div>
       </footer>
     </main>
