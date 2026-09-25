@@ -38,7 +38,6 @@ export function StarRatingDisplay({
     <span className="inline-flex items-center gap-1">
       <Star size={size} className="fill-[var(--warning)] text-[var(--warning)]" />
       <span className="text-xs font-bold text-[var(--text-1)]">{shown.average.toFixed(1)}</span>
-      <span className="text-xs text-[var(--text-3)]">({shown.count})</span>
     </span>
   );
 }
