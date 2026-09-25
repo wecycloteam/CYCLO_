@@ -241,7 +241,7 @@ export const sw: Record<string, string> = {
   "Approve": "Idhinisha",
   "Reject": "Kataa",
   "Request Changes": "Omba Marekebisho",
-  "CYCLO — Turning Waste Into Value": "CYCLO — Kugeuza Taka Kuwa Thamani",
+  "CYCLO - Turning Waste Into Wealth": "CYCLO - Kugeuza Taka Kuwa Utajiri",
   "© 2026 CYCLO. All rights reserved.": "© 2026 CYCLO. Haki zote zimehifadhiwa.",
   "Built in Tanzania for a greener future": "Imejengwa Tanzania kwa mustakabali wa kijani",
   "of waste handled diverted from landfill": "ya taka zilizoshughulikiwa imeepushwa na dampo",

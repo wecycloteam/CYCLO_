@@ -240,7 +240,7 @@ export default function RootPage() {
       <footer className="bg-[#1B3E41] px-6 py-10 lg:px-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 text-center">
           <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={130} height={38} className="h-auto w-[130px]" />
-          <p className="text-sm font-extrabold text-white">{t("CYCLO — Turning Waste Into Value")}</p>
+          <p className="text-sm font-extrabold text-white">{t("CYCLO - Turning Waste Into Wealth")}</p>
           <p className="text-xs text-[#CAFFBD]/80">{t("© 2026 CYCLO. All rights reserved.")}</p>
           <p className="text-xs text-[#CAFFBD]/80">{t("Built in Tanzania for a greener future")}</p>
         </div>
