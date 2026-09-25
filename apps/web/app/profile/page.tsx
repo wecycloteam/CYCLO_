@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Pencil, X, Check, Camera, Lock } from "lucide-react";
+import Link from "next/link";
+import { Pencil, X, Check, Camera, Lock, Wallet as WalletIcon } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
@@ -175,6 +176,18 @@ export default function ProfilePage() {
                 {t("Edit profile")}
               </button>
             </div>
+
+            <Link
+              href="/wallet"
+              className="mb-4 flex items-center justify-between rounded-[var(--r-md)] p-4 text-white"
+              style={{ background: "linear-gradient(135deg, var(--cyclo-teal), #1B3E41)" }}
+            >
+              <div className="flex items-center gap-2">
+                <WalletIcon size={18} />
+                <span className="text-sm font-extrabold">{t("CYCLO Wallet")}</span>
+              </div>
+              <span className="text-xs font-bold text-[#B9D6D1]">{t("View →")}</span>
+            </Link>
 
             <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
               <div className="flex items-center justify-between px-4 py-3">

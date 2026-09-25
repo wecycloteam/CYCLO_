@@ -1,6 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { ListingStatus } from '@cyclo/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
 import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
 
 const ORDER_SELECT = {
@@ -33,7 +35,10 @@ function mapOrder<T extends { listing: { photos?: string | null } }>(order: T) {
 // listing's status is read, not a second parallel concept.
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly wallet: WalletService,
+  ) {}
 
   async create(buyerId: string, buyerRole: string, listingId: string, quantityKg: number) {
     // household is the "seller" side of the self-service mode switch (see
@@ -118,6 +123,57 @@ export class OrdersService {
         const updated = await tx.order.update({
           where: { id },
           data: { paymentStatus: 'PAID' },
+          select: ORDER_SELECT,
+        });
+        const listing = await tx.wasteListing.findUnique({ where: { id: order.listingId } });
+        if (listing && listing.status === 'RESERVED') {
+          assertValidListingTransition('RESERVED', 'SOLD');
+          await tx.wasteListing.update({ where: { id: order.listingId }, data: { status: 'SOLD' } });
+        }
+        // Real money already moved directly between buyer and seller by mobile money —
+        // only the CC loyalty reward is granted here, never the TZS itself (see
+        // WalletService.creditSaleCCOnly for why crediting TZS too would double-count it).
+        await this.wallet.creditSaleCCOnly(tx, order.sellerId, order.agreedPrice, id);
+        await this.wallet.creditBuyerCC(tx, order.buyerId, order.agreedPrice, id);
+        return mapOrder(updated);
+      },
+      { timeout: 15000 },
+    );
+  }
+
+  // A wallet-funded purchase is a real, atomic database transaction CYCLO itself performs
+  // (debit buyer, credit seller, mark PAID, all in one $transaction) — fundamentally
+  // different from submitPayment/confirmPayment above, which exists because CYCLO can't
+  // see real mobile-money transfers and has to trust the seller's own manual confirmation.
+  // Here there's nothing to "confirm" after the fact: the password check IS the
+  // confirmation step (§ wallet spec item 4), required precisely because there's no
+  // second party in the loop to catch a mistaken or unauthorized purchase.
+  async payWithWallet(buyerId: string, id: string, password: string) {
+    const order = await this.getOwnedOrder(id, buyerId);
+    if (order.buyerId !== buyerId) throw new ForbiddenException('Only the buyer can pay for this order.');
+    if (order.paymentStatus !== 'PENDING') {
+      throw new BadRequestException('This order has already been paid, submitted, or cancelled.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: buyerId } });
+    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new UnauthorizedException('Incorrect password.');
+    }
+
+    const sufficientBalance = await this.wallet.hasSufficientBalance(buyerId, order.agreedPrice);
+    if (!sufficientBalance) {
+      throw new BadRequestException('Not enough money in your CYCLO wallet to complete this purchase. Top up and try again.');
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.wallet.debitForPurchase(tx, buyerId, order.agreedPrice, id);
+        await this.wallet.creditSaleEarning(tx, order.sellerId, order.agreedPrice, id);
+        await this.wallet.creditBuyerCC(tx, buyerId, order.agreedPrice, id);
+
+        const updated = await tx.order.update({
+          where: { id },
+          data: { paymentStatus: 'PAID', paymentMethod: 'cyclo_wallet' },
           select: ORDER_SELECT,
         });
         const listing = await tx.wasteListing.findUnique({ where: { id: order.listingId } });

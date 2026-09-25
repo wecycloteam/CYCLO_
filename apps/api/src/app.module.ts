@@ -19,6 +19,8 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
 import { OrdersModule } from './orders/orders.module';
 import { PublicStatsModule } from './public-stats/public-stats.module';
+import { WalletModule } from './wallet/wallet.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { PublicStatsModule } from './public-stats/public-stats.module';
     ChatModule,
     OrdersModule,
     PublicStatsModule,
+    WalletModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

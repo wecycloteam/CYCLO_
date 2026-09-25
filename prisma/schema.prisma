@@ -68,6 +68,10 @@ model User {
   country            String   @default("TZ")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  // Set by redeeming the "Featured Seller Placement" CC perk — shows a Featured badge on
+  // this seller's listings/profile while in the future; a real, visible effect rather than
+  // a purely cosmetic redemption.
+  featuredUntil      DateTime?
 
   organizationMemberships OrganizationMember[]
   ownedOrganizations      Organization[]       @relation("OrganizationOwner")
@@ -88,6 +92,8 @@ model User {
   messagesSent            Message[]
   ordersAsBuyer           Order[]              @relation("OrderBuyer")
   ordersAsSeller          Order[]              @relation("OrderSeller")
+  wallet                  Wallet?
+  cartItems               CartItem[]
 
   @@index([role])
   @@index([verificationStatus])
@@ -178,6 +184,64 @@ model OtpChallenge {
   createdAt    DateTime  @default(now())
 
   @@index([phone])
+}
+
+// The CYCLO Wallet — an internal, CYCLO-controlled balance (TZS) plus a separate loyalty
+// currency (CYCLO Credits/CC). Top-ups and wallet-funded purchases are real database
+// transactions CYCLO itself performs atomically (debit one wallet, credit another in the
+// same transaction), which is a fundamentally different trust situation from the
+// Order.paymentReference flow above (that flow exists because CYCLO can't observe money
+// moving through a real mobile money network, so it relies on the seller's own manual
+// confirmation). Top-up itself, until a real payment aggregator is integrated, credits the
+// wallet without an actual external charge — see WalletService.topUp.
+model Wallet {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  balanceTzs Float    @default(0)
+  creditsCC  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  walletId    String
+  // TOPUP | PURCHASE | SALE_EARNING | CC_REDEMPTION | REFUND
+  type        String
+  amountTzs   Float?
+  amountCC    Int?
+  // Mobile money / bank provider for a TOPUP row (mpesa, mixx_by_yas, airtel_money,
+  // halopesa, nmb, crdb, nbc, other) — null for non-topup rows.
+  provider    String?
+  relatedOrderId String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+}
+
+// One row per (buyer, listing) — quantity accumulates on repeated "Add to Cart" taps for
+// the same listing rather than duplicating rows. Cleared per-item at successful checkout,
+// not wholesale, so an item that fails validation (e.g. someone else bought the last of it
+// first) stays in the cart for the buyer to adjust or remove.
+model CartItem {
+  id         String   @id @default(uuid())
+  buyerId    String
+  listingId  String
+  quantityKg Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  buyer   User         @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  listing WasteListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerId, listingId])
+  @@index([buyerId])
 }
 
 model PasswordResetChallenge {
@@ -310,6 +374,10 @@ model WasteListing {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   expiresAt         DateTime?
+  // Set by redeeming the "Marketplace Boost" CC perk (WalletService.redeemCredits) —
+  // browseListings sorts a listing with a future boostedUntil ahead of everything else,
+  // a real ranking effect rather than a purely cosmetic redemption.
+  boostedUntil      DateTime?
 
   seller         User            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   material       WasteMaterial   @relation(fields: [materialId], references: [id])
@@ -317,6 +385,7 @@ model WasteListing {
   pickupRequests PickupRequest[]
   conversations  Conversation[]
   orders         Order[]
+  cartItems      CartItem[]
 
   @@index([sellerId])
   @@index([materialId])

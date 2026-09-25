@@ -86,7 +86,7 @@ export default function AdminListingsPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="Pending Listings" />
+      <AppHeader title="Pending Listings" back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         <AdminGate authState={authState} user={user}>
           {state === "loading" && <LoadingState label="Loading pending listings…" />}

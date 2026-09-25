@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageCircle, ShoppingBag, Phone } from "lucide-react";
-import { api, ApiError, CurrentUser, SellerContact, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
+import { ShoppingBag, ShoppingCart } from "lucide-react";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { FeaturedBadge } from "@/components/FeaturedBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n";
@@ -58,15 +59,13 @@ export default function ListingDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
-  const [messaging, setMessaging] = useState(false);
-  const [messageError, setMessageError] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [showBuyForm, setShowBuyForm] = useState(false);
   const [buyQuantity, setBuyQuantity] = useState("");
-  const [contact, setContact] = useState<SellerContact | null>(null);
-  const [contactLoading, setContactLoading] = useState(false);
-  const [contactError, setContactError] = useState<string | null>(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [cartSuccess, setCartSuccess] = useState(false);
 
   function load() {
     setState("loading");
@@ -113,29 +112,18 @@ export default function ListingDetailPage() {
     }
   }
 
-  async function handleShowContact() {
-    if (contact) return;
-    setContactLoading(true);
-    setContactError(null);
+  async function handleAddToCart() {
+    if (!listing) return;
+    setAddingToCart(true);
+    setCartError(null);
+    setCartSuccess(false);
     try {
-      setContact(await api.contactSeller(id));
+      await api.addToCart(listing.id, quantityNum || listing.estimatedWeightKg);
+      setCartSuccess(true);
     } catch (err) {
-      setContactError(err instanceof ApiError ? err.message : "Couldn't load the seller's contact info.");
+      setCartError(err instanceof ApiError ? err.message : "Couldn't add this to your cart.");
     } finally {
-      setContactLoading(false);
-    }
-  }
-
-  async function handleMessageSeller() {
-    setMessaging(true);
-    setMessageError(null);
-    try {
-      const conversation = await api.startConversation({ listingId: id });
-      router.push(`/chat/${conversation.id}`);
-    } catch (err) {
-      setMessageError(err instanceof ApiError ? err.message : "Couldn't start a conversation.");
-    } finally {
-      setMessaging(false);
+      setAddingToCart(false);
     }
   }
 
@@ -169,7 +157,7 @@ export default function ListingDetailPage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       {user ? (
-        <AppHeader title="Listing" />
+        <AppHeader title="Listing" back />
       ) : (
         <header className="sticky top-0 z-10 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
           <div className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-6 py-3 md:max-w-xl lg:max-w-3xl">
@@ -222,6 +210,7 @@ export default function ListingDetailPage() {
             <div className="flex items-center gap-2 mb-2 text-xs text-[var(--text-on-bg-2)]">
               <span>{listing.seller.name}</span>
               <VerifiedBadge status={listing.seller.verificationStatus} />
+              <FeaturedBadge featuredUntil={listing.seller.featuredUntil} />
             </div>
             <div className="mb-2">
               <StarRatingDisplay average={listing.seller.rating?.average ?? 0} count={listing.seller.rating?.count ?? 0} seed={listing.seller.id} />
@@ -256,16 +245,26 @@ export default function ListingDetailPage() {
             {!isOwner && user && (
               <div className="mb-4 flex flex-col gap-2">
                 {listing.status === "ACTIVE" && listing.askingPrice != null && canBuy && !showBuyForm && (
-                  <button
-                    onClick={() => {
-                      setShowBuyForm(true);
-                      setBuyQuantity(String(listing.estimatedWeightKg));
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3"
-                  >
-                    <ShoppingBag size={16} />
-                    {t("Buy Now")}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowBuyForm(true);
+                        setBuyQuantity(String(listing.estimatedWeightKg));
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3"
+                    >
+                      <ShoppingBag size={16} />
+                      {t("Buy Now")}
+                    </button>
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={addingToCart}
+                      className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-2.5 disabled:opacity-60"
+                    >
+                      <ShoppingCart size={16} />
+                      {addingToCart ? t("Adding…") : cartSuccess ? t("Added to Cart ✓") : t("Add to Cart")}
+                    </button>
+                  </>
                 )}
 
                 {showBuyForm && (
@@ -305,39 +304,7 @@ export default function ListingDetailPage() {
                     </div>
                   </div>
                 )}
-                <button
-                  onClick={handleMessageSeller}
-                  disabled={messaging}
-                  className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--cyclo-green)] text-[var(--cyclo-green)] font-bold text-sm py-2.5 disabled:opacity-60"
-                >
-                  <MessageCircle size={16} />
-                  {messaging ? t("Opening chat…") : t("Message Seller")}
-                </button>
-
-                {!contact ? (
-                  <button
-                    onClick={handleShowContact}
-                    disabled={contactLoading}
-                    className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-2.5 disabled:opacity-60"
-                  >
-                    <Phone size={16} />
-                    {contactLoading ? t("Loading…") : t("Show Seller's Phone Number")}
-                  </button>
-                ) : contact.phone ? (
-                  <a
-                    href={`tel:${contact.phone}`}
-                    className="flex w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-[var(--text-1)] font-bold text-sm py-2.5"
-                  >
-                    <Phone size={16} />
-                    {contact.phone}
-                  </a>
-                ) : (
-                  <p className="text-center text-xs text-[var(--text-on-bg-2)]">
-                    {t("{name} hasn't added a phone number — use chat to reach them.").replace("{name}", contact.name)}
-                  </p>
-                )}
-                {contactError && <p className="text-xs text-[var(--critical)]">{contactError}</p>}
-                {messageError && <p className="text-xs text-[var(--critical)]">{messageError}</p>}
+                {cartError && <p className="text-xs text-[var(--critical)]">{cartError}</p>}
                 {buyError && <p className="text-xs text-[var(--critical)]">{buyError}</p>}
               </div>
             )}
@@ -347,7 +314,7 @@ export default function ListingDetailPage() {
                 href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
                 className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 text-center mb-4"
               >
-                {t("Log in to Message Seller / Buy")}
+                {t("Log in to Buy")}
               </Link>
             )}
 

@@ -2,12 +2,17 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { api, tokenStore } from "@/lib/api";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n";
 
-export function AppHeader({ title }: { title?: string }) {
+// `back` is opt-in, not inferred from `title` — the bottom-nav tab pages (Marketplace,
+// Activity, Chat, Profile) also pass a title but have nowhere meaningful to "go back" to
+// within the app, so only drill-in/sub-pages (a listing, an order, a settings sub-page)
+// pass back={true}.
+export function AppHeader({ title, back }: { title?: string; back?: boolean }) {
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -24,7 +29,18 @@ export function AppHeader({ title }: { title?: string }) {
     <header className="sticky top-0 z-10 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
       <div className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-6 py-3 md:max-w-xl lg:max-w-3xl">
         {title ? (
-          <span className="text-lg font-extrabold text-[var(--chrome-text)]">{t(title)}</span>
+          <div className="flex min-w-0 items-center gap-3">
+            {back && (
+              <button
+                onClick={() => router.back()}
+                aria-label="Go back"
+                className="shrink-0 text-[var(--chrome-text)]"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <span className="truncate text-lg font-extrabold text-[var(--chrome-text)]">{t(title)}</span>
+          </div>
         ) : (
           <>
             <Image

@@ -52,7 +52,7 @@ export default function OrdersPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="Orders & Payments" />
+      <AppHeader title="Orders & Payments" back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-5 py-6">
         {state === "loading" && <LoadingState label={t("Loading your orders…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}

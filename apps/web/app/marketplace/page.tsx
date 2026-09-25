@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { FeaturedBadge } from "@/components/FeaturedBadge";
 import { StarRatingDisplay } from "@/components/StarRating";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -80,6 +81,7 @@ function ListingCard({ listing }: { listing: WasteListing }) {
             </span>
           )}
           <VerifiedBadge status={listing.seller.verificationStatus} />
+          <FeaturedBadge featuredUntil={listing.seller.featuredUntil} />
         </div>
       </div>
     </Link>

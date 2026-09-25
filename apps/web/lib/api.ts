@@ -141,6 +141,7 @@ export interface PublicSeller {
   id: string;
   name: string;
   verificationStatus: string;
+  featuredUntil?: string | null;
   rating?: SellerRating;
 }
 
@@ -163,6 +164,7 @@ export interface WasteListing {
   status: ListingStatus;
   moderationStatus: ModerationStatus;
   createdAt: string;
+  boostedUntil?: string | null;
   material: WasteMaterial;
   location: Location;
   seller: PublicSeller;
@@ -334,6 +336,53 @@ export interface Order {
   listing: { id: string; photos: string[]; material: { label: string } };
   buyer: { id: string; name: string; phone: string | null };
   seller: { id: string; name: string; phone: string | null };
+}
+
+export interface WalletProvider {
+  id: string;
+  label: string;
+}
+
+export interface WalletTransactionRecord {
+  id: string;
+  type: "TOPUP" | "PURCHASE" | "SALE_EARNING" | "CC_REDEMPTION" | "REFUND";
+  amountTzs: number | null;
+  amountCC: number | null;
+  provider: string | null;
+  relatedOrderId: string | null;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface Wallet {
+  id: string;
+  userId: string;
+  balanceTzs: number;
+  creditsCC: number;
+  transactions: WalletTransactionRecord[];
+}
+
+export interface CartItemRecord {
+  id: string;
+  listingId: string;
+  quantityKg: number;
+  createdAt: string;
+  subtotal: number | null;
+  listing: {
+    id: string;
+    status: string;
+    photos: string[];
+    askingPrice: number | null;
+    estimatedWeightKg: number;
+    quantityUnit: string;
+    material: { label: string };
+    seller: { id: string; name: string };
+  };
+}
+
+export interface Cart {
+  items: CartItemRecord[];
+  total: number;
 }
 
 export interface AuditLogEntry {
@@ -608,7 +657,39 @@ export const api = {
   submitOrderPayment: (id: string, reference: string) =>
     request<Order>(`/orders/${id}/submit-payment`, { method: "PATCH", body: JSON.stringify({ reference }) }, true),
   confirmOrderPayment: (id: string) => request<Order>(`/orders/${id}/confirm-payment`, { method: "PATCH" }, true),
+  payOrderWithWallet: (id: string, password: string) =>
+    request<Order>(`/orders/${id}/pay-with-wallet`, { method: "PATCH", body: JSON.stringify({ password }) }, true),
   cancelOrder: (id: string) => request<Order>(`/orders/${id}/cancel`, { method: "PATCH" }, true),
+
+  // CYCLO Wallet
+  walletProviders: () => request<WalletProvider[]>("/wallet/providers", { method: "GET" }, true),
+  myWallet: () => request<Wallet>("/wallet/me", { method: "GET" }, true),
+  topUpWallet: (provider: string, amountTzs: number) =>
+    request<Wallet>("/wallet/topup", { method: "POST", body: JSON.stringify({ provider, amountTzs }) }, true),
+  walletPerks: () =>
+    request<{ id: string; label: string; description: string; costCC: number; requiresListing: boolean }[]>(
+      "/wallet/perks",
+      { method: "GET" },
+      true
+    ),
+  redeemBoost: (listingId: string) => request<WasteListing>(`/wallet/perks/boost/${listingId}`, { method: "POST" }, true),
+  redeemFeatured: () => request<CurrentUser>("/wallet/perks/featured", { method: "POST" }, true),
+  redeemListingUpgrade: (listingId: string) =>
+    request<WasteListing>(`/wallet/perks/listing-upgrade/${listingId}`, { method: "POST" }, true),
+
+  // Cart
+  myCart: () => request<Cart>("/cart", { method: "GET" }, true),
+  addToCart: (listingId: string, quantityKg: number) =>
+    request<Cart>("/cart", { method: "POST", body: JSON.stringify({ listingId, quantityKg }) }, true),
+  updateCartItem: (id: string, quantityKg: number) =>
+    request<Cart>(`/cart/${id}`, { method: "PATCH", body: JSON.stringify({ quantityKg }) }, true),
+  removeCartItem: (id: string) => request<Cart>(`/cart/${id}`, { method: "DELETE" }, true),
+  checkoutCart: () =>
+    request<{ orders: Order[]; failed: { listingId: string; message: string }[] }>(
+      "/cart/checkout",
+      { method: "POST" },
+      true
+    ),
 
   // Admin
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),

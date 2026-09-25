@@ -16,7 +16,7 @@ const BROWSE_PAGE_SIZE = 20;
 // Minimal, public-safe seller fields for the "Verified Seller" badge (§26) — never phone
 // or anything else PII-adjacent; that stays behind the not-yet-built contact-buttons
 // increment, which needs its own privacy decision (see CYCLO_IMPLEMENTATION_PLAN.md).
-const PUBLIC_SELLER_SELECT = { id: true, name: true, verificationStatus: true } as const;
+const PUBLIC_SELLER_SELECT = { id: true, name: true, verificationStatus: true, featuredUntil: true } as const;
 
 @Injectable()
 export class MarketplaceService {
@@ -78,7 +78,18 @@ export class MarketplaceService {
       take: BROWSE_PAGE_SIZE,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
-    return this.attachSellerRatings(listings.map(mapListing));
+    // A currently-active "Marketplace Boost" (redeemed with CC — see WalletService) sorts
+    // its listing to the top of this page, ahead of the normal recency order. Compared
+    // in-memory rather than in the query because "boosted" means boostedUntil > right now,
+    // not merely non-null (an expired boost must not out-rank a fresh, unboosted listing).
+    const now = Date.now();
+    const sorted = [...listings].sort((a, b) => {
+      const aBoosted = a.boostedUntil != null && a.boostedUntil.getTime() > now;
+      const bBoosted = b.boostedUntil != null && b.boostedUntil.getTime() > now;
+      if (aBoosted !== bBoosted) return aBoosted ? -1 : 1;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+    return this.attachSellerRatings(sorted.map(mapListing));
   }
 
   // Ratings live on the SELLER (real reviews left by the collector/buyer on a completed

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle2, XCircle } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, XCircle, Wallet as WalletIcon } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Order } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
+import { PasswordInput } from "@/components/PasswordInput";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 import { useLanguage } from "@/lib/i18n";
 
@@ -22,6 +24,10 @@ export default function OrderDetailPage() {
   const [reference, setReference] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [showWalletConfirm, setShowWalletConfirm] = useState(false);
+  const [walletPassword, setWalletPassword] = useState("");
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
@@ -45,6 +51,26 @@ export default function OrderDetailPage() {
     if (authState === "ready") Promise.resolve().then(load);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authState, id]);
+
+  useEffect(() => {
+    if (authState === "ready") api.myWallet().then((w) => setWalletBalance(w.balanceTzs)).catch(() => undefined);
+  }, [authState]);
+
+  async function handlePayWithWallet(e: React.FormEvent) {
+    e.preventDefault();
+    setWalletError(null);
+    setActing(true);
+    try {
+      const updated = await api.payOrderWithWallet(id, walletPassword);
+      setOrder(updated);
+      setShowWalletConfirm(false);
+      setWalletPassword("");
+    } catch (err) {
+      setWalletError(err instanceof ApiError ? err.message : t("Something went wrong."));
+    } finally {
+      setActing(false);
+    }
+  }
 
   async function handleSubmitPayment(e: React.FormEvent) {
     e.preventDefault();
@@ -91,7 +117,7 @@ export default function OrderDetailPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="Order" />
+      <AppHeader title="Order" back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         {state === "loading" && <LoadingState label={t("Loading order…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
@@ -109,6 +135,76 @@ export default function OrderDetailPage() {
             </div>
 
             {actionError && <p className="text-xs font-bold text-[var(--critical)] mb-4">{actionError}</p>}
+
+            {order.paymentStatus === "PENDING" && isBuyer && walletBalance != null && (
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-4">
+                <h2 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-[var(--text-1)]">
+                  <WalletIcon size={16} /> {t("Pay with CYCLO Wallet")}
+                </h2>
+                <p className="text-xs text-[var(--text-2)] mb-3">
+                  {t("Wallet balance:")} <span className="font-bold text-[var(--text-1)]">TZS {Math.round(walletBalance).toLocaleString()}</span>
+                </p>
+
+                {walletBalance >= order.agreedPrice ? (
+                  !showWalletConfirm ? (
+                    <button
+                      onClick={() => setShowWalletConfirm(true)}
+                      className="w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3"
+                    >
+                      {t("Pay with Wallet")}
+                    </button>
+                  ) : (
+                    <form onSubmit={handlePayWithWallet} className="flex flex-col gap-3">
+                      <p className="text-xs text-[var(--text-2)]">
+                        {t("Enter your CYCLO password to confirm this payment of TZS {amount}.").replace(
+                          "{amount}",
+                          order.agreedPrice.toLocaleString()
+                        )}
+                      </p>
+                      <PasswordInput
+                        required
+                        value={walletPassword}
+                        onChange={(e) => setWalletPassword(e.target.value)}
+                        placeholder={t("Your CYCLO password")}
+                        className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+                      />
+                      {walletError && <p className="text-xs font-bold text-[var(--critical)]">{walletError}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowWalletConfirm(false);
+                            setWalletError(null);
+                          }}
+                          className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-2.5"
+                        >
+                          {t("Cancel")}
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={acting}
+                          className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
+                        >
+                          {acting ? t("Confirming…") : t("Confirm Payment")}
+                        </button>
+                      </div>
+                    </form>
+                  )
+                ) : (
+                  <>
+                    <p className="text-xs font-bold text-[var(--critical)] mb-3">
+                      {t("You don't have enough money in your CYCLO wallet to purchase this.")}
+                    </p>
+                    <Link
+                      href="/wallet"
+                      className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-3"
+                    >
+                      {t("Top Up Wallet")}
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
 
             {order.paymentStatus === "PENDING" && isBuyer && (
               <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-4">

@@ -108,7 +108,7 @@ export default function PickupDetailPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="Pickup" />
+      <AppHeader title="Pickup" back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         {state === "loading" && <LoadingState label="Loading pickup…" />}
         {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}

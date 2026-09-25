@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
+import { api } from "@/lib/api";
 import {
   Home,
   ShoppingCart,
+  ShoppingBag,
   Camera,
   Truck,
   User,
@@ -41,6 +44,7 @@ const PRODUCER_ITEMS: NavItem[] = [
 // old Jobs tab here.
 const COLLECTOR_ITEMS: NavItem[] = [
   { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
+  { href: "/cart", label: "Cart", icon: ShoppingBag },
   { href: "/activity", label: "Activity", icon: Compass },
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
@@ -72,6 +76,14 @@ export function BottomNav({ role }: { role: string }) {
   const pathname = usePathname();
   const { t } = useLanguage();
   const items = itemsForRole(role);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    if (role !== "collector") return;
+    api.myCart().then((c) => setCartCount(c.items.length)).catch(() => undefined);
+    // Re-checks whenever the buyer lands back on this nav (e.g. after adding an item and
+    // navigating) rather than polling continuously for a count that rarely changes.
+  }, [role, pathname]);
 
   return (
     <nav className="sticky bottom-0 z-10 border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)]">
@@ -83,11 +95,18 @@ export function BottomNav({ role }: { role: string }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold ${
+              className={`relative flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold ${
                 active ? "text-[var(--cyclo-green)]" : "text-[var(--chrome-text-muted)]"
               }`}
             >
-              <Icon size={20} strokeWidth={2} />
+              <span className="relative">
+                <Icon size={20} strokeWidth={2} />
+                {item.href === "/cart" && cartCount > 0 && (
+                  <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--critical)] px-1 text-[9px] font-extrabold text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </span>
               {t(item.label)}
             </Link>
           );
