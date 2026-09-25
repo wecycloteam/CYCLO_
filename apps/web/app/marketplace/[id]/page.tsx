@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingBag, ShoppingCart, Flag, MessageCircle } from "lucide-react";
-import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore, materialShortName } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { FeaturedBadge } from "@/components/FeaturedBadge";
@@ -209,7 +209,7 @@ export default function ListingDetailPage() {
             )}
 
             <div className="flex items-start justify-between gap-3 mb-2">
-              <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{t(listing.material.label)}</h1>
+              <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{t(materialShortName(listing.material))}</h1>
               <span
                 className={`inline-block rounded-[var(--r-pill)] px-2.5 py-1 text-[11px] font-bold ${
                   listing.moderationStatus === "PENDING" || listing.moderationStatus === "CHANGES_REQUESTED"
@@ -240,6 +240,7 @@ export default function ListingDetailPage() {
             )}
 
             <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)] mb-6">
+              <Row k={t("Type")} v={t(listing.material.label)} />
               <Row k={t("Quantity")} v={`${listing.estimatedWeightKg} ${listing.quantityUnit}`} />
               {listing.verifiedWeightKg != null && <Row k={t("Verified weight")} v={`${listing.verifiedWeightKg} kg`} />}
               {listing.condition && <Row k={t("Condition")} v={listing.condition} />}

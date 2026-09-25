@@ -224,7 +224,10 @@ export class ChatService {
     if (message.senderId !== userId) {
       throw new ForbiddenException('Only the sender can delete this message for everyone.');
     }
-    await this.prisma.message.update({ where: { id: messageId }, data: { deletedForEveryone: true } });
+    await this.prisma.message.update({
+      where: { id: messageId },
+      data: { deletedForEveryone: true, body: '', attachmentUrl: null, attachmentType: null },
+    });
     return { message: 'Deleted for everyone.' };
   }
 

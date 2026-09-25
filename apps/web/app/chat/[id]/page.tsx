@@ -55,6 +55,32 @@ export default function ConversationPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Deletions applied locally, re-applied to every poll result — otherwise a poll that was
+  // already in flight when the user deleted would briefly bring the message back.
+  const hiddenIdsRef = useRef<Set<string>>(new Set());
+  const deletedForEveryoneIdsRef = useRef<Set<string>>(new Set());
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function applyLocalDeletes(list: ChatMessageRecord[]) {
+    return list
+      .filter((m) => !hiddenIdsRef.current.has(m.id))
+      .map((m) =>
+        deletedForEveryoneIdsRef.current.has(m.id) ? { ...m, deletedForEveryone: true, body: "This message was deleted" } : m
+      );
+  }
+
+  function startLongPress(messageId: string) {
+    cancelLongPress();
+    longPressTimerRef.current = setTimeout(() => {
+      setOpenMenuId(messageId);
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
+    }, 450);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  }
 
   const conversation = conversations.find((c) => c.id === id) ?? null;
 
@@ -69,7 +95,7 @@ export default function ConversationPage() {
     Promise.all([api.myConversations(), api.conversationMessages(id)])
       .then(([convos, msgs]) => {
         setConversations(convos);
-        setMessages(msgs);
+        setMessages(applyLocalDeletes(msgs));
         setState("ready");
         if (initial) {
           api.markConversationRead(id).catch(() => undefined);
@@ -191,20 +217,26 @@ export default function ConversationPage() {
 
   async function handleDeleteForMe(messageId: string) {
     setOpenMenuId(null);
-    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    hiddenIdsRef.current.add(messageId);
+    setMessages((prev) => applyLocalDeletes(prev));
     try {
       await api.deleteMessageForMe(messageId);
     } catch {
+      hiddenIdsRef.current.delete(messageId);
+      setAttachError(t("Couldn't delete that message."));
       load(false);
     }
   }
 
   async function handleDeleteForEveryone(messageId: string) {
     setOpenMenuId(null);
-    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, deletedForEveryone: true, body: "This message was deleted" } : m)));
+    deletedForEveryoneIdsRef.current.add(messageId);
+    setMessages((prev) => applyLocalDeletes(prev));
     try {
       await api.deleteMessageForEveryone(messageId);
     } catch {
+      deletedForEveryoneIdsRef.current.delete(messageId);
+      setAttachError(t("Couldn't delete that message."));
       load(false);
     }
   }
@@ -243,6 +275,7 @@ export default function ConversationPage() {
 
       {state === "ready" && user && (
         <>
+          {openMenuId && <div className="fixed inset-0 z-[5]" onClick={() => setOpenMenuId(null)} aria-hidden="true" />}
           <div ref={listRef} className="mx-auto w-full max-w-md flex-1 space-y-2 overflow-y-auto px-4 pb-4">
             {messages.length === 0 && (
               <p className="py-8 text-center text-xs text-[var(--text-on-bg-2)]">
@@ -252,11 +285,22 @@ export default function ConversationPage() {
             {messages.map((m) => {
               const isMine = m.senderId === user.id;
               const isDeleted = m.deletedForEveryone;
+              const canOpenMenu = !isDeleted && !m.id.startsWith("temp-");
               return (
                 <div key={m.id} className={`relative max-w-[80%] ${isMine ? "ml-auto" : ""}`}>
-                  <button
-                    type="button"
-                    onClick={() => !isDeleted && setOpenMenuId(openMenuId === m.id ? null : m.id)}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onPointerDown={() => canOpenMenu && startLongPress(m.id)}
+                    onPointerUp={cancelLongPress}
+                    onPointerLeave={cancelLongPress}
+                    onPointerCancel={cancelLongPress}
+                    onClick={() => openMenuId && openMenuId !== m.id && setOpenMenuId(null)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      if (canOpenMenu) setOpenMenuId(m.id);
+                    }}
+                    style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
                     className={`w-full rounded-[var(--r-md)] px-3 py-2 text-left text-sm ${
                       isMine ? "bg-[var(--cyclo-teal)] text-white" : "bg-[var(--surface)] text-[var(--text-1)]"
                     } ${isDeleted ? "italic opacity-70" : ""}`}
@@ -283,7 +327,7 @@ export default function ConversationPage() {
                       <span>{formatTime(m.createdAt)}</span>
                       {isMine && !isDeleted && <MessageTicks status={m.status} />}
                     </div>
-                  </button>
+                  </div>
 
                   {openMenuId === m.id && !isDeleted && (
                     <div

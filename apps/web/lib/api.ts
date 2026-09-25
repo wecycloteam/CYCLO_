@@ -187,6 +187,21 @@ export interface WasteListing {
   seller: PublicSeller;
 }
 
+const CATEGORY_SHORT_NAME: Record<string, string> = {
+  plastic: "Plastic waste",
+  paper_cardboard: "Paper & cardboard",
+  metal: "Metal waste",
+  glass: "Glass waste",
+  e_waste: "E-waste",
+  textile: "Textile waste",
+  rubber: "Rubber waste",
+};
+
+// Short card heading ("Metal waste"); the full label with examples is shown on the detail page.
+export function materialShortName(material: { category: string; label: string }): string {
+  return CATEGORY_SHORT_NAME[material.category] ?? material.label;
+}
+
 // A listing's true public status is status + moderationStatus combined — ACTIVE alone
 // just means the seller published it, not that it's admin-approved yet (§15 vs the
 // moderation gate in CYCLO_IMPLEMENTATION_PLAN.md's "Admin foundation" section).

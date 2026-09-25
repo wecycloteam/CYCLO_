@@ -75,6 +75,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     price: "TZS 100 / kg",
     rating: "4.6",
     reviews: 38,
+    image: "/materials/glasswaste.jpg",
     acceptedForms: ["Bottles", "Glass containers"],
   },
   {
@@ -116,6 +117,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     price: "TZS 250 / kg",
     rating: "4.5",
     reviews: 21,
+    image: "/materials/tyresandrubber.jpg",
     acceptedForms: ["Tyres", "Rubber offcuts"],
   },
 ];

@@ -25,7 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ImpactStats, Location, Order, WasteListing, formatUnitPrice } from "@/lib/api";
+import { api, ImpactStats, Location, Order, WasteListing, formatUnitPrice, materialShortName } from "@/lib/api";
 import { BottomNav } from "@/components/BottomNav";
 import { AssistantChat } from "@/components/AssistantChat";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -86,7 +86,7 @@ function ListingProductCard({ listing }: { listing: WasteListing }) {
         )}
       </div>
       <div className="p-3">
-        <div className="truncate text-xs font-extrabold text-[var(--text-1)]">{t(listing.material.label)}</div>
+        <div className="truncate text-xs font-extrabold text-[var(--text-1)]">{t(materialShortName(listing.material))}</div>
         <div className="mt-0.5 truncate text-[10px] font-bold text-[var(--text-2)]">{listing.seller.name}</div>
         <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--text-2)]">
           <Scale size={11} /> {listing.estimatedWeightKg} kg
@@ -388,7 +388,7 @@ export default function HomePage() {
                     className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                   >
                     <div>
-                      <div className="text-sm font-bold">{t(l.material.label)}</div>
+                      <div className="text-sm font-bold">{t(materialShortName(l.material))}</div>
                       <div className="text-xs text-[var(--text-2)]">{l.estimatedWeightKg} kg listed</div>
                     </div>
                     <StatusBadge status={l.status} />
