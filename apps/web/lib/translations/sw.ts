@@ -241,6 +241,7 @@ export const sw: Record<string, string> = {
   "Approve": "Idhinisha",
   "Reject": "Kataa",
   "Request Changes": "Omba Marekebisho",
+  "of waste handled diverted from landfill ({diverted} of {handled} kg)": "ya taka zilizoshughulikiwa imeepushwa na dampo ({diverted} kati ya {handled} kg)",
   "Type": "Aina",
   "Couldn't delete that message.": "Imeshindwa kufuta ujumbe huo.",
   "{rate}% commission on all completed transactions.": "Kamisheni ya {rate}% kwa miamala yote iliyokamilika.",

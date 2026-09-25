@@ -16,19 +16,30 @@ export class PublicStatsService {
   // newer Order rows, where only PAID orders represent money that's actually changed
   // hands.
   async landingStats() {
-    const [materialsListed, transactions, paidOrders, dailyListingCounts] = await Promise.all([
-      this.prisma.wasteListing.count(),
+    const [materialsListed, liveKgAgg, transactions, paidOrders, dailyListingCounts] = await Promise.all([
+      // Only what's actually live in the marketplace right now.
+      this.prisma.wasteListing.count({ where: { status: 'ACTIVE', moderationStatus: 'APPROVED' } }),
+      this.prisma.wasteListing.aggregate({ where: { status: 'ACTIVE', moderationStatus: 'APPROVED' }, _sum: { estimatedWeightKg: true } }),
       this.prisma.transaction.findMany({ select: { agreedPrice: true } }),
-      this.prisma.order.findMany({ where: { paymentStatus: 'PAID' }, select: { agreedPrice: true } }),
+      this.prisma.order.findMany({ where: { paymentStatus: 'PAID' }, select: { agreedPrice: true, quantityKg: true } }),
       this.recentDailyListingCounts(),
     ]);
 
     const valueFromTransactions = transactions.reduce((sum, t) => sum + (t.agreedPrice ?? 0), 0);
     const valueFromOrders = paidOrders.reduce((sum, o) => sum + o.agreedPrice, 0);
 
+    // Landfill diversion rate: of all waste handled on CYCLO (sold + still listed), the
+    // share that was actually sold on into recycling rather than left to be dumped.
+    const kgDiverted = paidOrders.reduce((sum, o) => sum + o.quantityKg, 0);
+    const kgHandled = kgDiverted + (liveKgAgg._sum.estimatedWeightKg ?? 0);
+    const diversionRatePercent = kgHandled > 0 ? Math.round((kgDiverted / kgHandled) * 100) : 0;
+
     return {
       materialsListed,
       valueRecoveredTzs: Math.round(valueFromTransactions + valueFromOrders),
+      kgDiverted: Math.round(kgDiverted),
+      kgHandled: Math.round(kgHandled),
+      diversionRatePercent,
       dailyListingCounts,
     };
   }

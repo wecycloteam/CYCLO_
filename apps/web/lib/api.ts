@@ -672,7 +672,7 @@ export const api = {
     request<{ message: string }>("/auth/password-reset/confirm", { method: "POST", body: JSON.stringify(input) }),
 
   landingStats: () =>
-    request<{ materialsListed: number; valueRecoveredTzs: number; dailyListingCounts: number[] }>(
+    request<{ materialsListed: number; valueRecoveredTzs: number; kgDiverted: number; kgHandled: number; diversionRatePercent: number; dailyListingCounts: number[] }>(
       "/public-stats/landing",
       { method: "GET" }
     ),

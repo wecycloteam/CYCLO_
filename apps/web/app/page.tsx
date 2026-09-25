@@ -20,7 +20,7 @@ function barHeight(count: number, max: number): number {
 export default function RootPage() {
   const hasSession = tokenStore.getAccess();
   const { t } = useLanguage();
-  const [stats, setStats] = useState<{ materialsListed: number; valueRecoveredTzs: number; dailyListingCounts: number[] } | null>(null);
+  const [stats, setStats] = useState<{ materialsListed: number; valueRecoveredTzs: number; kgDiverted: number; kgHandled: number; diversionRatePercent: number; dailyListingCounts: number[] } | null>(null);
 
   useEffect(() => {
     document.title = "CYCLO — Turn waste into value";
@@ -129,7 +129,14 @@ export default function RootPage() {
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
                     <p className="text-xs font-bold text-[#5B6C69]">{t("Impact Tracked")}</p>
                     <p className="mt-2 text-2xl font-extrabold text-[#275458]">
-                      {stats ? `TZS ${Math.round(stats.valueRecoveredTzs).toLocaleString()}` : "—"}
+                      {stats ? `${stats.diversionRatePercent}%` : "—"}
+                    </p>
+                    <p className="mt-1 text-[11px] leading-4 text-[#5B6C69]">
+                      {stats
+                        ? t("of waste handled diverted from landfill ({diverted} of {handled} kg)")
+                            .replace("{diverted}", stats.kgDiverted.toLocaleString())
+                            .replace("{handled}", stats.kgHandled.toLocaleString())
+                        : ""}
                     </p>
                   </div>
                 </div>
