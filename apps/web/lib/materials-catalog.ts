@@ -33,7 +33,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     price: "TZS 500 / kg",
     rating: "4.9",
     reviews: 128,
-    image: "/materials/plastic-bottles.png?v=2",
+    image: "/materials/plastic-bottles.jpg",
     acceptedForms: ["Bottles (cap removed)", "Rinsed containers", "Packaging"],
   },
   {

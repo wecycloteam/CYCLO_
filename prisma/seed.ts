@@ -70,7 +70,7 @@ const DEMO_LISTINGS: Array<{
   // fabricating one. See prisma/seed.ts's main() for how this becomes WasteListing.photos.
   photo?: string;
 }> = [
-  { category: 'plastic', subtype: 'GENERAL', label: 'Plastic Bottles', estimatedWeightKg: 25, description: 'Clean plastic bottles collected from a household.', seller: 'amina', photo: '/materials/plastic-bottles.png?v=2' },
+  { category: 'plastic', subtype: 'GENERAL', label: 'Plastic Bottles', estimatedWeightKg: 25, description: 'Clean plastic bottles collected from a household.', seller: 'amina', photo: '/materials/plastic-bottles.jpg' },
   { category: 'metal', subtype: 'GENERAL', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', seller: 'neema', photo: '/materials/aluminum-cans.jpg' },
   { category: 'paper_cardboard', subtype: 'GENERAL', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', seller: 'baraka', photo: '/materials/cardboard.jpg?v=2' },
   { category: 'metal', subtype: 'GENERAL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', seller: 'fatuma', photo: '/materials/steel-tin.jpg' },

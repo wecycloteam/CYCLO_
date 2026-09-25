@@ -96,3 +96,9 @@
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
+
+# Waste photos rarely change — let browsers reuse them for a week instead of re-downloading.
+[[headers]]
+  for = "/materials/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

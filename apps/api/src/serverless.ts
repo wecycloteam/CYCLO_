@@ -32,6 +32,18 @@ async function bootstrapHandler() {
     next();
   });
 
+  // Public, identical-for-everyone GET responses are cached on Netlify's CDN so repeat
+  // visitors skip the function (and the cross-region database round trips) entirely.
+  // Browsers always revalidate; the CDN serves for 60s, then refreshes in the background.
+  const CDN_CACHEABLE = new Set(['/listings', '/waste-prices', '/waste-materials', '/public-stats']);
+  expressApp.use((req, res, next) => {
+    if (req.method === 'GET' && CDN_CACHEABLE.has(req.path)) {
+      res.setHeader('Netlify-CDN-Cache-Control', 'public, durable, s-maxage=60, stale-while-revalidate=600');
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
+    next();
+  });
+
   const app = await createApp(new ExpressAdapter(expressApp), { bodyParser: false });
   await app.init();
 

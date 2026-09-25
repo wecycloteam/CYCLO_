@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Scale, Recycle, Magnet, FileText, Shirt, GlassWater, Cpu, Circle, Trash2, type LucideIcon } from "lucide-react";
-import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore, materialShortName } from "@/lib/api";
+import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore, materialShortName, getCachedCurrentUser, setCachedCurrentUser } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -93,8 +93,9 @@ function ListingCard({ listing }: { listing: WasteListing }) {
 // need one. So this checks for a session without ever redirecting an anonymous
 // visitor away, unlike useCurrentUser().
 function useOptionalCurrentUser() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [checked, setChecked] = useState(false);
+  const cached = getCachedCurrentUser();
+  const [user, setUser] = useState<CurrentUser | null>(cached);
+  const [checked, setChecked] = useState(cached != null);
 
   useEffect(() => {
     if (!tokenStore.getAccess()) {
@@ -105,6 +106,7 @@ function useOptionalCurrentUser() {
     api
       .me()
       .then((u) => {
+        setCachedCurrentUser(u);
         if (!cancelled) setUser(u);
       })
       .catch(() => {
@@ -168,11 +170,17 @@ function MarketplaceContent() {
       });
   }
 
+  // Browsing is public, so it loads straight away instead of waiting on the login check.
   useEffect(() => {
-    if (!checked) return;
-    if (tab === "mine" && !user) return;
-    Promise.resolve().then(() => load(tab));
-  }, [checked, user, tab]);
+    if (tab === "browse") Promise.resolve().then(() => load("browse"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  const userId = user?.id;
+  useEffect(() => {
+    if (tab === "mine" && checked && userId) Promise.resolve().then(() => load("mine"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, checked, userId]);
 
   const filteredListings = useMemo(() => {
     const q = search.trim().toLowerCase();
