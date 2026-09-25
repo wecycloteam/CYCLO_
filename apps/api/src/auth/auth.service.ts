@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -31,6 +31,8 @@ function hashRefreshToken(token: string): string {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly users: UsersService,
@@ -219,7 +221,17 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000);
 
     await this.prisma.passwordResetChallenge.create({ data: { email: dto.email, codeHash, expiresAt } });
-    await this.email.sendPasswordResetCode(dto.email, code);
+
+    // A delivery failure here (provider outage, an unverified sending domain rejecting the
+    // recipient, etc.) must not turn into a 500 or leak provider details to the client —
+    // the response already can't reveal whether the account exists (see genericResponse
+    // above), so it can't start doing so now just because sending broke. It's logged
+    // server-side instead, which is where a real operator would actually look.
+    try {
+      await this.email.sendPasswordResetCode(dto.email, code);
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${dto.email}:`, error);
+    }
 
     return {
       ...genericResponse,
