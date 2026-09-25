@@ -3,6 +3,7 @@ import * as bcrypt from 'bcryptjs';
 import { ListingStatus } from '@cyclo/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
 
 const ORDER_SELECT = {
@@ -22,11 +23,30 @@ const ORDER_SELECT = {
   seller: { select: { id: true, name: true, phone: true } },
 } as const;
 
+type OrderWithSelect = {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  quantityKg: number;
+  agreedPrice: number;
+  paymentMethod: string | null;
+  paymentReference: string | null;
+  paymentStatus: string;
+  createdAt: Date;
+  updatedAt: Date;
+  listing: { id: string; photos: string | null; material: { label: string } };
+  buyer: { id: string; name: string; phone: string | null };
+  seller: { id: string; name: string; phone: string | null };
+};
+
 // Same JSON-encoded-string decode as marketplace.service.ts's mapListing — every read
 // path returns a real array, never the raw stored string.
-function mapOrder<T extends { listing: { photos?: string | null } }>(order: T) {
+function mapOrder(order: OrderWithSelect) {
   return { ...order, listing: { ...order.listing, photos: order.listing.photos ? JSON.parse(order.listing.photos) : [] } };
 }
+
+type MappedOrder = ReturnType<typeof mapOrder>;
 
 // §14/§26 — a buyer's in-app purchase confirmation, paid by mobile money and confirmed by
 // hand on both sides (no payment gateway exists for this app — see SubmitPaymentDto). This
@@ -38,6 +58,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly wallet: WalletService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(buyerId: string, buyerRole: string, listingId: string, quantityKg: number) {
@@ -60,9 +81,9 @@ export class OrdersService {
     const pricePerKg = listing.askingPrice / listing.estimatedWeightKg;
     const agreedPrice = Math.round(pricePerKg * quantityKg);
 
-    return this.prisma.$transaction(
+    const order = await this.prisma.$transaction(
       async (tx) => {
-        const order = await tx.order.create({
+        const created = await tx.order.create({
           data: {
             listingId,
             buyerId,
@@ -73,10 +94,18 @@ export class OrdersService {
           select: ORDER_SELECT,
         });
         await tx.wasteListing.update({ where: { id: listingId }, data: { status: 'RESERVED' } });
-        return mapOrder(order);
+        return mapOrder(created);
       },
       { timeout: 15000 },
     );
+    this.notifications.create(
+      order.sellerId,
+      'ORDER_PLACED',
+      'New order received',
+      `${order.buyer.name} wants to buy "${order.listing.material.label}" for TZS ${order.agreedPrice.toLocaleString()}.`,
+      `/orders/${order.id}`,
+    );
+    return order;
   }
 
   async listMine(userId: string) {
@@ -108,7 +137,15 @@ export class OrdersService {
       data: { paymentReference: reference, paymentStatus: 'AWAITING_CONFIRMATION' },
       select: ORDER_SELECT,
     });
-    return mapOrder(updated);
+    const mapped = mapOrder(updated);
+    this.notifications.create(
+      mapped.sellerId,
+      'PAYMENT_SUBMITTED',
+      'Payment code submitted',
+      `${mapped.buyer.name} submitted a payment code for "${mapped.listing.material.label}". Confirm receipt to complete the sale.`,
+      `/orders/${mapped.id}`,
+    );
+    return mapped;
   }
 
   async confirmPayment(sellerId: string, id: string) {
@@ -118,9 +155,9 @@ export class OrdersService {
       throw new BadRequestException('This order has no payment reference awaiting confirmation.');
     }
 
-    return this.prisma.$transaction(
+    const updated = await this.prisma.$transaction(
       async (tx) => {
-        const updated = await tx.order.update({
+        const result = await tx.order.update({
           where: { id },
           data: { paymentStatus: 'PAID' },
           select: ORDER_SELECT,
@@ -135,10 +172,12 @@ export class OrdersService {
         // WalletService.creditSaleCCOnly for why crediting TZS too would double-count it).
         await this.wallet.creditSaleCCOnly(tx, order.sellerId, order.agreedPrice, id);
         await this.wallet.creditBuyerCC(tx, order.buyerId, order.agreedPrice, id);
-        return mapOrder(updated);
+        return mapOrder(result);
       },
       { timeout: 15000 },
     );
+    this.notifyPaymentConfirmed(updated);
+    return updated;
   }
 
   // A wallet-funded purchase is a real, atomic database transaction CYCLO itself performs
@@ -165,13 +204,13 @@ export class OrdersService {
       throw new BadRequestException('Not enough money in your CYCLO wallet to complete this purchase. Top up and try again.');
     }
 
-    return this.prisma.$transaction(
+    const updated = await this.prisma.$transaction(
       async (tx) => {
         await this.wallet.debitForPurchase(tx, buyerId, order.agreedPrice, id);
         await this.wallet.creditSaleEarning(tx, order.sellerId, order.agreedPrice, id);
         await this.wallet.creditBuyerCC(tx, buyerId, order.agreedPrice, id);
 
-        const updated = await tx.order.update({
+        const result = await tx.order.update({
           where: { id },
           data: { paymentStatus: 'PAID', paymentMethod: 'cyclo_wallet' },
           select: ORDER_SELECT,
@@ -181,9 +220,28 @@ export class OrdersService {
           assertValidListingTransition('RESERVED', 'SOLD');
           await tx.wasteListing.update({ where: { id: order.listingId }, data: { status: 'SOLD' } });
         }
-        return mapOrder(updated);
+        return mapOrder(result);
       },
       { timeout: 15000 },
+    );
+    this.notifyPaymentConfirmed(updated);
+    return updated;
+  }
+
+  private notifyPaymentConfirmed(order: MappedOrder) {
+    this.notifications.create(
+      order.buyerId,
+      'PAYMENT_CONFIRMED_BUYER',
+      'Purchase successful',
+      `Your purchase of "${order.listing.material.label}" for TZS ${order.agreedPrice.toLocaleString()} is complete.`,
+      `/orders/${order.id}`,
+    );
+    this.notifications.create(
+      order.sellerId,
+      'PAYMENT_CONFIRMED_SELLER',
+      'Sale confirmed',
+      `Payment for "${order.listing.material.label}" (TZS ${order.agreedPrice.toLocaleString()}) from ${order.buyer.name} is confirmed.`,
+      `/orders/${order.id}`,
     );
   }
 

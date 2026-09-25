@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
 import { mapListing } from '../marketplace/marketplace.service';
 import { PricingService } from '../pricing/pricing.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const ACTIVITY_PAGE_SIZE = 20;
 const PENDING_VERIFICATION_STATUSES = ['unverified', 'pending'];
@@ -33,6 +34,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pricing: PricingService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async dashboard() {
@@ -218,12 +220,19 @@ export class AdminService {
   }
 
   async approveListing(adminId: string, id: string) {
-    await this.getPendingListing(id);
+    const listing = await this.getPendingListing(id);
     const updated = await this.prisma.wasteListing.update({
       where: { id },
       data: { moderationStatus: 'APPROVED' },
     });
     await this.audit(adminId, 'LISTING_APPROVED', 'WasteListing', id);
+    this.notifications.create(
+      listing.sellerId,
+      'LISTING_APPROVED',
+      'Your listing was approved',
+      `"${listing.material.label}" has been approved and is now live in the marketplace.`,
+      `/marketplace/${id}`,
+    );
     return mapListing(updated);
   }
 
@@ -240,6 +249,15 @@ export class AdminService {
       },
     });
     await this.audit(adminId, 'LISTING_REJECTED', 'WasteListing', id, reason);
+    this.notifications.create(
+      listing.sellerId,
+      'LISTING_REJECTED',
+      'Your listing was rejected',
+      reason
+        ? `"${listing.material.label}" was rejected: ${reason}`
+        : `"${listing.material.label}" was rejected by an admin.`,
+      '/marketplace?tab=mine',
+    );
     return mapListing(updated);
   }
 
@@ -252,6 +270,7 @@ export class AdminService {
   private async getPendingListing(id: string) {
     const listing = await this.prisma.wasteListing.findUnique({
       where: { id },
+      include: { material: true },
     });
     if (!listing) throw new NotFoundException('Listing not found.');
     if (listing.moderationStatus !== 'PENDING') {

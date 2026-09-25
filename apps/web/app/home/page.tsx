@@ -124,6 +124,12 @@ export default function HomePage() {
   const [nearbyState, setNearbyState] = useState<"loading" | "ready" | "error">("loading");
   const [locations, setLocations] = useState<Location[]>([]);
   const [searchValue, setSearchValue] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (state !== "ready" || !user) return;
+    api.unreadNotificationCount().then((res) => setUnreadCount(res.count)).catch(() => undefined);
+  }, [state, user]);
 
   useEffect(() => {
     if (state !== "ready" || !user) return;
@@ -182,11 +188,16 @@ export default function HomePage() {
               <LanguageToggle />
               <ThemeToggle />
               <Link
-                href="/activity"
-                aria-label="Notifications and activity"
-                className="grid h-9 w-9 place-items-center rounded-full border border-[var(--chrome-border)] text-[var(--chrome-text)]"
+                href="/notifications"
+                aria-label="Notifications"
+                className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--chrome-border)] text-[var(--chrome-text)]"
               >
                 <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--critical)] px-1 text-[9px] font-extrabold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/profile"
@@ -297,7 +308,7 @@ export default function HomePage() {
               <h3 className="text-sm font-extrabold text-[var(--text-on-bg)] mb-3">{t("Quick actions")}</h3>
               <div className="grid grid-cols-4 gap-2.5">
                 <QuickAction href="/marketplace/new" icon={Tag} label={t("Sell Waste")} />
-                <QuickAction href="/scan" icon={Camera} label={t("Scan")} />
+                <QuickAction href="/scan" icon={Camera} label={t("List Waste")} />
                 <QuickAction href="/orders" icon={ShoppingBag} label={t("Orders")} />
                 <QuickAction href="/chat" icon={MessageCircle} label={t("Chat")} />
                 <QuickAction href="/learn" icon={BookOpen} label={t("Learn")} />

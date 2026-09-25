@@ -96,6 +96,7 @@ model User {
   cartItems               CartItem[]
   reportsFiled            Report[]              @relation("ReportsFiled")
   reportsReceived         Report[]              @relation("ReportsReceived")
+  notifications           Notification[]
 
   @@index([role])
   @@index([verificationStatus])
@@ -647,4 +648,23 @@ model AiScan {
   finalMaterial WasteMaterial? @relation(fields: [finalMaterialId], references: [id])
 
   @@index([userId])
+}
+
+// In-app notifications — the bell icon's real content. One row per user-facing event
+// (listing submitted/approved/rejected, order placed/paid) with an optional deep link
+// so tapping a notification goes straight to the relevant listing/order.
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

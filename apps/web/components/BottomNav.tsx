@@ -34,7 +34,7 @@ interface NavItem {
 // already goes straight to /marketplace, so a dedicated tab for it here was redundant too.
 const PRODUCER_ITEMS: NavItem[] = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/scan", label: "Scan", icon: Camera },
+  { href: "/scan", label: "List Waste", icon: Camera },
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/activity", label: "Activity", icon: Truck },
 ];

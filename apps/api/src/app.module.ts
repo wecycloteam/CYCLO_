@@ -22,6 +22,7 @@ import { PublicStatsModule } from './public-stats/public-stats.module';
 import { WalletModule } from './wallet/wallet.module';
 import { CartModule } from './cart/cart.module';
 import { ReportsModule } from './reports/reports.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ReportsModule } from './reports/reports.module';
     WalletModule,
     CartModule,
     ReportsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

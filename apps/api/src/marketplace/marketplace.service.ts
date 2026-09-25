@@ -8,6 +8,7 @@ import { ListingStatus } from '@cyclo/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { LocationsService } from '../locations/locations.service';
 import { WasteMaterialsService } from '../waste-materials/waste-materials.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { assertValidListingTransition } from './domain/listing-state-machine';
 
@@ -24,6 +25,7 @@ export class MarketplaceService {
     private readonly prisma: PrismaService,
     private readonly locations: LocationsService,
     private readonly materials: WasteMaterialsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(sellerId: string, sellerRole: string, dto: CreateListingDto) {
@@ -48,7 +50,15 @@ export class MarketplaceService {
     const listing = await this.getOwned(sellerId, id);
     assertValidListingTransition(listing.status as ListingStatus, 'ACTIVE');
     await this.prisma.wasteListing.update({ where: { id }, data: { status: 'ACTIVE' } });
-    return this.findOne(sellerId, id);
+    const published = await this.findOne(sellerId, id);
+    this.notifications.create(
+      sellerId,
+      'LISTING_PENDING',
+      'Listing submitted for review',
+      `Your listing "${published.material.label}" is pending admin review before it goes live in the marketplace.`,
+      `/marketplace/${id}`,
+    );
+    return published;
   }
 
   async cancel(sellerId: string, id: string) {

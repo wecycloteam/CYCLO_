@@ -8,8 +8,9 @@ import Image from "next/image";
 // off of (navigations are usually near-instant since target pages are prefetched) — this
 // shows a brief CYCLO-branded flash on every pathname change instead, giving navigation a
 // consistent, intentional feel rather than an abrupt cut, without pretending to track a
-// load duration that isn't actually meaningful here.
-const FLASH_MS = 260;
+// load duration that isn't actually meaningful here. Kept short and snappy — this fires on
+// literally every navigation, so any extra time here directly reads as app-wide lag.
+const FLASH_MS = 120;
 
 export function PageTransitionOverlay() {
   const pathname = usePathname();
@@ -29,7 +30,7 @@ export function PageTransitionOverlay() {
   return (
     <div
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-[#1B3E41] transition-opacity duration-150 ${
+      className={`pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-[#1B3E41] transition-opacity duration-100 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
@@ -38,7 +39,7 @@ export function PageTransitionOverlay() {
         alt=""
         width={120}
         height={35}
-        className={`h-auto w-[120px] transition-transform duration-300 ${visible ? "scale-100" : "scale-90"}`}
+        className={`h-auto w-[120px] transition-transform duration-150 ${visible ? "scale-100" : "scale-90"}`}
       />
     </div>
   );

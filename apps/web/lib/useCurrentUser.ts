@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, tokenStore, ApiError, CurrentUser } from "@/lib/api";
+import { api, tokenStore, ApiError, CurrentUser, getCachedCurrentUser, setCachedCurrentUser } from "@/lib/api";
 
 type LoadState = "loading" | "ready" | "error";
 
 // Every authenticated page needs the same "am I logged in, who am I" check with the
 // same loading/error/redirect handling (§46) — shared here instead of repeated per page.
+// Renders instantly from the cached user (see api.ts's getCachedCurrentUser) when one
+// exists — e.g. every navigation after the first — while still revalidating against
+// /me in the background, rather than blocking each page on a fresh network round-trip.
 export function useCurrentUser() {
   const router = useRouter();
-  const [state, setState] = useState<LoadState>("loading");
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const cached = getCachedCurrentUser();
+  const [state, setState] = useState<LoadState>(cached ? "ready" : "loading");
+  const [user, setUser] = useState<CurrentUser | null>(cached);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -21,16 +25,18 @@ export function useCurrentUser() {
       return;
     }
     let cancelled = false;
+    const hadCache = getCachedCurrentUser() != null;
     // Deferred a microtask so the setState calls below aren't synchronous within the
     // effect body (react-hooks/set-state-in-effect) — same-tick behavior, just not
     // traced as a direct effect-body call.
     Promise.resolve().then(() => {
       if (cancelled) return;
-      setState("loading");
+      if (!hadCache) setState("loading");
       api
         .me()
         .then((u) => {
           if (cancelled) return;
+          setCachedCurrentUser(u);
           setUser(u);
           setState("ready");
         })
@@ -41,8 +47,13 @@ export function useCurrentUser() {
             router.replace("/login");
             return;
           }
-          setError(err instanceof ApiError ? err.message : "We couldn't load your profile.");
-          setState("error");
+          // With a cached user already on screen, a background revalidation failure
+          // (e.g. a flaky network blip) shouldn't rip the page out from under the user —
+          // it just keeps showing the last-known-good state and tries again next visit.
+          if (!hadCache) {
+            setError(err instanceof ApiError ? err.message : "We couldn't load your profile.");
+            setState("error");
+          }
         });
     });
     return () => {

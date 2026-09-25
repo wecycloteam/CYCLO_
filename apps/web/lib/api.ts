@@ -15,8 +15,23 @@ export const tokenStore = {
   clear: () => {
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    currentUserCache = null;
   },
 };
+
+// Every page calls useCurrentUser() on mount, and the App Router remounts each route's
+// page component on navigation — without this, that meant a full /me round-trip (plus
+// serverless cold-start latency) blocking every single page-to-page navigation, which is
+// what made the app feel laggy switching pages. Cached in module scope (survives across
+// client-side navigations, cleared on logout) so a page renders instantly with the last-
+// known user while a fresh /me call quietly revalidates it in the background.
+let currentUserCache: CurrentUser | null = null;
+export function getCachedCurrentUser(): CurrentUser | null {
+  return currentUserCache;
+}
+export function setCachedCurrentUser(user: CurrentUser | null) {
+  currentUserCache = user;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -437,6 +452,17 @@ export interface Report extends CreateReportInput {
   createdAt: string;
 }
 
+export interface Notification {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface AuditLogEntry {
   id: string;
   actorId: string | null;
@@ -753,6 +779,12 @@ export const api = {
   // Reports
   createReport: (input: CreateReportInput) => request<Report>("/reports", { method: "POST", body: JSON.stringify(input) }, true),
   myReports: () => request<Report[]>("/reports/mine", { method: "GET" }, true),
+
+  // Notifications
+  myNotifications: () => request<Notification[]>("/notifications", { method: "GET" }, true),
+  unreadNotificationCount: () => request<{ count: number }>("/notifications/unread-count", { method: "GET" }, true),
+  markNotificationRead: (id: string) => request<void>(`/notifications/${id}/read`, { method: "POST" }, true),
+  markAllNotificationsRead: () => request<void>("/notifications/read-all", { method: "POST" }, true),
 
   // Admin
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),

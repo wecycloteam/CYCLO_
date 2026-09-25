@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, XCircle, Wallet as WalletIcon, Flag } from "lucide-react";
+import { CheckCircle2, XCircle, Wallet as WalletIcon, Flag, MessageCircle } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Order } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
@@ -28,6 +28,7 @@ export default function OrderDetailPage() {
   const [showWalletConfirm, setShowWalletConfirm] = useState(false);
   const [walletPassword, setWalletPassword] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [startingChat, setStartingChat] = useState(false);
 
   function load() {
     setState("loading");
@@ -96,6 +97,19 @@ export default function OrderDetailPage() {
       setActionError(err instanceof ApiError ? err.message : "Couldn't confirm this payment.");
     } finally {
       setActing(false);
+    }
+  }
+
+  async function handleChat() {
+    if (!order) return;
+    setStartingChat(true);
+    try {
+      const conversation = await api.startConversation({ listingId: order.listing.id });
+      router.push(`/chat/${conversation.id}`);
+    } catch {
+      setActionError(t("Couldn't open the chat."));
+    } finally {
+      setStartingChat(false);
     }
   }
 
@@ -287,6 +301,15 @@ export default function OrderDetailPage() {
                 <p className="text-sm font-bold text-[var(--critical)]">{t("This order was cancelled")}</p>
               </div>
             )}
+
+            <button
+              onClick={handleChat}
+              disabled={startingChat}
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-teal)] font-bold text-sm py-3 disabled:opacity-60"
+            >
+              <MessageCircle size={16} />
+              {startingChat ? t("Opening chat…") : t("Chat with {name}").replace("{name}", isBuyer ? order.seller.name : order.buyer.name)}
+            </button>
 
             {["PENDING", "AWAITING_CONFIRMATION"].includes(order.paymentStatus) && (
               <button

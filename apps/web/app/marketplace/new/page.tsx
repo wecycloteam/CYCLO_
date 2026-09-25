@@ -20,6 +20,12 @@ const PICKUP_OPTIONS = [
 const QUANTITY_UNITS = ["kg", "tonnes", "pieces", "litres"];
 const CONDITIONS = ["Clean", "Sorted", "Mixed", "Compressed", "Damaged", "Other"];
 const MAX_PHOTOS = 4;
+const MAX_OTHER_CONDITION_WORDS = 10;
+
+function limitWords(text: string, maxWords: number) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  return words.slice(0, maxWords).join(" ");
+}
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -48,6 +54,7 @@ function NewListingForm() {
   const [estimatedWeightKg, setEstimatedWeightKg] = useState(scanWeightKg ?? "");
   const [quantityUnit, setQuantityUnit] = useState("kg");
   const [condition, setCondition] = useState(CONDITIONS[0]);
+  const [otherCondition, setOtherCondition] = useState("");
   const [pricePerUnit, setPricePerUnit] = useState("");
   const [askingPrice, setAskingPrice] = useState("");
   const [pickupOption, setPickupOption] = useState(PICKUP_OPTIONS[0].value);
@@ -151,7 +158,7 @@ function NewListingForm() {
         locationId,
         estimatedWeightKg: Number(estimatedWeightKg),
         quantityUnit,
-        condition: condition || undefined,
+        condition: condition === "Other" ? otherCondition.trim() || "Other" : condition || undefined,
         askingPrice: askingPrice ? Number(askingPrice) : undefined,
         photos: photos.length > 0 ? photos : undefined,
         pickupOption,
@@ -346,6 +353,14 @@ function NewListingForm() {
                   </option>
                 ))}
               </select>
+              {condition === "Other" && (
+                <input
+                  value={otherCondition}
+                  onChange={(e) => setOtherCondition(limitWords(e.target.value, MAX_OTHER_CONDITION_WORDS))}
+                  placeholder={t("Briefly describe the condition (max 10 words)")}
+                  className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
+                />
+              )}
             </label>
 
             <label className="flex flex-col gap-1.5">
