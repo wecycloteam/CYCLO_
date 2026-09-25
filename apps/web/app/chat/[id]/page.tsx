@@ -7,6 +7,7 @@ import { ArrowLeft, Send, Trash2, Smile } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, ChatMessageRecord, Conversation } from "@/lib/api";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -22,6 +23,7 @@ const POLL_MS = 2000;
 export default function ConversationPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<ChatMessageRecord[]>([]);
@@ -136,7 +138,7 @@ export default function ConversationPage() {
           <div className="truncate text-sm font-extrabold text-[var(--chrome-text)]">{other?.name ?? "Chat"}</div>
           {conversation?.listing && (
             <Link href={`/marketplace/${conversation.listingId}`} className="truncate text-[11px] text-[var(--chrome-text-muted)]">
-              Re: {conversation.listing.material.label}
+              {t("Re:")} {conversation.listing.material.label}
             </Link>
           )}
         </div>
@@ -144,8 +146,8 @@ export default function ConversationPage() {
 
       {state !== "ready" && (
         <div className="mx-auto w-full max-w-md flex-1 px-4 py-4">
-          {state === "loading" && <LoadingState label="Loading conversation…" />}
-          {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(true)} />}
+          {state === "loading" && <LoadingState label={t("Loading conversation…")} />}
+          {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={() => load(true)} />}
         </div>
       )}
 
@@ -154,7 +156,7 @@ export default function ConversationPage() {
           <div ref={listRef} className="mx-auto w-full max-w-md flex-1 space-y-2 overflow-y-auto px-4 pb-4">
             {messages.length === 0 && (
               <p className="py-8 text-center text-xs text-[var(--text-on-bg-2)]">
-                Say hello — start the conversation about this listing.
+                {t("Say hello — start the conversation about this listing.")}
               </p>
             )}
             {messages.map((m) => {
@@ -169,7 +171,7 @@ export default function ConversationPage() {
                       isMine ? "bg-[var(--cyclo-teal)] text-white" : "bg-[var(--surface)] text-[var(--text-1)]"
                     } ${isDeleted ? "italic opacity-70" : ""}`}
                   >
-                    {m.body}
+                    {isDeleted ? t(m.body) : m.body}
                   </button>
 
                   {openMenuId === m.id && !isDeleted && (
@@ -183,7 +185,7 @@ export default function ConversationPage() {
                         onClick={() => handleDeleteForMe(m.id)}
                         className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold text-[var(--text-1)] hover:bg-[var(--surface-2)]"
                       >
-                        <Trash2 size={14} /> Delete for me
+                        <Trash2 size={14} /> {t("Delete for me")}
                       </button>
                       {isMine && (
                         <button
@@ -191,7 +193,7 @@ export default function ConversationPage() {
                           onClick={() => handleDeleteForEveryone(m.id)}
                           className="flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold text-[var(--critical)] hover:bg-[var(--surface-2)]"
                         >
-                          <Trash2 size={14} /> Delete for everyone
+                          <Trash2 size={14} /> {t("Delete for everyone")}
                         </button>
                       )}
                     </div>
@@ -228,7 +230,7 @@ export default function ConversationPage() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message…"
+                placeholder={t("Type a message…")}
                 className="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--text-1)] outline-none"
               />
               <button

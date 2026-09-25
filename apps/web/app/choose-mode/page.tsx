@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShoppingBag, Tag } from "lucide-react";
 import { api, ApiError, tokenStore } from "@/lib/api";
+import { useLanguage } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 // Shown right after every sign-in for a household/collector account — asks explicitly
 // "sell" or "buy" for this session rather than burying that choice in profile settings.
@@ -14,6 +16,7 @@ function ChooseModeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/home";
+  const { t } = useLanguage();
 
   const [checking, setChecking] = useState(true);
   const [currentRole, setCurrentRole] = useState<string | null>(null);
@@ -48,7 +51,7 @@ function ChooseModeContent() {
       }
       router.replace(redirectTo);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't set that mode.");
+      setError(err instanceof ApiError ? err.message : t("Couldn't set that mode."));
       setSaving(null);
     }
   }
@@ -60,9 +63,12 @@ function ChooseModeContent() {
       className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
       style={{ background: "linear-gradient(160deg, #1B3E41 0%, #275458 55%, #24484B 100%)" }}
     >
-      <h1 className="text-xl font-extrabold text-white mb-2">How do you want to use CYCLO?</h1>
+      <div className="mb-6">
+        <LanguageToggle />
+      </div>
+      <h1 className="text-xl font-extrabold text-white mb-2">{t("How do you want to use CYCLO?")}</h1>
       <p className="text-sm text-[#B9D6D1] mb-8 max-w-xs">
-        You can switch this any time from your profile.
+        {t("You can switch this any time from your profile.")}
       </p>
 
       <div className="flex w-full max-w-xs flex-col gap-3">
@@ -72,7 +78,7 @@ function ChooseModeContent() {
           className="flex items-center justify-center gap-2 rounded-full bg-[var(--cyclo-green)] px-6 py-4 text-[15px] font-extrabold text-[#0E2A1F] disabled:opacity-60"
         >
           <Tag size={18} />
-          {saving === "household" ? "Setting up…" : "Enter as Seller"}
+          {saving === "household" ? t("Setting up…") : t("Enter as Seller")}
         </button>
         <button
           onClick={() => choose("collector")}
@@ -80,7 +86,7 @@ function ChooseModeContent() {
           className="flex items-center justify-center gap-2 rounded-full border-2 border-white/30 px-6 py-4 text-[15px] font-extrabold text-white disabled:opacity-60"
         >
           <ShoppingBag size={18} />
-          {saving === "collector" ? "Setting up…" : "Enter as Buyer"}
+          {saving === "collector" ? t("Setting up…") : t("Enter as Buyer")}
         </button>
       </div>
 

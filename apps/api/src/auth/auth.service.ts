@@ -11,6 +11,7 @@ import type { SmsProvider } from '../sms/sms-provider.interface';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 const OTP_TTL_MINUTES = 5;
 const OTP_LENGTH = 6;
@@ -189,6 +190,30 @@ export class AuthService {
     }
 
     return this.issueTokens(user.id, user.role);
+  }
+
+  // The current password can't be shown back to the user (only its hash is ever stored),
+  // so this is the only way to change it: prove you know the old one (if one exists —
+  // a Google-only account has none yet) and supply a new one, which gets re-hashed here.
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Session expired. Please log in again.');
+    }
+
+    if (user.passwordHash) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Enter your current password.');
+      }
+      const matches = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+      if (!matches) {
+        throw new BadRequestException('Current password is incorrect.');
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return { message: 'Password updated.' };
   }
 
   async logout(refreshToken: string) {

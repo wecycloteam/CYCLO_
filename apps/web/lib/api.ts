@@ -501,6 +501,9 @@ export const api = {
       body: JSON.stringify({ refreshToken }),
     }),
 
+  changePassword: (input: { currentPassword?: string; newPassword: string }) =>
+    request<{ message: string }>("/auth/change-password", { method: "POST", body: JSON.stringify(input) }, true),
+
   // Locations
   createLocation: (input: { label: string; addressLine?: string; district?: string; region?: string; country?: string }) =>
     request<Location>("/locations", { method: "POST", body: JSON.stringify(input) }, true),

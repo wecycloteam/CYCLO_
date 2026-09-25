@@ -7,6 +7,7 @@ import { api, ApiError, Order } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -25,6 +26,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [orders, setOrders] = useState<Order[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -52,11 +54,11 @@ export default function OrdersPage() {
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Orders & Payments" />
       <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
-        {state === "loading" && <LoadingState label="Loading your orders…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+        {state === "loading" && <LoadingState label={t("Loading your orders…")} />}
+        {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
         {state === "ready" && orders.length === 0 && (
-          <EmptyState title="No orders yet" hint="Buy Now on a listing to start a purchase and pay in-app." />
+          <EmptyState title={t("No orders yet")} hint={t("Buy Now on a listing to start a purchase and pay in-app.")} />
         )}
 
         {state === "ready" && orders.length > 0 && user && (
@@ -77,10 +79,12 @@ export default function OrdersPage() {
                       </span>
                     </div>
                     <div className="text-xs text-[var(--text-2)] mb-2">
-                      {isBuyer ? `Buying from ${o.seller.name}` : `Selling to ${o.buyer.name}`}
+                      {isBuyer
+                        ? t("Buying from {name}").replace("{name}", o.seller.name)
+                        : t("Selling to {name}").replace("{name}", o.buyer.name)}
                     </div>
                     <span className={`inline-block rounded-[var(--r-pill)] px-2.5 py-1 text-[11px] font-bold ${STATUS_STYLE[o.paymentStatus]}`}>
-                      {STATUS_LABEL[o.paymentStatus]}
+                      {t(STATUS_LABEL[o.paymentStatus])}
                     </span>
                   </div>
                 </Link>

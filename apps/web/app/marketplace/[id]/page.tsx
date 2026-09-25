@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageCircle, ShoppingBag } from "lucide-react";
-import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
+import { MessageCircle, ShoppingBag, Phone } from "lucide-react";
+import { api, ApiError, CurrentUser, SellerContact, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n";
 import { StarRatingDisplay } from "@/components/StarRating";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
@@ -49,6 +51,7 @@ function useOptionalCurrentUser() {
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useLanguage();
   const { user, checked } = useOptionalCurrentUser();
   const [listing, setListing] = useState<WasteListing | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -61,6 +64,9 @@ export default function ListingDetailPage() {
   const [buyError, setBuyError] = useState<string | null>(null);
   const [showBuyForm, setShowBuyForm] = useState(false);
   const [buyQuantity, setBuyQuantity] = useState("");
+  const [contact, setContact] = useState<SellerContact | null>(null);
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
@@ -104,6 +110,19 @@ export default function ListingDetailPage() {
       setActionError(err instanceof ApiError ? err.message : "Couldn't cancel this listing.");
     } finally {
       setActing(false);
+    }
+  }
+
+  async function handleShowContact() {
+    if (contact) return;
+    setContactLoading(true);
+    setContactError(null);
+    try {
+      setContact(await api.contactSeller(id));
+    } catch (err) {
+      setContactError(err instanceof ApiError ? err.message : "Couldn't load the seller's contact info.");
+    } finally {
+      setContactLoading(false);
     }
   }
 
@@ -158,19 +177,20 @@ export default function ListingDetailPage() {
             <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
           </Link>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             <Link
               href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
               className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
             >
-              Log in
+              {t("Log in")}
             </Link>
           </div>
         </header>
       )}
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
-        {state === "loading" && <LoadingState label="Loading listing…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+        {state === "loading" && <LoadingState label={t("Loading listing…")} />}
+        {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
         {state === "ready" && listing && (
           <>
@@ -194,7 +214,7 @@ export default function ListingDetailPage() {
                       : "bg-[#E4F7E2] text-[var(--success)]"
                 }`}
               >
-                {listingStatusLabel(listing)}
+                {t(listingStatusLabel(listing))}
               </span>
             </div>
             <div className="flex items-center gap-2 mb-2 text-xs text-[var(--text-on-bg-2)]">
@@ -214,19 +234,19 @@ export default function ListingDetailPage() {
             )}
 
             <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)] mb-6">
-              <Row k="Quantity" v={`${listing.estimatedWeightKg} ${listing.quantityUnit}`} />
-              {listing.verifiedWeightKg != null && <Row k="Verified weight" v={`${listing.verifiedWeightKg} kg`} />}
-              {listing.condition && <Row k="Condition" v={listing.condition} />}
+              <Row k={t("Quantity")} v={`${listing.estimatedWeightKg} ${listing.quantityUnit}`} />
+              {listing.verifiedWeightKg != null && <Row k={t("Verified weight")} v={`${listing.verifiedWeightKg} kg`} />}
+              {listing.condition && <Row k={t("Condition")} v={listing.condition} />}
               <Row
-                k="Location"
+                k={t("Location")}
                 v={
                   [listing.location.addressLine, listing.location.district, listing.location.region]
                     .filter(Boolean)
                     .join(", ") || listing.location.label
                 }
               />
-              <Row k="Pickup" v={listing.pickupOption.replace(/_/g, " ")} />
-              <Row k="Listing status" v={listing.status.replace(/_/g, " ")} />
+              <Row k={t("Pickup")} v={t(listing.pickupOption.replace(/_/g, " "))} />
+              <Row k={t("Listing status")} v={t(listing.status.replace(/_/g, " "))} />
             </div>
 
             {listing.description && <p className="text-sm text-[var(--text-on-bg-2)] mb-6">{listing.description}</p>}
@@ -242,14 +262,16 @@ export default function ListingDetailPage() {
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3"
                   >
                     <ShoppingBag size={16} />
-                    Buy Now
+                    {t("Buy Now")}
                   </button>
                 )}
 
                 {showBuyForm && (
                   <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
                     <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">
-                      How much do you want to buy? (max {listing.estimatedWeightKg} {listing.quantityUnit})
+                      {t("How much do you want to buy? (max {max} {unit})")
+                        .replace("{max}", String(listing.estimatedWeightKg))
+                        .replace("{unit}", listing.quantityUnit)}
                     </label>
                     <input
                       type="number"
@@ -261,7 +283,7 @@ export default function ListingDetailPage() {
                       className="mb-3 w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2.5 text-sm"
                     />
                     <div className="mb-3 flex items-center justify-between text-sm">
-                      <span className="text-[var(--text-2)]">Total price</span>
+                      <span className="text-[var(--text-2)]">{t("Total price")}</span>
                       <span className="font-extrabold text-[var(--text-1)]">TZS {computedPrice.toLocaleString()}</span>
                     </div>
                     <div className="flex gap-2">
@@ -269,14 +291,14 @@ export default function ListingDetailPage() {
                         onClick={() => setShowBuyForm(false)}
                         className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-2.5"
                       >
-                        Cancel
+                        {t("Cancel")}
                       </button>
                       <button
                         onClick={handleConfirmPurchase}
                         disabled={buying}
                         className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
                       >
-                        {buying ? "Starting…" : "Confirm Purchase"}
+                        {buying ? t("Starting…") : t("Confirm Purchase")}
                       </button>
                     </div>
                   </div>
@@ -287,8 +309,32 @@ export default function ListingDetailPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[var(--cyclo-green)] text-[var(--cyclo-green)] font-bold text-sm py-2.5 disabled:opacity-60"
                 >
                   <MessageCircle size={16} />
-                  {messaging ? "Opening chat…" : "Message Seller"}
+                  {messaging ? t("Opening chat…") : t("Message Seller")}
                 </button>
+
+                {!contact ? (
+                  <button
+                    onClick={handleShowContact}
+                    disabled={contactLoading}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-2.5 disabled:opacity-60"
+                  >
+                    <Phone size={16} />
+                    {contactLoading ? t("Loading…") : t("Show Seller's Phone Number")}
+                  </button>
+                ) : contact.phone ? (
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="flex w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-[var(--text-on-bg)] font-bold text-sm py-2.5"
+                  >
+                    <Phone size={16} />
+                    {contact.phone}
+                  </a>
+                ) : (
+                  <p className="text-center text-xs text-[var(--text-on-bg-2)]">
+                    {t("{name} hasn't added a phone number — use chat to reach them.").replace("{name}", contact.name)}
+                  </p>
+                )}
+                {contactError && <p className="text-xs text-[var(--critical)]">{contactError}</p>}
                 {messageError && <p className="text-xs text-[var(--critical)]">{messageError}</p>}
                 {buyError && <p className="text-xs text-[var(--critical)]">{buyError}</p>}
               </div>
@@ -299,7 +345,7 @@ export default function ListingDetailPage() {
                 href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
                 className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 text-center mb-4"
               >
-                Log in to Message Seller / Buy
+                {t("Log in to Message Seller / Buy")}
               </Link>
             )}
 
@@ -311,17 +357,8 @@ export default function ListingDetailPage() {
                 disabled={acting}
                 className="w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 mb-2 disabled:opacity-60"
               >
-                {acting ? "Publishing…" : "Publish Listing"}
+                {acting ? t("Publishing…") : t("Publish Listing")}
               </button>
-            )}
-
-            {isOwner && listing.status === "ACTIVE" && (
-              <Link
-                href={`/activity/new?listingId=${listing.id}`}
-                className="block text-center w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 mb-2"
-              >
-                Request Pickup
-              </Link>
             )}
 
             {isOwner && ["DRAFT", "ACTIVE"].includes(listing.status) && (
@@ -330,7 +367,7 @@ export default function ListingDetailPage() {
                 disabled={acting}
                 className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3 disabled:opacity-60"
               >
-                {acting ? "Cancelling…" : "Cancel Listing"}
+                {acting ? t("Cancelling…") : t("Cancel Listing")}
               </button>
             )}
 
@@ -339,7 +376,7 @@ export default function ListingDetailPage() {
                 onClick={() => router.back()}
                 className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3"
               >
-                Back
+                {t("Back")}
               </button>
             )}
           </>

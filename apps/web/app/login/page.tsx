@@ -4,6 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { api, tokenStore, ApiError, API_URL } from "@/lib/api";
+import { PasswordInput } from "@/components/PasswordInput";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n";
 
 type Mode = "signin" | "signup";
 
@@ -85,6 +88,7 @@ function LoginSplash({ visible }: { visible: boolean }) {
 }
 
 function GoogleButton({ redirectTo }: { redirectTo: string }) {
+  const { t } = useLanguage();
   const href = `${API_URL}/auth/google?redirect=${encodeURIComponent(redirectTo)}`;
   return (
     <a
@@ -92,7 +96,7 @@ function GoogleButton({ redirectTo }: { redirectTo: string }) {
       className="flex w-full items-center justify-center gap-3 rounded-full border border-white/25 bg-white px-5 py-3.5 text-[15px] font-bold text-[#1B3E41] transition hover:bg-[#F6F9F8]"
     >
       <GoogleMark />
-      Continue with Google
+      {t("Continue with Google")}
     </a>
   );
 }
@@ -101,6 +105,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/home";
+  const { t } = useLanguage();
 
   const [showSplash, setShowSplash] = useState(true);
   const [mode, setMode] = useState<Mode>("signin");
@@ -194,12 +199,16 @@ function LoginContent() {
             priority
           />
 
+          <div className="mb-4 flex justify-center">
+            <LanguageToggle />
+          </div>
+
           <h1 className="text-[22px] font-bold leading-snug text-[#EFFBF3] mb-2">
-            Your waste has value.
+            {t("Your waste has value.")}
             <br />
-            Let&rsquo;s put it to work.
+            {t("Let's put it to work.")}
           </h1>
-          <p className="text-sm text-[#B9D6D1] mb-7 leading-relaxed">Log in or create a free account to continue.</p>
+          <p className="text-sm text-[#B9D6D1] mb-7 leading-relaxed">{t("Log in or create a free account to continue.")}</p>
 
           <div className="mb-6">
             <GoogleButton redirectTo={redirectTo} />
@@ -207,7 +216,7 @@ function LoginContent() {
 
           <div className="mb-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-white/15" />
-            <span className="text-xs font-bold uppercase tracking-wide text-[#8FB6AF]">or</span>
+            <span className="text-xs font-bold uppercase tracking-wide text-[#8FB6AF]">{t("or")}</span>
             <span className="h-px flex-1 bg-white/15" />
           </div>
 
@@ -220,7 +229,7 @@ function LoginContent() {
               }}
               className={mode === "signin" ? "text-[var(--cyclo-green)]" : "text-[#8FB6AF]"}
             >
-              Sign in
+              {t("Sign in")}
             </button>
             <button
               type="button"
@@ -230,7 +239,7 @@ function LoginContent() {
               }}
               className={mode === "signup" ? "text-[var(--cyclo-green)]" : "text-[#8FB6AF]"}
             >
-              Create account
+              {t("Create account")}
             </button>
           </div>
 
@@ -239,15 +248,14 @@ function LoginContent() {
               <input
                 type="text"
                 required
-                placeholder="Username"
+                placeholder={t("Username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
-              <input
-                type="password"
+              <PasswordInput
                 required
-                placeholder="Password"
+                placeholder={t("Password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
@@ -258,7 +266,7 @@ function LoginContent() {
                 disabled={loading}
                 className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
               >
-                {loading ? "Signing in…" : "Sign in"}
+                {loading ? t("Signing in…") : t("Sign in")}
               </button>
             </form>
           ) : (
@@ -266,7 +274,7 @@ function LoginContent() {
               <input
                 type="text"
                 required
-                placeholder="Full name"
+                placeholder={t("Full name")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
@@ -278,7 +286,7 @@ function LoginContent() {
                 maxLength={20}
                 pattern="[a-zA-Z0-9_]+"
                 title="Letters, numbers and underscore only"
-                placeholder="Choose a username"
+                placeholder={t("Choose a username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
@@ -293,16 +301,15 @@ function LoginContent() {
               />
               <input
                 type="email"
-                placeholder="Email (optional)"
+                placeholder={t("Email (optional)")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
-              <input
-                type="password"
+              <PasswordInput
                 required
                 minLength={8}
-                placeholder="Password (min. 8 characters)"
+                placeholder={t("Password (min. 8 characters)")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
@@ -314,7 +321,7 @@ function LoginContent() {
               >
                 {ROLE_OPTIONS.map((r) => (
                   <option key={r.value} value={r.value}>
-                    {r.label}
+                    {t(r.label)}
                   </option>
                 ))}
               </select>
@@ -324,13 +331,13 @@ function LoginContent() {
                 disabled={loading}
                 className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
               >
-                {loading ? "Creating account…" : "Create account"}
+                {loading ? t("Creating account…") : t("Create account")}
               </button>
             </form>
           )}
 
           <div className="mt-7 text-xs text-[#8FB6AF]">
-            By continuing you agree to CYCLO&rsquo;s Terms and Privacy Policy.
+            {t("By continuing you agree to CYCLO's Terms and Privacy Policy.")}
           </div>
         </div>
       </main>

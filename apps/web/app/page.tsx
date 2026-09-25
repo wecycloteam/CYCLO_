@@ -6,9 +6,12 @@ import Link from "next/link";
 import { Star, ArrowUpRight } from "lucide-react";
 import { tokenStore } from "@/lib/api";
 import { MATERIALS_CATALOG } from "@/lib/materials-catalog";
+import { useLanguage } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function RootPage() {
   const hasSession = tokenStore.getAccess();
+  const { t } = useLanguage();
 
   useEffect(() => {
     document.title = "CYCLO — Turn waste into value";
@@ -40,51 +43,52 @@ export default function RootPage() {
             />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageToggle />
             <Link
               href="/login"
               className="rounded-full px-4 py-2.5 text-sm font-bold text-[#EFFBF3] transition hover:bg-white/10"
             >
-              Log in
+              {t("Log in")}
             </Link>
             <Link
               href="/login"
               className="rounded-full bg-[#48F53B] px-4 py-2.5 text-sm font-extrabold text-[#0E2A1F] shadow-[0_8px_22px_rgba(72,245,59,.2)] transition hover:bg-[#CAFFBD]"
             >
-              Sign up
+              {t("Sign up")}
             </Link>
           </div>
         </nav>
 
         <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-14 px-6 pb-24 pt-16 lg:grid-cols-[1.02fr_.98fr] lg:items-center lg:px-10 lg:pb-32 lg:pt-24">
           <div className="max-w-2xl">
-            <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.24em] text-[#48F53B]">The circular marketplace</p>
+            <p className="mb-5 text-xs font-extrabold uppercase tracking-[0.24em] text-[#48F53B]">{t("The circular marketplace")}</p>
             <h1 className="max-w-xl text-5xl font-extrabold leading-[1.02] tracking-[-0.04em] sm:text-7xl">
-              Waste is not the end of the story.
+              {t("Waste is not the end of the story.")}
             </h1>
             <p className="mt-7 max-w-lg text-lg leading-8 text-[#B9D6D1] sm:text-xl">
-              CYCLO helps people, collectors and businesses turn recyclable materials into income, opportunity and a cleaner tomorrow.
+              {t("CYCLO helps people, collectors and businesses turn recyclable materials into income, opportunity and a cleaner tomorrow.")}
             </p>
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href={hasSession ? "/home" : "/login"}
                 className="rounded-full bg-[#48F53B] px-6 py-3.5 text-sm font-extrabold text-[#0E2A1F] shadow-[0_12px_28px_rgba(72,245,59,.22)] transition hover:bg-[#CAFFBD]"
               >
-                {hasSession ? "Open dashboard" : "Get started"}
+                {hasSession ? t("Open dashboard") : t("Get started")}
               </Link>
               <Link
                 href={hasSession ? "/marketplace/new" : `/login?redirect=${encodeURIComponent("/marketplace/new")}`}
                 className="rounded-full border border-white/20 px-6 py-3.5 text-sm font-bold text-[#EFFBF3] transition hover:bg-white/10"
               >
-                Sell your recyclables
+                {t("Sell your recyclables")}
               </Link>
               <a href="#how-it-works" className="text-sm font-bold text-[#EFFBF3] underline decoration-white/30 decoration-2 underline-offset-4 transition hover:decoration-white/60">
-                See how it works
+                {t("See how it works")}
               </a>
             </div>
             <div className="mt-12 flex flex-wrap gap-x-8 gap-y-3 text-sm text-[#B9D6D1]">
-              <span><strong className="text-[#EFFBF3]">Sell</strong> what you collect</span>
-              <span><strong className="text-[#EFFBF3]">Find</strong> trusted materials</span>
-              <span><strong className="text-[#EFFBF3]">Move</strong> value forward</span>
+              <span><strong className="text-[#EFFBF3]">{t("Sell")}</strong> {t("what you collect")}</span>
+              <span><strong className="text-[#EFFBF3]">{t("Find")}</strong> {t("trusted materials")}</span>
+              <span><strong className="text-[#EFFBF3]">{t("Move")}</strong> {t("value forward")}</span>
             </div>
           </div>
 
@@ -93,8 +97,8 @@ export default function RootPage() {
               <div className="rounded-[1.5rem] bg-[#F6F9F8] p-5 text-[#10161A] sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5B6C69]">Today&apos;s value</p>
-                    <p className="mt-2 text-3xl font-extrabold tracking-tight text-[#275458]">Keep it moving.</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5B6C69]">{t("Today's value")}</p>
+                    <p className="mt-2 text-3xl font-extrabold tracking-tight text-[#275458]">{t("Keep it moving.")}</p>
                   </div>
                   <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#CAFFBD] text-[#1B3E41]">
                     <ArrowUpRight size={22} strokeWidth={2.25} />
@@ -102,18 +106,18 @@ export default function RootPage() {
                 </div>
                 <div className="mt-8 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
-                    <p className="text-xs font-bold text-[#5B6C69]">Materials listed</p>
+                    <p className="text-xs font-bold text-[#5B6C69]">{t("Materials listed")}</p>
                     <p className="mt-2 text-2xl font-extrabold text-[#275458]">2,480</p>
                   </div>
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
-                    <p className="text-xs font-bold text-[#5B6C69]">Value recovered</p>
+                    <p className="text-xs font-bold text-[#5B6C69]">{t("Value recovered")}</p>
                     <p className="mt-2 text-2xl font-extrabold text-[#275458]">TZS 8.6M</p>
                   </div>
                 </div>
                 <div className="mt-3 rounded-2xl bg-[#275458] p-4 text-[#EFFBF3]">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold">Plastic bottles</span>
-                    <span className="rounded-full bg-[#48F53B] px-2.5 py-1 text-xs font-extrabold text-[#0E2A1F]">Active</span>
+                    <span className="font-bold">{t("Plastic bottles")}</span>
+                    <span className="rounded-full bg-[#48F53B] px-2.5 py-1 text-xs font-extrabold text-[#0E2A1F]">{t("Active")}</span>
                   </div>
                   <div className="mt-6 flex items-end gap-1.5" aria-label="Growing recovery value chart">
                     {[34, 48, 40, 62, 56, 78, 94].map((height, index) => (
@@ -124,7 +128,7 @@ export default function RootPage() {
               </div>
             </div>
             <div className="absolute -bottom-5 -left-5 rounded-2xl border border-white/15 bg-[#CAFFBD] px-4 py-3 text-sm font-extrabold text-[#1B3E41] shadow-xl sm:-left-8">
-              Better waste. Better value.
+              {t("Better waste. Better value.")}
             </div>
           </div>
         </div>
@@ -134,15 +138,15 @@ export default function RootPage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#2FA827]">Materials in demand</p>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#275458] sm:text-5xl">Give useful things a second life.</h2>
-              <p className="mt-5 text-base leading-7 text-[#5B6C69] sm:text-lg">These are some of the materials people are already collecting, buying and putting back into circulation.</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#2FA827]">{t("Materials in demand")}</p>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#275458] sm:text-5xl">{t("Give useful things a second life.")}</h2>
+              <p className="mt-5 text-base leading-7 text-[#5B6C69] sm:text-lg">{t("These are some of the materials people are already collecting, buying and putting back into circulation.")}</p>
             </div>
             <Link
               href="/marketplace"
               className="text-sm font-extrabold text-[#275458] underline decoration-[#48F53B] decoration-2 underline-offset-4"
             >
-              Browse the marketplace →
+              {t("Browse the marketplace →")}
             </Link>
           </div>
 
@@ -152,15 +156,15 @@ export default function RootPage() {
                 <div className="relative h-40 overflow-hidden bg-[#DCE7E4]">
                   <Image src={material.image} alt={material.title} fill className="object-cover transition duration-500 hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-5 pb-4 pt-10">
-                    <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-white">{material.code} material</span>
+                    <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-white">{material.code} {t("material")}</span>
                   </div>
                 </div>
                 <div className="p-5">
                   <h3 className="text-lg font-extrabold leading-snug text-[#275458]">{material.title}</h3>
                   <p className="mt-3 min-h-20 text-sm leading-6 text-[#5B6C69]">{material.detail}</p>
                   <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-sm font-extrabold text-[#275458]">From {material.price}</span>
-                    <span className="text-xs text-[#8B9997]">Typical listing</span>
+                    <span className="text-sm font-extrabold text-[#275458]">{t("From")} {material.price}</span>
+                    <span className="text-xs text-[#8B9997]">{t("Typical listing")}</span>
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars from ${material.reviews} reviews`}>
                     <span className="flex items-center gap-0.5 text-[#E6A51A]" aria-hidden="true">
@@ -175,7 +179,7 @@ export default function RootPage() {
                     href={`/materials/${material.code}`}
                     className="mt-4 inline-flex text-sm font-extrabold text-[#275458] underline decoration-[#48F53B] decoration-2 underline-offset-4"
                   >
-                    Explore material
+                    {t("Explore material")}
                   </Link>
                 </div>
               </article>
@@ -186,9 +190,9 @@ export default function RootPage() {
 
       <section id="how-it-works" className="mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
         <div className="max-w-2xl">
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#2FA827]">A better waste economy</p>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#275458] sm:text-5xl">One place for every next step.</h2>
-          <p className="mt-5 text-base leading-7 text-[#5B6C69] sm:text-lg">From the first collection to the final buyer, CYCLO keeps the people, materials and opportunities connected.</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#2FA827]">{t("A better waste economy")}</p>
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-[#275458] sm:text-5xl">{t("One place for every next step.")}</h2>
+          <p className="mt-5 text-base leading-7 text-[#5B6C69] sm:text-lg">{t("From the first collection to the final buyer, CYCLO keeps the people, materials and opportunities connected.")}</p>
         </div>
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {[
@@ -198,8 +202,8 @@ export default function RootPage() {
           ].map((item) => (
             <article key={item.number} className="rounded-[1.25rem] border border-[#E2E9E7] bg-white p-6 shadow-[0_8px_24px_rgba(16,22,26,.05)] sm:p-7">
               <span className="text-sm font-extrabold text-[#2FA827]">{item.number}</span>
-              <h3 className="mt-10 text-xl font-extrabold text-[#275458]">{item.title}</h3>
-              <p className="mt-3 leading-7 text-[#5B6C69]">{item.text}</p>
+              <h3 className="mt-10 text-xl font-extrabold text-[#275458]">{t(item.title)}</h3>
+              <p className="mt-3 leading-7 text-[#5B6C69]">{t(item.text)}</p>
             </article>
           ))}
         </div>
@@ -208,7 +212,7 @@ export default function RootPage() {
       <footer className="border-t border-[#E2E9E7] px-6 py-8 lg:px-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-[#5B6C69] sm:flex-row sm:items-center sm:justify-between">
           <span className="font-extrabold text-[#275458]">CYCLO</span>
-          <span>Turning waste into wealth.</span>
+          <span>{t("Turning waste into wealth.")}</span>
         </div>
       </footer>
     </main>

@@ -8,6 +8,7 @@ import { api, ApiError, Conversation } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -17,6 +18,7 @@ type LoadState = "loading" | "ready" | "error";
 const POLL_MS = 2000;
 
 export default function ChatListPage() {
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -49,13 +51,13 @@ export default function ChatListPage() {
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Chats" />
       <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
-        {state === "loading" && <LoadingState label="Loading your chats…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(true)} />}
+        {state === "loading" && <LoadingState label={t("Loading your chats…")} />}
+        {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={() => load(true)} />}
 
         {state === "ready" && conversations.length === 0 && (
           <EmptyState
-            title="No conversations yet"
-            hint="Message a seller from a listing, or a buyer will message you once they're interested."
+            title={t("No conversations yet")}
+            hint={t("Message a seller from a listing, or a buyer will message you once they're interested.")}
           />
         )}
 
@@ -86,9 +88,9 @@ export default function ChatListPage() {
                         </span>
                       )}
                     </div>
-                    {c.listing && <div className="truncate text-[11px] text-[var(--text-3)]">Re: {c.listing.material.label}</div>}
+                    {c.listing && <div className="truncate text-[11px] text-[var(--text-3)]">{t("Re:")} {c.listing.material.label}</div>}
                     <div className="truncate text-xs text-[var(--text-2)]">
-                      {c.lastMessage ? c.lastMessage.body : <span className="italic text-[var(--text-3)]">No messages yet</span>}
+                      {c.lastMessage ? c.lastMessage.body : <span className="italic text-[var(--text-3)]">{t("No messages yet")}</span>}
                     </div>
                   </div>
                   <MessageCircle size={16} className="shrink-0 text-[var(--text-3)]" />

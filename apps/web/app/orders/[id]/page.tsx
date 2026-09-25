@@ -7,12 +7,14 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Order } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [order, setOrder] = useState<Order | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -91,8 +93,8 @@ export default function OrderDetailPage() {
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Order" />
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
-        {state === "loading" && <LoadingState label="Loading order…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+        {state === "loading" && <LoadingState label={t("Loading order…")} />}
+        {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
         {state === "ready" && order && (
           <>
@@ -100,7 +102,9 @@ export default function OrderDetailPage() {
               <div className="text-xs font-bold text-[var(--text-2)] mb-1">{order.listing.material.label}</div>
               <div className="text-2xl font-extrabold text-[var(--text-1)] mb-3">TZS {order.agreedPrice.toLocaleString()}</div>
               <div className="text-xs text-[var(--text-2)]">
-                {isBuyer ? `Seller: ${order.seller.name}` : `Buyer: ${order.buyer.name}`}
+                {isBuyer
+                  ? t("Seller: {name}").replace("{name}", order.seller.name)
+                  : t("Buyer: {name}").replace("{name}", order.buyer.name)}
               </div>
             </div>
 
@@ -108,25 +112,26 @@ export default function OrderDetailPage() {
 
             {order.paymentStatus === "PENDING" && isBuyer && (
               <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-4">
-                <h2 className="text-sm font-extrabold text-[var(--text-1)] mb-2">Pay by mobile money</h2>
+                <h2 className="text-sm font-extrabold text-[var(--text-1)] mb-2">{t("Pay by mobile money")}</h2>
                 <p className="text-xs text-[var(--text-2)] mb-3">
-                  Send TZS {order.agreedPrice.toLocaleString()} to the seller
+                  {t("Send TZS {amount} to the seller").replace("{amount}", order.agreedPrice.toLocaleString())}
                   {order.seller.phone ? (
                     <>
                       {" "}
-                      at <a href={`tel:${order.seller.phone}`} className="font-bold text-[var(--cyclo-teal)]">{order.seller.phone}</a>
+                      {t("at")} <a href={`tel:${order.seller.phone}`} className="font-bold text-[var(--cyclo-teal)]">{order.seller.phone}</a>
                     </>
                   ) : (
-                    " (ask them for their mobile money number in chat)"
+                    ` ${t("(ask them for their mobile money number in chat)")}`
                   )}
-                  , then enter the confirmation code your provider sent you below.
+                  {", "}
+                  {t("then enter the confirmation code your provider sent you below.")}
                 </p>
                 <form onSubmit={handleSubmitPayment} className="flex flex-col gap-3">
                   <input
                     required
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
-                    placeholder="Mobile money confirmation code"
+                    placeholder={t("Mobile money confirmation code")}
                     className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
                   />
                   <button
@@ -134,7 +139,7 @@ export default function OrderDetailPage() {
                     disabled={acting}
                     className="rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 disabled:opacity-60"
                   >
-                    {acting ? "Submitting…" : "I've Paid — Submit Code"}
+                    {acting ? t("Submitting…") : t("I've Paid — Submit Code")}
                   </button>
                 </form>
               </div>
@@ -142,21 +147,21 @@ export default function OrderDetailPage() {
 
             {order.paymentStatus === "PENDING" && isSeller && (
               <div className="rounded-[var(--r-lg)] border border-dashed border-[var(--border)] bg-[var(--surface)] p-5 mb-4 text-center">
-                <p className="text-sm font-bold text-[var(--text-1)]">Waiting for the buyer to pay</p>
-                <p className="text-xs text-[var(--text-2)] mt-1">You&rsquo;ll be able to confirm once they submit a payment code.</p>
+                <p className="text-sm font-bold text-[var(--text-1)]">{t("Waiting for the buyer to pay")}</p>
+                <p className="text-xs text-[var(--text-2)] mt-1">{t("You'll be able to confirm once they submit a payment code.")}</p>
               </div>
             )}
 
             {order.paymentStatus === "AWAITING_CONFIRMATION" && (
               <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-4">
-                <h2 className="text-sm font-extrabold text-[var(--text-1)] mb-1">Payment code submitted</h2>
+                <h2 className="text-sm font-extrabold text-[var(--text-1)] mb-1">{t("Payment code submitted")}</h2>
                 <p className="text-xs text-[var(--text-2)] mb-3">
-                  Reference: <span className="font-bold text-[var(--text-1)]">{order.paymentReference}</span>
+                  {t("Reference:")} <span className="font-bold text-[var(--text-1)]">{order.paymentReference}</span>
                 </p>
                 {isSeller ? (
                   <>
                     <p className="text-xs text-[var(--text-2)] mb-3">
-                      Check your mobile money account for this payment, then confirm receipt below.
+                      {t("Check your mobile money account for this payment, then confirm receipt below.")}
                     </p>
                     <button
                       onClick={handleConfirm}
@@ -164,11 +169,11 @@ export default function OrderDetailPage() {
                       className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--success)] text-white font-bold text-sm py-3 disabled:opacity-60"
                     >
                       <CheckCircle2 size={16} />
-                      {acting ? "Confirming…" : "Confirm Payment Received"}
+                      {acting ? t("Confirming…") : t("Confirm Payment Received")}
                     </button>
                   </>
                 ) : (
-                  <p className="text-xs text-[var(--text-2)]">Waiting for the seller to confirm they received your payment.</p>
+                  <p className="text-xs text-[var(--text-2)]">{t("Waiting for the seller to confirm they received your payment.")}</p>
                 )}
               </div>
             )}
@@ -176,14 +181,14 @@ export default function OrderDetailPage() {
             {order.paymentStatus === "PAID" && (
               <div className="rounded-[var(--r-lg)] bg-[var(--success)]/10 border border-[var(--success)]/30 p-5 mb-4 text-center">
                 <CheckCircle2 size={28} className="mx-auto mb-2 text-[var(--success)]" />
-                <p className="text-sm font-bold text-[var(--success)]">Payment confirmed</p>
+                <p className="text-sm font-bold text-[var(--success)]">{t("Payment confirmed")}</p>
               </div>
             )}
 
             {order.paymentStatus === "CANCELLED" && (
               <div className="rounded-[var(--r-lg)] bg-[var(--critical)]/10 border border-[var(--critical)]/30 p-5 mb-4 text-center">
                 <XCircle size={28} className="mx-auto mb-2 text-[var(--critical)]" />
-                <p className="text-sm font-bold text-[var(--critical)]">This order was cancelled</p>
+                <p className="text-sm font-bold text-[var(--critical)]">{t("This order was cancelled")}</p>
               </div>
             )}
 
@@ -193,7 +198,7 @@ export default function OrderDetailPage() {
                 disabled={acting}
                 className="w-full rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-3 disabled:opacity-60"
               >
-                Cancel Order
+                {t("Cancel Order")}
               </button>
             )}
           </>

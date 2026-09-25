@@ -9,6 +9,7 @@ import { api, ApiError, Location, WasteMaterial, WastePrice } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { AppHeader } from "@/components/AppHeader";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 const PICKUP_OPTIONS = [
   { value: "collection_required", label: "Needs collection" },
@@ -29,6 +30,7 @@ function NewListingForm() {
   const scanMaterialId = searchParams.get("materialId") ?? undefined;
   const scanWeightKg = searchParams.get("weightKg") ?? undefined;
   const manual = searchParams.get("manual") === "1";
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +72,7 @@ function NewListingForm() {
         setState("ready");
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "We couldn't load the listing form.");
+        setError(err instanceof ApiError ? err.message : t("We couldn't load the listing form."));
         setState("error");
       });
   }
@@ -106,7 +108,7 @@ function NewListingForm() {
       const resized = await Promise.all(files.slice(0, remaining).map((f) => resizeImageFile(f)));
       setPhotos((prev) => [...prev, ...resized]);
     } catch {
-      setPhotoError("Couldn't add that photo.");
+      setPhotoError(t("Couldn't add that photo."));
     }
   }
 
@@ -133,7 +135,7 @@ function NewListingForm() {
       setNewLocationStreet("");
       setShowAddLocation(false);
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Couldn't save that location.");
+      setSubmitError(err instanceof ApiError ? err.message : t("Couldn't save that location."));
     } finally {
       setSubmitting(false);
     }
@@ -161,7 +163,7 @@ function NewListingForm() {
       }
       router.push(`/marketplace/${listing.id}`);
     } catch (err) {
-      setSubmitError(err instanceof ApiError ? err.message : "Couldn't create that listing.");
+      setSubmitError(err instanceof ApiError ? err.message : t("Couldn't create that listing."));
     } finally {
       setSubmitting(false);
     }
@@ -173,58 +175,56 @@ function NewListingForm() {
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
         {authState === "ready" && user?.role === "collector" ? (
           <EmptyState
-            title="Buyer mode is buy-only"
-            hint="Switch to seller mode in your profile to list waste for sale."
+            title={t("Buyer mode is buy-only")}
+            hint={t("Switch to seller mode in your profile to list waste for sale.")}
             action={
               <Link href="/profile" className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5">
-                Go to profile
+                {t("Go to profile")}
               </Link>
             }
           />
         ) : (
           <>
-        {state === "loading" && <LoadingState label="Loading form…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+        {state === "loading" && <LoadingState label={t("Loading form…")} />}
+        {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
         {state === "ready" && scanId && (
           <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--text-2)] mb-4">
-            <span className="font-bold text-[var(--text-1)]">AI Identification —</span> material pre-filled from your
-            scan. Change it below if it&apos;s not right.
+            <span className="font-bold text-[var(--text-1)]">{t("AI Identification —")}</span> {t("material pre-filled from your scan. Change it below if it's not right.")}
           </div>
         )}
         {state === "ready" && !scanId && manual && (
           <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--text-2)] mb-4">
-            <span className="font-bold text-[var(--text-1)]">Manual Selection —</span> choose the waste type yourself
-            below.
+            <span className="font-bold text-[var(--text-1)]">{t("Manual Selection —")}</span> {t("choose the waste type yourself below.")}
           </div>
         )}
 
         {state === "ready" && (locations.length === 0 || showAddLocation) && (
           <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-5 mb-6">
-            <h3 className="text-sm font-extrabold mb-1">{locations.length === 0 ? "Add a location first" : "Add a new location"}</h3>
-            <p className="text-xs text-[var(--text-2)] mb-4">Where is this material? You can reuse this location for future listings.</p>
+            <h3 className="text-sm font-extrabold mb-1">{locations.length === 0 ? t("Add a location first") : t("Add a new location")}</h3>
+            <p className="text-xs text-[var(--text-2)] mb-4">{t("Where is this material? You can reuse this location for future listings.")}</p>
             <form onSubmit={handleAddLocation} className="flex flex-col gap-3">
               <input
                 required
-                placeholder="Label (e.g. Home)"
+                placeholder={t("Label (e.g. Home)")}
                 value={newLocationLabel}
                 onChange={(e) => setNewLocationLabel(e.target.value)}
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
               />
               <input
-                placeholder="Region (e.g. Arusha)"
+                placeholder={t("Region (e.g. Arusha)")}
                 value={newLocationRegion}
                 onChange={(e) => setNewLocationRegion(e.target.value)}
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
               />
               <input
-                placeholder="District (e.g. Arusha Urban)"
+                placeholder={t("District (e.g. Arusha Urban)")}
                 value={newLocationDistrict}
                 onChange={(e) => setNewLocationDistrict(e.target.value)}
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
               />
               <input
-                placeholder="Street / address"
+                placeholder={t("Street / address")}
                 value={newLocationStreet}
                 onChange={(e) => setNewLocationStreet(e.target.value)}
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
@@ -237,7 +237,7 @@ function NewListingForm() {
                     onClick={() => setShowAddLocation(false)}
                     className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-sm py-2.5"
                   >
-                    Cancel
+                    {t("Cancel")}
                   </button>
                 )}
                 <button
@@ -245,7 +245,7 @@ function NewListingForm() {
                   disabled={submitting}
                   className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-2.5 disabled:opacity-60"
                 >
-                  {submitting ? "Saving…" : "Save location"}
+                  {submitting ? t("Saving…") : t("Save location")}
                 </button>
               </div>
             </form>
@@ -255,7 +255,7 @@ function NewListingForm() {
         {state === "ready" && locations.length > 0 && materials.length > 0 && !showAddLocation && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Material</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Material")}</span>
               <select
                 value={materialId}
                 onChange={(e) => setMaterialId(e.target.value)}
@@ -270,7 +270,7 @@ function NewListingForm() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Location</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Location")}</span>
               <select
                 value={locationId}
                 onChange={(e) => setLocationId(e.target.value)}
@@ -290,13 +290,13 @@ function NewListingForm() {
                 onClick={() => setShowAddLocation(true)}
                 className="self-start text-xs font-bold text-[var(--cyclo-teal)]"
               >
-                + Add new location
+                {t("+ Add new location")}
               </button>
             </label>
 
             <div className="flex gap-3">
               <label className="flex-1 flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Quantity</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Quantity")}</span>
                 <input
                   required
                   type="number"
@@ -308,7 +308,7 @@ function NewListingForm() {
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Unit</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Unit")}</span>
                 <select
                   value={quantityUnit}
                   onChange={(e) => setQuantityUnit(e.target.value)}
@@ -316,7 +316,7 @@ function NewListingForm() {
                 >
                   {QUANTITY_UNITS.map((u) => (
                     <option key={u} value={u}>
-                      {u}
+                      {t(u)}
                     </option>
                   ))}
                 </select>
@@ -325,16 +325,16 @@ function NewListingForm() {
 
             {quantityUnit === "kg" && (
               <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5">
-                <div className="text-[11px] font-bold text-[var(--text-2)] uppercase tracking-wide">Estimated Market Value</div>
+                <div className="text-[11px] font-bold text-[var(--text-2)] uppercase tracking-wide">{t("Estimated Market Value")}</div>
                 <div className="text-lg font-extrabold text-[var(--cyclo-teal)]">
-                  {estimatedMarketValue != null ? `TZS ${Math.round(estimatedMarketValue).toLocaleString()}` : "No reference price set"}
+                  {estimatedMarketValue != null ? `TZS ${Math.round(estimatedMarketValue).toLocaleString()}` : t("No reference price set")}
                 </div>
-                <div className="text-[11px] text-[var(--text-2)]">An estimate, not a guaranteed buying price.</div>
+                <div className="text-[11px] text-[var(--text-2)]">{t("An estimate, not a guaranteed buying price.")}</div>
               </div>
             )}
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Condition</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Condition")}</span>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
@@ -342,14 +342,14 @@ function NewListingForm() {
               >
                 {CONDITIONS.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {t(c)}
                   </option>
                 ))}
               </select>
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Photos (optional, up to {MAX_PHOTOS})</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Photos (optional, up to {max})").replace("{max}", String(MAX_PHOTOS))}</span>
               <div className="flex flex-wrap gap-2">
                 {photos.map((p, i) => (
                   <div key={i} className="relative h-16 w-16">
@@ -373,7 +373,7 @@ function NewListingForm() {
                       className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-on-bg-2)] text-[10px] font-bold"
                     >
                       <Camera size={18} />
-                      Camera
+                      {t("Camera")}
                     </button>
                     <button
                       type="button"
@@ -382,7 +382,7 @@ function NewListingForm() {
                       className="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-[var(--r-md)] border-2 border-dashed border-[var(--border)] text-[var(--text-on-bg-2)] text-[10px] font-bold"
                     >
                       <Upload size={18} />
-                      Upload
+                      {t("Upload")}
                     </button>
                   </>
                 )}
@@ -412,7 +412,7 @@ function NewListingForm() {
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Pickup</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Pickup")}</span>
               <select
                 value={pickupOption}
                 onChange={(e) => setPickupOption(e.target.value)}
@@ -420,7 +420,7 @@ function NewListingForm() {
               >
                 {PICKUP_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(o.label)}
                   </option>
                 ))}
               </select>
@@ -428,22 +428,22 @@ function NewListingForm() {
 
             <div className="flex gap-3">
               <label className="flex-1 flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Price per {quantityUnit} — TZS (optional)</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Price per {unit} — TZS (optional)").replace("{unit}", t(quantityUnit))}</span>
                 <input
                   type="number"
                   min="0"
-                  placeholder="Leave blank if unsure"
+                  placeholder={t("Leave blank if unsure")}
                   value={pricePerUnit}
                   onChange={(e) => handlePricePerUnitChange(e.target.value)}
                   className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
                 />
               </label>
               <label className="flex-1 flex flex-col gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Total asking price — TZS</span>
+                <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Total asking price — TZS")}</span>
                 <input
                   type="number"
                   min="0"
-                  placeholder="Leave blank if unsure"
+                  placeholder={t("Leave blank if unsure")}
                   value={askingPrice}
                   onChange={(e) => handleAskingPriceChange(e.target.value)}
                   className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
@@ -452,7 +452,7 @@ function NewListingForm() {
             </div>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">Description (optional)</span>
+              <span className="text-xs font-bold text-[var(--text-on-bg-2)]">{t("Description (optional)")}</span>
               <textarea
                 rows={3}
                 value={description}
@@ -468,7 +468,7 @@ function NewListingForm() {
               disabled={submitting || !estimatedWeightKg}
               className="rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 disabled:opacity-60"
             >
-              {submitting ? "Creating…" : "Create Listing"}
+              {submitting ? t("Creating…") : t("Create Listing")}
             </button>
           </form>
         )}

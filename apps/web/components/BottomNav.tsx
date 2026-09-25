@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/lib/i18n";
 import {
   Home,
   ShoppingCart,
   Camera,
   Truck,
   User,
-  ClipboardList,
   Compass,
   LayoutDashboard,
   Tag,
@@ -36,11 +36,11 @@ const PRODUCER_ITEMS: NavItem[] = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
-// Collector nav mirrors the prototype's Jobs/Active/Profile shape (index.html
-// #view-collector) minus Earnings — there's no wallet/payment data yet (Phase 5),
-// so it isn't shown rather than shown with fabricated numbers.
+// Buyer (collector-mode) nav — buying now happens by browsing the marketplace and using
+// Buy Now directly, not by accepting open collection jobs, so Marketplace replaces the
+// old Jobs tab here.
 const COLLECTOR_ITEMS: NavItem[] = [
-  { href: "/jobs", label: "Jobs", icon: ClipboardList },
+  { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
   { href: "/activity", label: "Active", icon: Compass },
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
@@ -70,6 +70,7 @@ function itemsForRole(role: string): NavItem[] {
 
 export function BottomNav({ role }: { role: string }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const items = itemsForRole(role);
 
   return (
@@ -86,7 +87,7 @@ export function BottomNav({ role }: { role: string }) {
             }`}
           >
             <Icon size={20} strokeWidth={2} />
-            {item.label}
+            {t(item.label)}
           </Link>
         );
       })}

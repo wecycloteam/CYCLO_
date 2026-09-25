@@ -8,7 +8,11 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import type { CurrentUserPayload } from './decorators/current-user.decorator';
 import type { GoogleProfile } from './strategies/google.strategy';
 
 @Controller('auth')
@@ -85,5 +89,11 @@ export class AuthController {
   @Post('logout')
   logout(@Body() dto: RefreshTokenDto) {
     return this.auth.logout(dto.refreshToken);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  changePassword(@CurrentUser() principal: CurrentUserPayload, @Body() dto: ChangePasswordDto) {
+    return this.auth.changePassword(principal.userId, dto);
   }
 }

@@ -1,14 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Pencil, X, Check, Camera } from "lucide-react";
+import { Pencil, X, Check, Camera, Lock } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError } from "@/lib/api";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { PasswordInput } from "@/components/PasswordInput";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 // household/collector are the two self-switchable "modes" (see the toggle below) — their
 // labels spell out Seller/Buyer explicitly so the account type row reflects which side of
@@ -46,6 +48,7 @@ function Avatar({ url, name, size = 64 }: { url: string | null | undefined; name
 }
 
 export default function ProfilePage() {
+  const { t } = useLanguage();
   const { state, user, error, retry } = useCurrentUser();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -58,6 +61,14 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
+
   const canSwitchMode = user?.role === "household" || user?.role === "collector";
 
   function startEditing() {
@@ -69,7 +80,38 @@ export default function ProfilePage() {
     if (user.role === "household" || user.role === "collector") setMode(user.role);
     setSaveError(null);
     setAvatarError(null);
+    setShowPasswordForm(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError(null);
+    setPasswordSuccess(null);
     setEditing(true);
+  }
+
+  async function handleChangePassword() {
+    setPasswordError(null);
+    setPasswordSuccess(null);
+    if (newPassword.length < 8) {
+      setPasswordError(t("New password must be at least 8 characters."));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError(t("New passwords don't match."));
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await api.changePassword({ currentPassword: currentPassword || undefined, newPassword });
+      setPasswordSuccess(t("Password updated."));
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPasswordError(err instanceof ApiError ? err.message : t("We couldn't update your password."));
+    } finally {
+      setChangingPassword(false);
+    }
   }
 
   async function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -80,7 +122,7 @@ export default function ProfilePage() {
     try {
       setAvatarUrl(await resizeImageFile(file));
     } catch {
-      setAvatarError("Couldn't use that photo.");
+      setAvatarError(t("Couldn't use that photo."));
     }
   }
 
@@ -98,7 +140,7 @@ export default function ProfilePage() {
       setEditing(false);
       retry();
     } catch (err) {
-      setSaveError(err instanceof ApiError ? err.message : "We couldn't save your changes.");
+      setSaveError(err instanceof ApiError ? err.message : t("We couldn't save your changes."));
     } finally {
       setSaving(false);
     }
@@ -109,8 +151,8 @@ export default function ProfilePage() {
       <AppHeader title="Profile" />
 
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-8">
-        {state === "loading" && <LoadingState label="Loading your profile…" />}
-        {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={retry} />}
+        {state === "loading" && <LoadingState label={t("Loading your profile…")} />}
+        {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={retry} />}
 
         {state === "ready" && user && !editing && (
           <>
@@ -123,36 +165,36 @@ export default function ProfilePage() {
               {user.username && (
                 <div className="text-sm font-semibold text-[var(--cyclo-green)]">@{user.username}</div>
               )}
-              <div className="text-sm text-[var(--text-on-bg-2)]">{user.phone ?? "No phone on file"}</div>
+              <div className="text-sm text-[var(--text-on-bg-2)]">{user.phone ?? t("No phone on file")}</div>
 
               <button
                 onClick={startEditing}
                 className="mt-4 flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-bold text-[var(--text-1)]"
               >
                 <Pencil size={14} />
-                Edit profile
+                {t("Edit profile")}
               </button>
             </div>
 
             <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)]">
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-[var(--text-2)]">Username</span>
-                <span className="text-sm font-bold">{user.username ?? "Not set"}</span>
+                <span className="text-sm text-[var(--text-2)]">{t("Username")}</span>
+                <span className="text-sm font-bold">{user.username ?? t("Not set")}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-[var(--text-2)]">Account type</span>
-                <span className="text-sm font-bold">{ROLE_LABELS[user.role] ?? user.role}</span>
+                <span className="text-sm text-[var(--text-2)]">{t("Account type")}</span>
+                <span className="text-sm font-bold">{t(ROLE_LABELS[user.role] ?? user.role)}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-[var(--text-2)]">Verification</span>
-                <span className="text-sm font-bold">{VERIFICATION_LABELS[user.verificationStatus] ?? user.verificationStatus}</span>
+                <span className="text-sm text-[var(--text-2)]">{t("Verification")}</span>
+                <span className="text-sm font-bold">{t(VERIFICATION_LABELS[user.verificationStatus] ?? user.verificationStatus)}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-[var(--text-2)]">Country</span>
+                <span className="text-sm text-[var(--text-2)]">{t("Country")}</span>
                 <span className="text-sm font-bold">{user.country}</span>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm text-[var(--text-2)]">Member since</span>
+                <span className="text-sm text-[var(--text-2)]">{t("Member since")}</span>
                 <span className="text-sm font-bold">
                   {new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short" })}
                 </span>
@@ -164,7 +206,7 @@ export default function ProfilePage() {
         {state === "ready" && user && editing && (
           <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-extrabold text-[var(--text-1)]">Edit profile</h2>
+              <h2 className="text-sm font-extrabold text-[var(--text-1)]">{t("Edit profile")}</h2>
               <button onClick={() => setEditing(false)} aria-label="Cancel" className="text-[var(--text-2)]">
                 <X size={18} />
               </button>
@@ -188,7 +230,7 @@ export default function ProfilePage() {
 
             {canSwitchMode && (
               <div className="mb-4">
-                <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">I want to</label>
+                <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">{t("I want to")}</label>
                 <div className="flex rounded-[var(--r-pill)] border border-[var(--border)] p-1">
                   <button
                     type="button"
@@ -197,7 +239,7 @@ export default function ProfilePage() {
                       mode === "household" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-2)]"
                     }`}
                   >
-                    Sell waste
+                    {t("Sell waste")}
                   </button>
                   <button
                     type="button"
@@ -206,21 +248,21 @@ export default function ProfilePage() {
                       mode === "collector" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-2)]"
                     }`}
                   >
-                    Buy / collect waste
+                    {t("Buy / collect waste")}
                   </button>
                 </div>
                 {mode !== user.role && (
                   <p className="mt-1.5 text-[11px] text-[var(--text-2)]">
                     {mode === "collector"
-                      ? "Switches your account to a collector — you'll see and accept pickup jobs instead of your own listings."
-                      : "Switches your account back to a household seller."}
+                      ? t("Switches your account to a collector — you'll see and accept pickup jobs instead of your own listings.")
+                      : t("Switches your account back to a household seller.")}
                   </p>
                 )}
               </div>
             )}
 
             <div className="mb-4">
-              <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">Username</label>
+              <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">{t("Username")}</label>
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -230,7 +272,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="mb-4">
-              <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">Full name</label>
+              <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">{t("Full name")}</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -239,13 +281,59 @@ export default function ProfilePage() {
             </div>
 
             <div className="mb-4">
-              <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">Phone number</label>
+              <label className="mb-1 block text-xs font-bold text-[var(--text-2)]">{t("Phone number")}</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+255712345678 or 0712345678"
                 className="w-full rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)]"
               />
+            </div>
+
+            <div className="mb-4 border-t border-[var(--border)] pt-4">
+              <button
+                type="button"
+                onClick={() => setShowPasswordForm((v) => !v)}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-2)]">
+                  <Lock size={14} /> {t("Change password")}
+                </span>
+                <span className="text-xs font-bold text-[var(--cyclo-teal)]">{showPasswordForm ? t("Hide") : t("Change")}</span>
+              </button>
+
+              {showPasswordForm && (
+                <div className="mt-3 flex flex-col gap-3">
+                  <PasswordInput
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder={t("Current password")}
+                    className="w-full rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 pr-10 text-sm text-[var(--text-1)]"
+                  />
+                  <PasswordInput
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={t("New password (min. 8 characters)")}
+                    className="w-full rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 pr-10 text-sm text-[var(--text-1)]"
+                  />
+                  <PasswordInput
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder={t("Confirm new password")}
+                    className="w-full rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 pr-10 text-sm text-[var(--text-1)]"
+                  />
+                  {passwordError && <p className="text-xs font-bold text-[var(--critical)]">{passwordError}</p>}
+                  {passwordSuccess && <p className="text-xs font-bold text-[var(--success)]">{passwordSuccess}</p>}
+                  <button
+                    type="button"
+                    onClick={handleChangePassword}
+                    disabled={changingPassword || !newPassword}
+                    className="w-full rounded-full border border-[var(--cyclo-teal)] py-2.5 text-sm font-bold text-[var(--cyclo-teal)] disabled:opacity-60"
+                  >
+                    {changingPassword ? t("Updating…") : t("Update password")}
+                  </button>
+                </div>
+              )}
             </div>
 
             {saveError && <p className="mb-4 text-xs font-bold text-[var(--critical)]">{saveError}</p>}
@@ -256,7 +344,7 @@ export default function ProfilePage() {
               className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[var(--cyclo-teal)] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
             >
               <Check size={16} />
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? t("Saving…") : t("Save changes")}
             </button>
           </div>
         )}

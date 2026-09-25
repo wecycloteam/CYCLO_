@@ -9,6 +9,7 @@ import { resizeImageFile } from "@/lib/resizeImage";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type Step = "capture" | "live" | "classifying" | "result" | "error";
 
@@ -16,6 +17,7 @@ const MAX_DIMENSION = 900;
 
 export default function ScanPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -144,14 +146,6 @@ export default function ScanPage() {
     router.push(`/marketplace/new?${params.toString()}`);
   }
 
-  function useForPickup() {
-    if (!scan) return;
-    const params = new URLSearchParams();
-    if (scan.suggestedMaterialId) params.set("materialId", scan.suggestedMaterialId);
-    if (quantity) params.set("weightKg", quantity);
-    router.push(`/activity/new?${params.toString()}`);
-  }
-
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Scan Waste" />
@@ -162,7 +156,7 @@ export default function ScanPage() {
           <div className="flex flex-col items-center text-center gap-4">
             <div className="w-full aspect-square rounded-[var(--r-lg)] border-2 border-dashed border-[var(--border)] bg-[var(--surface)] flex flex-col items-center justify-center gap-2 text-[var(--text-2)]">
               <Camera size={48} strokeWidth={1.5} />
-              <span className="text-sm">Point your camera at a material to identify it</span>
+              <span className="text-sm">{t("Point your camera at a material to identify it")}</span>
             </div>
             <input
               ref={fileInputRef}
@@ -175,29 +169,29 @@ export default function ScanPage() {
               onClick={openLiveCamera}
               className="w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3.5"
             >
-              Open Camera
+              {t("Open Camera")}
             </button>
             {cameraError && <p className="text-xs text-[var(--critical)]">{cameraError}</p>}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-3"
             >
-              Upload a Photo Instead
+              {t("Upload a Photo Instead")}
             </button>
 
             <div className="w-full flex items-center gap-3 my-1">
               <div className="flex-1 h-px bg-[var(--border)]" />
-              <span className="text-[11px] font-bold text-[var(--text-on-bg-2)]">OR</span>
+              <span className="text-[11px] font-bold text-[var(--text-on-bg-2)]">{t("OR")}</span>
               <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
             <button
               onClick={() => router.push("/marketplace/new?manual=1")}
               className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-3.5"
             >
-              Select Waste Manually
+              {t("Select Waste Manually")}
             </button>
             <p className="text-xs text-[var(--text-on-bg-2)]">
-              AI identification can misread a material — choose the category yourself instead.
+              {t("AI identification can misread a material — choose the category yourself instead.")}
             </p>
           </div>
         )}
@@ -211,13 +205,13 @@ export default function ScanPage() {
               onClick={capturePhoto}
               className="w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3.5"
             >
-              Capture Photo
+              {t("Capture Photo")}
             </button>
             <button
               onClick={cancelLiveCamera}
               className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg-2)] font-bold text-sm py-3"
             >
-              Cancel
+              {t("Cancel")}
             </button>
           </div>
         )}
@@ -228,7 +222,7 @@ export default function ScanPage() {
               // eslint-disable-next-line @next/next/no-img-element -- data: URL, not an optimizable remote asset
               <img src={preview} alt="Captured waste" className="w-full aspect-square object-cover rounded-[var(--r-lg)]" />
             )}
-            <LoadingState label="Identifying material…" />
+            <LoadingState label={t("Identifying material…")} />
           </div>
         )}
 
@@ -236,13 +230,13 @@ export default function ScanPage() {
           <div className="flex flex-col items-center text-center gap-4">
             <p className="text-sm text-[var(--critical)]">{error}</p>
             <button onClick={reset} className="w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3.5">
-              Try Again
+              {t("Try Again")}
             </button>
             <button
               onClick={() => router.push("/marketplace/new?manual=1")}
               className="w-full rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-3.5"
             >
-              Select Waste Manually Instead
+              {t("Select Waste Manually Instead")}
             </button>
           </div>
         )}
@@ -256,23 +250,23 @@ export default function ScanPage() {
 
             {scan.result.mock && (
               <div className="rounded-[var(--r-md)] bg-[var(--warning)]/15 border border-[var(--warning)]/40 px-4 py-2 text-xs font-bold text-[var(--warning)] text-center">
-                DEMO MODE — this is a placeholder result, not a real AI classification yet
+                {t("DEMO MODE — this is a placeholder result, not a real AI classification yet")}
               </div>
             )}
 
             <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--surface)] p-5">
               <div className="text-lg font-extrabold mb-1">{scan.result.label}</div>
               <div className="text-sm text-[var(--text-2)] mb-3">
-                {Math.round(scan.result.confidence * 100)}% confidence ·{" "}
-                {scan.result.recyclable ? "Recyclable" : "Not recyclable"}
-                {scan.result.condition && <> · {scan.result.condition.charAt(0) + scan.result.condition.slice(1).toLowerCase()} condition</>}
+                {Math.round(scan.result.confidence * 100)}% {t("confidence")} ·{" "}
+                {scan.result.recyclable ? t("Recyclable") : t("Not recyclable")}
+                {scan.result.condition && <> · {t(scan.result.condition.charAt(0) + scan.result.condition.slice(1).toLowerCase())} {t("condition")}</>}
               </div>
               {scan.result.conditionNotes && (
                 <p className="text-xs text-[var(--text-2)] mb-3 italic">{scan.result.conditionNotes}</p>
               )}
 
               <label className="flex flex-col gap-1.5 mb-3">
-                <span className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide">Estimated quantity (kg)</span>
+                <span className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide">{t("Estimated quantity (kg)")}</span>
                 <input
                   type="number"
                   min="0.1"
@@ -284,17 +278,17 @@ export default function ScanPage() {
               </label>
 
               <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-3 mb-3">
-                <div className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide">Estimated Market Value</div>
+                <div className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide">{t("Estimated Market Value")}</div>
                 <div className="text-xl font-extrabold text-[var(--cyclo-teal)]">
-                  {estimatedValue != null ? `TZS ${Math.round(estimatedValue).toLocaleString()}` : "No reference price set yet"}
+                  {estimatedValue != null ? `TZS ${Math.round(estimatedValue).toLocaleString()}` : t("No reference price set yet")}
                 </div>
-                <div className="text-[11px] text-[var(--text-2)]">An estimate, not a guaranteed buying price.</div>
+                <div className="text-[11px] text-[var(--text-2)]">{t("An estimate, not a guaranteed buying price.")}</div>
               </div>
 
-              <div className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide mb-1">Recommended action</div>
+              <div className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide mb-1">{t("Recommended action")}</div>
               <p className="text-sm font-bold text-[var(--text-1)] mb-3">{scan.result.recommendedAction}</p>
 
-              <div className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide mb-1">Suggested next steps</div>
+              <div className="text-xs font-bold text-[var(--text-2)] uppercase tracking-wide mb-1">{t("Suggested next steps")}</div>
               <ul className="text-sm text-[var(--text-1)] list-disc list-inside space-y-0.5">
                 {scan.result.handlingInstructions.map((step, i) => (
                   <li key={i}>{step}</li>
@@ -306,13 +300,7 @@ export default function ScanPage() {
               onClick={useForListing}
               className="w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3.5"
             >
-              List This Waste
-            </button>
-            <button
-              onClick={useForPickup}
-              className="w-full rounded-full border border-[var(--cyclo-teal)] text-[var(--cyclo-green)] font-bold text-sm py-3.5"
-            >
-              Request Pickup
+              {t("List This Waste")}
             </button>
             <button
               onClick={reset}

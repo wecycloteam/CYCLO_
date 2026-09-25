@@ -19,7 +19,6 @@ import {
   Search,
   Camera,
   Tag,
-  Truck,
   BookOpen,
   Scale,
   ShoppingBag,
@@ -27,11 +26,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ImpactStats, Location, PickupRequest, WasteListing, formatUnitPrice } from "@/lib/api";
+import { api, ImpactStats, Location, Order, WasteListing, formatUnitPrice } from "@/lib/api";
 import { BottomNav } from "@/components/BottomNav";
 import { AssistantChat } from "@/components/AssistantChat";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 const CATEGORY_TILES: { key: string; label: string; icon: LucideIcon }[] = [
@@ -115,9 +116,10 @@ function QuickAction({ href, icon: Icon, label }: { href: string; icon: LucideIc
 
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { state, user, error, retry } = useCurrentUser();
   const [recentListings, setRecentListings] = useState<WasteListing[]>([]);
-  const [recentPickups, setRecentPickups] = useState<PickupRequest[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [impact, setImpact] = useState<ImpactStats | null>(null);
   const [nearbyListings, setNearbyListings] = useState<WasteListing[]>([]);
   const [nearbyState, setNearbyState] = useState<"loading" | "ready" | "error">("loading");
@@ -127,10 +129,8 @@ export default function HomePage() {
   useEffect(() => {
     if (state !== "ready" || !user) return;
     api.myListings().then(setRecentListings).catch(() => undefined);
-    if (user.role === "collector") {
-      api.assignedPickupJobs().then(setRecentPickups).catch(() => undefined);
-    } else {
-      api.myPickupRequests().then(setRecentPickups).catch(() => undefined);
+    api.myOrders().then(setRecentOrders).catch(() => undefined);
+    if (user.role !== "collector") {
       api.myLocations().then(setLocations).catch(() => undefined);
       setNearbyState("loading");
       api
@@ -179,6 +179,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             <Link
               href="/activity"
@@ -212,7 +213,10 @@ export default function HomePage() {
             height={40}
             className="cyclo-header-logo-dark h-[42px] w-auto"
           />
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
         </header>
       )}
 
@@ -228,7 +232,7 @@ export default function HomePage() {
                 <input
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder="Search recyclable materials…"
+                  placeholder={t("Search recyclable materials…")}
                   className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
                 />
               </div>
@@ -244,19 +248,19 @@ export default function HomePage() {
                 style={{ background: "radial-gradient(circle, rgba(72,245,59,0.35), transparent 70%)" }}
               />
               <div className="relative">
-                <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">Turn waste into value</div>
-                <div className="text-xl font-extrabold leading-snug">Scan waste,
+                <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">{t("Turn waste into value")}</div>
+                <div className="text-xl font-extrabold leading-snug">{t("Scan waste,")}
                   <br />
-                  get an instant price →
+                  {t("get an instant price →")}
                 </div>
                 <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--cyclo-green)] px-4 py-2 text-xs font-extrabold text-[#0E2A1F]">
-                  <Camera size={14} /> AI Scan Waste
+                  <Camera size={14} /> {t("AI Scan Waste")}
                 </span>
               </div>
             </Link>
 
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">Browse by category</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">{t("Browse by category")}</h3>
             </div>
             <div className="mb-6 grid grid-cols-3 gap-2.5">
               {CATEGORY_TILES.map((c) => (
@@ -266,35 +270,34 @@ export default function HomePage() {
                   className="flex flex-col items-center gap-1.5 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] py-4 transition hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <c.icon size={22} strokeWidth={1.75} className="text-[var(--cyclo-teal)]" />
-                  <span className="text-[11px] font-bold text-[var(--text-1)]">{c.label}</span>
+                  <span className="text-[11px] font-bold text-[var(--text-1)]">{t(c.label)}</span>
                 </Link>
               ))}
             </div>
 
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">Available materials near you</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">{t("Available materials near you")}</h3>
               <Link href="/marketplace" className="text-xs font-bold text-[var(--cyclo-green)]">
-                See all
+                {t("See all")}
               </Link>
             </div>
             <div className="mb-6 -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
-              {nearbyState === "loading" && <p className="text-xs text-[var(--text-2)] py-6">Loading listings…</p>}
-              {nearbyState === "error" && <p className="text-xs text-[var(--text-2)] py-6">Couldn&rsquo;t load nearby listings right now.</p>}
+              {nearbyState === "loading" && <p className="text-xs text-[var(--text-2)] py-6">{t("Loading listings…")}</p>}
+              {nearbyState === "error" && <p className="text-xs text-[var(--text-2)] py-6">{t("Couldn't load nearby listings right now.")}</p>}
               {nearbyState === "ready" && nearbyListings.length === 0 && (
-                <p className="text-xs text-[var(--text-2)] py-6">No listings yet — be the first to list something.</p>
+                <p className="text-xs text-[var(--text-2)] py-6">{t("No listings yet — be the first to list something.")}</p>
               )}
               {nearbyState === "ready" && nearbyListings.map((l) => <ListingProductCard key={l.id} listing={l} />)}
             </div>
 
             <div className="mb-3">
-              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)] mb-3">Quick actions</h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)] mb-3">{t("Quick actions")}</h3>
               <div className="grid grid-cols-4 gap-2.5">
-                <QuickAction href="/marketplace/new" icon={Tag} label="Sell Waste" />
-                <QuickAction href="/activity/new" icon={Truck} label="Request Pickup" />
-                <QuickAction href="/scan" icon={Camera} label="Scan" />
-                <QuickAction href="/orders" icon={ShoppingBag} label="Orders" />
-                <QuickAction href="/chat" icon={MessageCircle} label="Chat" />
-                <QuickAction href="/learn" icon={BookOpen} label="Learn" />
+                <QuickAction href="/marketplace/new" icon={Tag} label={t("Sell Waste")} />
+                <QuickAction href="/scan" icon={Camera} label={t("Scan")} />
+                <QuickAction href="/orders" icon={ShoppingBag} label={t("Orders")} />
+                <QuickAction href="/chat" icon={MessageCircle} label={t("Chat")} />
+                <QuickAction href="/learn" icon={BookOpen} label={t("Learn")} />
               </div>
             </div>
           </>
@@ -303,16 +306,16 @@ export default function HomePage() {
         {state === "ready" && user && user.role === "collector" && (
           <>
             <div className="mb-6">
-              <div className="text-sm text-[var(--text-on-bg-2)]">Good to see you</div>
+              <div className="text-sm text-[var(--text-on-bg-2)]">{t("Good to see you")}</div>
               <div className="text-xl font-extrabold text-[var(--text-on-bg)]">{user.name}</div>
             </div>
             <Link
-              href="/jobs"
+              href="/marketplace"
               className="block rounded-[var(--r-lg)] p-5 mb-8 text-white relative overflow-hidden"
               style={{ background: "linear-gradient(135deg, var(--cyclo-teal), #1B3E41)" }}
             >
-              <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">Collector</div>
-              <div className="text-lg font-extrabold">Browse open jobs →</div>
+              <div className="text-xs font-bold uppercase tracking-wide text-[#B9D6D1] mb-1">{t("Buyer")}</div>
+              <div className="text-lg font-extrabold">{t("Browse the marketplace →")}</div>
             </Link>
           </>
         )}
@@ -321,48 +324,46 @@ export default function HomePage() {
           <>
             {impact && user.role !== "collector" && (
               <div className="grid grid-cols-3 gap-2 mb-2">
-                <StatTile label="Waste recycled" value={`${impact.asSeller.wasteRecycledKg} kg`} />
-                <StatTile label="Est. earnings" value={`TZS ${Math.round(impact.asSeller.estimatedEarnings).toLocaleString()}`} />
-                <StatTile label="Est. CO₂ avoided" value={`${impact.asSeller.co2AvoidedKg} kg`} />
+                <StatTile label={t("Waste recycled")} value={`${impact.asSeller.wasteRecycledKg} kg`} />
+                <StatTile label={t("Est. earnings")} value={`TZS ${Math.round(impact.asSeller.estimatedEarnings).toLocaleString()}`} />
+                <StatTile label={t("Est. CO₂ avoided")} value={`${impact.asSeller.co2AvoidedKg} kg`} />
               </div>
             )}
             {impact && user.role === "collector" && (
               <div className="grid grid-cols-2 gap-2 mb-2">
-                <StatTile label="Pickups completed" value={`${impact.asCollector.completedCount}`} />
-                <StatTile label="Weight collected" value={`${impact.asCollector.collectedWeightKg} kg`} />
+                <StatTile label={t("Pickups completed")} value={`${impact.asCollector.completedCount}`} />
+                <StatTile label={t("Weight collected")} value={`${impact.asCollector.collectedWeightKg} kg`} />
               </div>
             )}
             {impact && (
               <Link href="/impact" className="mb-8 inline-block text-xs font-bold text-[var(--cyclo-green)]">
-                See full impact & achievements →
+                {t("See full impact & achievements →")}
               </Link>
             )}
 
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">
-                {user.role === "collector" ? "Your active jobs" : "Your recent activity"}
-              </h3>
+              <h3 className="text-sm font-extrabold text-[var(--text-on-bg)]">{t("Your recent activity")}</h3>
               <Link href="/activity" className="text-xs font-bold text-[var(--cyclo-green)]">
-                See all
+                {t("See all")}
               </Link>
             </div>
 
-            {recentPickups.length === 0 && recentListings.length === 0 && (
-              <p className="text-xs text-[var(--text-on-bg-2)]">Nothing here yet — get started above.</p>
+            {recentOrders.length === 0 && recentListings.length === 0 && (
+              <p className="text-xs text-[var(--text-on-bg-2)]">{t("Nothing here yet — get started above.")}</p>
             )}
 
             <div className="flex flex-col gap-2">
-              {recentPickups.slice(0, 3).map((p) => (
+              {recentOrders.slice(0, 3).map((o) => (
                 <Link
-                  key={p.id}
-                  href={`/activity/${p.id}`}
+                  key={o.id}
+                  href={`/orders/${o.id}`}
                   className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                 >
                   <div>
-                    <div className="text-sm font-bold">{p.material.label}</div>
-                    <div className="text-xs text-[var(--text-2)]">{p.estimatedWeightKg} kg est.</div>
+                    <div className="text-sm font-bold">{o.listing.material.label}</div>
+                    <div className="text-xs text-[var(--text-2)]">TZS {o.agreedPrice.toLocaleString()}</div>
                   </div>
-                  <StatusBadge status={p.status} />
+                  <StatusBadge status={o.paymentStatus} />
                 </Link>
               ))}
               {user.role !== "collector" &&

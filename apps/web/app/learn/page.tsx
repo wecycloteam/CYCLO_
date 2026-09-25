@@ -5,6 +5,7 @@ import { Recycle, Leaf, Coins, ShieldCheck, Camera, MessageCircle, ShoppingBag }
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
+import { useLanguage } from "@/lib/i18n";
 
 function Section({ icon: Icon, title, children }: { icon: typeof Recycle; title: string; children: React.ReactNode }) {
   return (
@@ -20,69 +21,63 @@ function Section({ icon: Icon, title, children }: { icon: typeof Recycle; title:
 
 export default function LearnPage() {
   const { user } = useCurrentUser();
+  const { t } = useLanguage();
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Learn" />
       <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
-        <h1 className="text-lg font-extrabold text-[var(--text-on-bg)] mb-1">Why waste management matters</h1>
+        <h1 className="text-lg font-extrabold text-[var(--text-on-bg)] mb-1">{t("Why waste management matters")}</h1>
         <p className="text-sm text-[var(--text-on-bg-2)] mb-5">
-          A short guide to recycling, and how CYCLO turns it into real income.
+          {t("A short guide to recycling, and how CYCLO turns it into real income.")}
         </p>
 
-        <Section icon={Leaf} title="Why it matters">
-          Waste that ends up in open dumps or is burned releases methane and toxic smoke, contaminates soil and
-          groundwater, and blocks drainage that causes flooding in urban areas. Materials like plastic, metal, and
-          glass can be reused almost indefinitely instead of being extracted and manufactured from scratch each
-          time — recycling one tonne of these materials avoids a meaningful amount of the energy, water, and raw
-          material that virgin production would otherwise need.
+        <Section icon={Leaf} title={t("Why it matters")}>
+          {t(
+            "Waste that ends up in open dumps or is burned releases methane and toxic smoke, contaminates soil and groundwater, and blocks drainage that causes flooding in urban areas. Materials like plastic, metal, and glass can be reused almost indefinitely instead of being extracted and manufactured from scratch each time — recycling one tonne of these materials avoids a meaningful amount of the energy, water, and raw material that virgin production would otherwise need."
+          )}
         </Section>
 
-        <Section icon={Coins} title="Waste has real value">
-          Plastic, metal, cardboard, paper, and textiles all have active scrap markets — someone is willing to pay
-          for them because they can be reprocessed into new products. Most of that value is lost when recyclable
-          material is thrown away instead of sorted and sold. CYCLO exists to connect the people generating that
-          material with the collectors and recyclers who already want to buy it.
+        <Section icon={Coins} title={t("Waste has real value")}>
+          {t(
+            "Plastic, metal, cardboard, paper, and textiles all have active scrap markets — someone is willing to pay for them because they can be reprocessed into new products. Most of that value is lost when recyclable material is thrown away instead of sorted and sold. CYCLO exists to connect the people generating that material with the collectors and recyclers who already want to buy it."
+          )}
         </Section>
 
-        <Section icon={Recycle} title="What you can do today">
-          Separate recyclables (plastic bottles, cardboard, metal cans, paper, clean textiles) from general waste
-          before you throw anything away. Rinse food residue off plastic and metal containers — contaminated
-          material is worth less and harder to sell. Flatten cardboard and boxes to make them easier to store and
-          transport.
+        <Section icon={Recycle} title={t("What you can do today")}>
+          {t(
+            "Separate recyclables (plastic bottles, cardboard, metal cans, paper, clean textiles) from general waste before you throw anything away. Rinse food residue off plastic and metal containers — contaminated material is worth less and harder to sell. Flatten cardboard and boxes to make them easier to store and transport."
+          )}
         </Section>
 
-        <Section icon={Camera} title="Scan before you sort">
-          Not sure what category something falls under, whether it's actually recyclable, or roughly what it's
-          worth? Use{" "}
+        <Section icon={Camera} title={t("Scan before you sort")}>
+          {t("Not sure what category something falls under, whether it's actually recyclable, or roughly what it's worth? Use")}{" "}
           <Link href="/scan" className="font-bold text-[var(--cyclo-teal)]">
-            AI Scan
+            {t("AI Scan")}
           </Link>{" "}
-          to photograph an item and get a real classification, condition assessment, and an estimated price in
-          TZS.
+          {t("to photograph an item and get a real classification, condition assessment, and an estimated price in TZS.")}
         </Section>
 
-        <Section icon={ShoppingBag} title="List it, don't bin it">
-          Once you know what you have,{" "}
+        <Section icon={ShoppingBag} title={t("List it, don't bin it")}>
+          {t("Once you know what you have,")}{" "}
           <Link href="/marketplace/new" className="font-bold text-[var(--cyclo-teal)]">
-            list it on the marketplace
+            {t("list it on the marketplace")}
           </Link>{" "}
-          instead of throwing it away. A buyer can purchase it directly in-app, or a collector can pick it up
-          through a scheduled collection.
+          {t("instead of throwing it away. A buyer can purchase it directly in-app, or a collector can pick it up through a scheduled collection.")}
         </Section>
 
-        <Section icon={MessageCircle} title="Talk it through">
-          Unsure about pricing, condition, or how to prepare something for sale?{" "}
+        <Section icon={MessageCircle} title={t("Talk it through")}>
+          {t("Unsure about pricing, condition, or how to prepare something for sale?")}{" "}
           <Link href="/chat" className="font-bold text-[var(--cyclo-teal)]">
-            Message a buyer or seller directly
+            {t("Message a buyer or seller directly")}
           </Link>{" "}
-          in-app, or ask CYCLO AI (the floating chat button) for guidance on sorting, cleaning, and pricing.
+          {t("in-app, or ask CYCLO AI (the floating chat button) for guidance on sorting, cleaning, and pricing.")}
         </Section>
 
-        <Section icon={ShieldCheck} title="Verified, not anonymous">
-          Every account goes through admin review before it's marked verified, and every rating you see traces
-          back to a real, completed transaction between two real people — never a fabricated number. That's what
-          the verification badge and star ratings on listings actually mean.
+        <Section icon={ShieldCheck} title={t("Verified, not anonymous")}>
+          {t(
+            "Every account goes through admin review before it's marked verified, and every rating you see traces back to a real, completed transaction between two real people — never a fabricated number. That's what the verification badge and star ratings on listings actually mean."
+          )}
         </Section>
 
         {!user && (
@@ -90,7 +85,7 @@ export default function LearnPage() {
             href="/login"
             className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-3 mt-2"
           >
-            Create a free account to start
+            {t("Create a free account to start")}
           </Link>
         )}
       </div>

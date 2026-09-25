@@ -12,6 +12,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { StarRatingDisplay } from "@/components/StarRating";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/lib/i18n";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
 
 type Tab = "browse" | "mine";
@@ -125,6 +127,7 @@ export default function MarketplacePage() {
 }
 
 function MarketplaceContent() {
+  const { t } = useLanguage();
   const { user, checked } = useOptionalCurrentUser();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams.get("category") ?? "";
@@ -195,12 +198,13 @@ function MarketplaceContent() {
             <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
           </Link>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             <Link
               href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
               className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
             >
-              Log in
+              {t("Log in")}
             </Link>
           </div>
         </header>
@@ -215,7 +219,7 @@ function MarketplaceContent() {
                 tab === "browse" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-on-bg-2)]"
               }`}
             >
-              Browse
+              {t("Browse")}
             </button>
             {user ? (
               <button
@@ -224,14 +228,14 @@ function MarketplaceContent() {
                   tab === "mine" ? "bg-[var(--cyclo-teal)] text-white" : "text-[var(--text-on-bg-2)]"
                 }`}
               >
-                My Listings
+                {t("My Listings")}
               </button>
             ) : (
               <Link
                 href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
                 className="rounded-[var(--r-pill)] px-4 py-1.5 text-xs font-bold text-[var(--text-on-bg-2)]"
               >
-                My Listings
+                {t("My Listings")}
               </Link>
             )}
           </div>
@@ -239,19 +243,19 @@ function MarketplaceContent() {
             href={user ? "/marketplace/new" : `/login?redirect=${encodeURIComponent("/marketplace/new")}`}
             className="rounded-full bg-[var(--cyclo-teal)] text-white text-xs font-bold px-4 py-2"
           >
-            + New
+            {t("+ New")}
           </Link>
         </div>
 
         <Link href="/prices" className="inline-block text-xs font-bold text-[var(--cyclo-green)] mb-4">
-          View transparent reference prices →
+          {t("View transparent reference prices →")}
         </Link>
 
         {tab === "browse" && (
           <div className="mb-4">
             <div className="flex gap-2 mb-2">
               <input
-                placeholder="Search materials…"
+                placeholder={t("Search materials…")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="flex-1 rounded-[var(--r-md)] border border-[var(--border)] px-4 py-2.5 text-sm"
@@ -261,7 +265,7 @@ function MarketplaceContent() {
                 onClick={() => setShowFilters((v) => !v)}
                 className="rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2.5 text-xs font-bold text-[var(--text-on-bg-2)]"
               >
-                {showFilters ? "Hide filters" : "Filters"}
+                {showFilters ? t("Hide filters") : t("Filters")}
               </button>
             </div>
 
@@ -272,15 +276,15 @@ function MarketplaceContent() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-xs bg-[var(--surface)]"
                 >
-                  <option value="">All categories</option>
+                  <option value="">{t("All categories")}</option>
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
-                      {c.replace(/_/g, " ")}
+                      {t(c.replace(/_/g, " "))}
                     </option>
                   ))}
                 </select>
                 <input
-                  placeholder="Location contains…"
+                  placeholder={t("Location contains…")}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-xs"
@@ -289,7 +293,7 @@ function MarketplaceContent() {
                   <input
                     type="number"
                     min="0"
-                    placeholder="Min price"
+                    placeholder={t("Min price")}
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     className="flex-1 rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-xs"
@@ -297,7 +301,7 @@ function MarketplaceContent() {
                   <input
                     type="number"
                     min="0"
-                    placeholder="Max price"
+                    placeholder={t("Max price")}
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     className="flex-1 rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-xs"
@@ -305,7 +309,7 @@ function MarketplaceContent() {
                   <input
                     type="number"
                     min="0"
-                    placeholder="Min qty"
+                    placeholder={t("Min qty")}
                     value={minQty}
                     onChange={(e) => setMinQty(e.target.value)}
                     className="flex-1 rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-xs"
@@ -318,41 +322,41 @@ function MarketplaceContent() {
 
         {tab === "mine" && !user && checked && (
           <EmptyState
-            title="Log in to see your listings"
-            hint="Create a free account or log in to list and manage your own materials."
+            title={t("Log in to see your listings")}
+            hint={t("Create a free account or log in to list and manage your own materials.")}
             action={
               <Link
                 href={`/login?redirect=${encodeURIComponent("/marketplace/new")}`}
                 className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5"
               >
-                Log in / Sign up
+                {t("Log in / Sign up")}
               </Link>
             }
           />
         )}
 
-        {(tab === "browse" || user) && state === "loading" && <LoadingState label="Loading listings…" />}
+        {(tab === "browse" || user) && state === "loading" && <LoadingState label={t("Loading listings…")} />}
         {(tab === "browse" || user) && state === "error" && (
-          <ErrorState message={error ?? "Something went wrong."} onRetry={() => load(tab)} />
+          <ErrorState message={error ?? t("Something went wrong.")} onRetry={() => load(tab)} />
         )}
 
         {(tab === "browse" || user) && state === "ready" && listings.length === 0 && (
           <EmptyState
-            title={tab === "browse" ? "No listings yet" : "You haven't listed anything yet"}
-            hint="Start by listing recyclable material to sell."
+            title={tab === "browse" ? t("No listings yet") : t("You haven't listed anything yet")}
+            hint={t("Start by listing recyclable material to sell.")}
             action={
               <Link
                 href={user ? "/marketplace/new" : `/login?redirect=${encodeURIComponent("/marketplace/new")}`}
                 className="inline-block rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm px-5 py-2.5"
               >
-                List Material
+                {t("List Material")}
               </Link>
             }
           />
         )}
 
         {(tab === "browse" || user) && state === "ready" && listings.length > 0 && filteredListings.length === 0 && (
-          <EmptyState title="No listings match your filters" hint="Try widening your search." />
+          <EmptyState title={t("No listings match your filters")} hint={t("Try widening your search.")} />
         )}
 
         {(tab === "browse" || user) && state === "ready" && filteredListings.length > 0 && (
