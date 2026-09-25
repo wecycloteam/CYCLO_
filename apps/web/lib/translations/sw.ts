@@ -205,10 +205,10 @@ export const sw: Record<string, string> = {
   "Report transaction": "Ripoti muamala",
   "Show password": "Onyesha nenosiri",
   "Hide password": "Ficha nenosiri",
-  "Household — I want to sell waste": "Kaya — Nataka kuuza taka",
-  "I'm a Business": "Mimi ni Biashara",
+  "Individual": "Mtu Binafsi",
+  "Finish setting up your account": "Kamilisha kuweka akaunti yako",
+  "Welcome, {name} — a few more details and you're in.": "Karibu, {name} — maelezo machache zaidi na utaingia.",
   "Waste Collector — I want to buy waste": "Mkusanyaji wa Taka — Nataka kununua taka",
-  "I'm a Recycling Company": "Mimi ni Kampuni ya Kutumia Taka Tena",
 
   // Header / nav
   "Log out": "Toka",

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, ShoppingCart, Flag } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Flag, MessageCircle } from "lucide-react";
 import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -66,6 +66,8 @@ export default function ListingDetailPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [cartSuccess, setCartSuccess] = useState(false);
+  const [messaging, setMessaging] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
@@ -124,6 +126,19 @@ export default function ListingDetailPage() {
       setCartError(err instanceof ApiError ? err.message : "Couldn't add this to your cart.");
     } finally {
       setAddingToCart(false);
+    }
+  }
+
+  async function handleMessageSeller() {
+    setMessaging(true);
+    setMessageError(null);
+    try {
+      const conversation = await api.startConversation({ listingId: id });
+      router.push(`/chat/${conversation.id}`);
+    } catch (err) {
+      setMessageError(err instanceof ApiError ? err.message : "Couldn't start a conversation.");
+    } finally {
+      setMessaging(false);
     }
   }
 
@@ -266,6 +281,18 @@ export default function ListingDetailPage() {
                     </button>
                   </>
                 )}
+
+                {canBuy && (
+                  <button
+                    onClick={handleMessageSeller}
+                    disabled={messaging}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] text-[var(--text-on-bg)] font-bold text-sm py-2.5 disabled:opacity-60"
+                  >
+                    <MessageCircle size={16} />
+                    {messaging ? t("Opening chat…") : t("Message Seller")}
+                  </button>
+                )}
+                {messageError && <p className="text-xs text-[var(--critical)]">{messageError}</p>}
 
                 {showBuyForm && (
                   <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">

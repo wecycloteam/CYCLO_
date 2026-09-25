@@ -11,11 +11,15 @@ import { useLanguage } from "@/lib/i18n";
 
 type Mode = "signin" | "signup";
 
+// "Individual" is the label shown, but still maps to the same "household" role
+// underneath — the account type, permissions, and every existing role check are
+// unchanged, only the wording seen at signup. Business/recycler are no longer offered
+// here at all per explicit request (their role values, and every backend check that
+// already handles them, are left alone — this is a signup-form-only reduction, not a
+// removal of those account types from the system).
 const ROLE_OPTIONS = [
-  { value: "household", label: "Household — I want to sell waste" },
-  { value: "business", label: "I'm a Business" },
+  { value: "household", label: "Individual" },
   { value: "collector", label: "Waste Collector — I want to buy waste" },
-  { value: "recycler", label: "I'm a Recycling Company" },
 ];
 
 function GoogleMark() {
@@ -293,8 +297,8 @@ function LoginContent() {
                 required
                 minLength={3}
                 maxLength={20}
-                pattern="[a-zA-Z0-9_]+"
-                title="Letters, numbers and underscore only"
+                pattern="[a-zA-Z0-9][a-zA-Z0-9_.]{1,18}[a-zA-Z0-9]"
+                title="Letters, numbers, underscore or full stop only (not at the start or end)"
                 placeholder={t("Choose a username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -323,17 +327,20 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
               />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-[#1B3E41] px-5 py-3.5 text-center text-white focus:outline-none focus:border-[var(--cyclo-green)]"
-              >
+              <div className="flex rounded-full border border-white/25 p-1">
                 {ROLE_OPTIONS.map((r) => (
-                  <option key={r.value} value={r.value}>
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRole(r.value)}
+                    className={`flex-1 rounded-full py-2.5 text-xs font-bold transition ${
+                      role === r.value ? "bg-[var(--cyclo-green)] text-[#0E2A1F]" : "text-white/70"
+                    }`}
+                  >
                     {t(r.label)}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
               <label className="flex items-start gap-2.5 px-1 text-left text-xs text-[#B9D6D1]">
                 <input
                   type="checkbox"

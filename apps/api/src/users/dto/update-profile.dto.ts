@@ -3,7 +3,7 @@ import { Transform } from 'class-transformer';
 import { normalizeTanzanianPhone } from '../../common/normalize-phone';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
-const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
+const USERNAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9_.]{1,18}[a-zA-Z0-9])?$/;
 // The two self-service "modes" a regular user can switch between from their own profile —
 // household lists/sells material, collector accepts/completes pickup jobs (buys it). Other
 // roles (business, recycler, authority, admin) need verification/org affiliation or admin
@@ -23,7 +23,9 @@ export class UpdateProfileDto {
   phone?: string;
 
   @IsOptional()
-  @Matches(USERNAME, { message: 'username must be 3-20 characters: letters, numbers, underscore only.' })
+  @Matches(USERNAME, {
+    message: 'username must be 3-20 characters: letters, numbers, underscore or full stop only (not at the start or end).',
+  })
   username?: string;
 
   // Data URL (base64) from the client's image picker — same size class as WasteListing

@@ -5,12 +5,14 @@ import type { SelfRegisterableRole } from '@cyclo/shared-types';
 import { normalizeTanzanianPhone } from '../../common/normalize-phone';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
-const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
+const USERNAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9_.]{1,18}[a-zA-Z0-9])?$/;
 
 export class RegisterDto {
   // The identity used to log in (AuthService.login) — chosen here, matched exactly at
   // login. Not the phone number: phone stays contact info for pickup/marketplace.
-  @Matches(USERNAME, { message: 'username must be 3-20 characters: letters, numbers, underscore only.' })
+  @Matches(USERNAME, {
+    message: 'username must be 3-20 characters: letters, numbers, underscore or full stop only (not at the start or end).',
+  })
   username: string;
 
   // Optional — email is still useful (Google sign-in links to it) but not required.

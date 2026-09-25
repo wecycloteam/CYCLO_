@@ -93,6 +93,7 @@ export interface CurrentUser {
   username: string | null;
   // null for a Google-only account — Google never provides a phone number.
   phone: string | null;
+  email: string | null;
   name: string;
   avatarUrl: string | null;
   role: string;
