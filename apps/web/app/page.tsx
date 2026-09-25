@@ -132,11 +132,7 @@ export default function RootPage() {
                       {stats ? `${stats.diversionRatePercent}%` : "—"}
                     </p>
                     <p className="mt-1 text-[11px] leading-4 text-[#5B6C69]">
-                      {stats
-                        ? t("of waste handled diverted from landfill ({diverted} of {handled} kg)")
-                            .replace("{diverted}", stats.kgDiverted.toLocaleString())
-                            .replace("{handled}", stats.kgHandled.toLocaleString())
-                        : ""}
+                      {stats ? t("of waste handled diverted from landfill") : ""}
                     </p>
                   </div>
                 </div>
