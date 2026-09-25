@@ -28,7 +28,7 @@ export class ChatController {
 
   @Post('conversations/:id/messages')
   sendMessage(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string, @Body() dto: SendMessageDto) {
-    return this.chat.sendMessage(principal.userId, id, dto.body);
+    return this.chat.sendMessage(principal.userId, id, dto.body, dto.attachmentUrl, dto.attachmentType);
   }
 
   @Patch('conversations/:id/read')

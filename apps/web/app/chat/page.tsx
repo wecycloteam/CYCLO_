@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Image as ImageIcon, Mic } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Conversation } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
@@ -90,7 +90,24 @@ export default function ChatListPage() {
                     </div>
                     {c.listing && <div className="truncate text-[11px] text-[var(--text-3)]">{t("Re:")} {t(c.listing.material.label)}</div>}
                     <div className="truncate text-xs text-[var(--text-2)]">
-                      {c.lastMessage ? c.lastMessage.body : <span className="italic text-[var(--text-3)]">{t("No messages yet")}</span>}
+                      {c.lastMessage ? (
+                        c.lastMessage.body || (
+                          <span className="inline-flex items-center gap-1">
+                            {c.lastMessage.attachmentType === "image" ? (
+                              <ImageIcon size={12} />
+                            ) : c.lastMessage.attachmentType === "audio" ? (
+                              <Mic size={12} />
+                            ) : null}
+                            {c.lastMessage.attachmentType === "image"
+                              ? t("Photo")
+                              : c.lastMessage.attachmentType === "audio"
+                                ? t("Voice note")
+                                : ""}
+                          </span>
+                        )
+                      ) : (
+                        <span className="italic text-[var(--text-3)]">{t("No messages yet")}</span>
+                      )}
                     </div>
                   </div>
                   <MessageCircle size={16} className="shrink-0 text-[var(--text-3)]" />

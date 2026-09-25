@@ -300,9 +300,14 @@ export interface ChatMessageRecord {
   conversationId: string;
   senderId: string;
   body: string;
+  attachmentUrl?: string | null;
+  attachmentType?: "image" | "audio" | null;
   createdAt: string;
   readAt: string | null;
   deletedForEveryone: boolean;
+  // Only meaningful for a message the current user sent — null for the other
+  // participant's own messages (see ChatService.getMessages).
+  status?: "sent" | "delivered" | "read" | null;
 }
 
 export interface Conversation {
@@ -383,6 +388,47 @@ export interface CartItemRecord {
 export interface Cart {
   items: CartItemRecord[];
   total: number;
+}
+
+export type ReportCategory =
+  | "ACCOUNT"
+  | "LISTING"
+  | "PAYMENT"
+  | "COLLECTOR"
+  | "BUYER_RECYCLER"
+  | "CHAT"
+  | "MISINFORMATION"
+  | "FRAUDULENT_WASTE"
+  | "OTHER";
+
+export type ReportContext = "MARKETPLACE" | "CHAT" | "PICKUP" | "PAYMENT" | "OUTSIDE_APP";
+export type ReportSeverity = "LOW" | "MEDIUM" | "HIGH";
+export type ReportContactPreference = "IN_APP" | "EMAIL" | "PHONE";
+
+export interface CreateReportInput {
+  category: ReportCategory;
+  description: string;
+  reportedUsername?: string;
+  reportedUserId?: string;
+  relatedListingId?: string;
+  relatedOrderId?: string;
+  relatedTransactionId?: string;
+  relatedPickupId?: string;
+  relatedConversationId?: string;
+  incidentAt?: string;
+  context?: ReportContext;
+  locationArea?: string;
+  evidence?: string[];
+  severity: ReportSeverity;
+  contactPreference: ReportContactPreference;
+}
+
+export interface Report extends CreateReportInput {
+  id: string;
+  reportNumber: string;
+  reporterId: string;
+  status: "UNDER_REVIEW" | "INVESTIGATING" | "RESOLVED" | "DISMISSED";
+  createdAt: string;
 }
 
 export interface AuditLogEntry {
@@ -641,8 +687,12 @@ export const api = {
   myConversations: () => request<Conversation[]>("/chat/conversations", { method: "GET" }, true),
   conversationMessages: (id: string) =>
     request<ChatMessageRecord[]>(`/chat/conversations/${id}/messages`, { method: "GET" }, true),
-  sendChatMessage: (id: string, body: string) =>
-    request<ChatMessageRecord>(`/chat/conversations/${id}/messages`, { method: "POST", body: JSON.stringify({ body }) }, true),
+  sendChatMessage: (id: string, body: string, attachmentUrl?: string, attachmentType?: "image" | "audio") =>
+    request<ChatMessageRecord>(
+      `/chat/conversations/${id}/messages`,
+      { method: "POST", body: JSON.stringify({ body, attachmentUrl, attachmentType }) },
+      true
+    ),
   markConversationRead: (id: string) =>
     request<{ message: string }>(`/chat/conversations/${id}/read`, { method: "PATCH" }, true),
   deleteMessageForMe: (id: string) =>
@@ -690,6 +740,10 @@ export const api = {
       { method: "POST" },
       true
     ),
+
+  // Reports
+  createReport: (input: CreateReportInput) => request<Report>("/reports", { method: "POST", body: JSON.stringify(input) }, true),
+  myReports: () => request<Report[]>("/reports/mine", { method: "GET" }, true),
 
   // Admin
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),

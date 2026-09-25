@@ -93,7 +93,21 @@ export class ChatService {
   }
 
   async getMessages(userId: string, conversationId: string) {
-    await this.assertParticipant(conversationId, userId);
+    const conversation = await this.assertParticipant(conversationId, userId);
+
+    // Recording that this participant's client just synced is exactly what a real
+    // WhatsApp-style "delivered" tick means — the recipient's device has actually fetched
+    // since the message was sent, not merely that the server accepted it. Updated on every
+    // fetch (not just markRead) so ticks progress even before the thread is marked read.
+    const isBuyer = conversation.buyerId === userId;
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: isBuyer ? { buyerLastSeenAt: new Date() } : { sellerLastSeenAt: new Date() },
+    });
+    // The OTHER participant's last-seen time is what determines delivery status for
+    // messages *this* user sent.
+    const otherLastSeenAt = isBuyer ? conversation.sellerLastSeenAt : conversation.buyerLastSeenAt;
+
     const messages = await this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
@@ -104,18 +118,36 @@ export class ChatService {
     // other participant) exactly like WhatsApp's per-device delete.
     return messages
       .filter((m) => !m.deletedForUserIds.includes(userId))
-      .map(({ deletedForUserIds: _deletedForUserIds, ...m }) =>
-        m.deletedForEveryone ? { ...m, body: 'This message was deleted' } : m,
-      );
+      .map(({ deletedForUserIds: _deletedForUserIds, ...m }) => {
+        const withBody = m.deletedForEveryone ? { ...m, body: 'This message was deleted' } : m;
+        if (m.senderId !== userId) return { ...withBody, status: null };
+        const status: 'sent' | 'delivered' | 'read' = m.readAt
+          ? 'read'
+          : otherLastSeenAt && otherLastSeenAt >= m.createdAt
+            ? 'delivered'
+            : 'sent';
+        return { ...withBody, status };
+      });
   }
 
-  async sendMessage(userId: string, conversationId: string, body: string) {
+  async sendMessage(
+    userId: string,
+    conversationId: string,
+    body: string | undefined,
+    attachmentUrl?: string,
+    attachmentType?: string,
+  ) {
     await this.assertParticipant(conversationId, userId);
+    if (!body?.trim() && !attachmentUrl) {
+      throw new BadRequestException('Enter a message or attach a photo/voice note.');
+    }
     const [message] = await this.prisma.$transaction([
-      this.prisma.message.create({ data: { conversationId, senderId: userId, body } }),
+      this.prisma.message.create({
+        data: { conversationId, senderId: userId, body: body?.trim() ?? '', attachmentUrl, attachmentType },
+      }),
       this.prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } }),
     ]);
-    return message;
+    return { ...message, status: 'sent' as const };
   }
 
   private async getOwnMessage(userId: string, messageId: string) {

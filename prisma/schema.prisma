@@ -94,6 +94,8 @@ model User {
   ordersAsSeller          Order[]              @relation("OrderSeller")
   wallet                  Wallet?
   cartItems               CartItem[]
+  reportsFiled            Report[]              @relation("ReportsFiled")
+  reportsReceived         Report[]              @relation("ReportsReceived")
 
   @@index([role])
   @@index([verificationStatus])
@@ -109,6 +111,12 @@ model Conversation {
   sellerId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Bumped to now() whenever that participant fetches this conversation's messages (see
+  // ChatService.getMessages) — the real signal a WhatsApp-style "delivered" (double grey
+  // tick) is derived from: the other person's device has actually synced since a message
+  // was sent, not merely that the server accepted it.
+  buyerLastSeenAt  DateTime?
+  sellerLastSeenAt DateTime?
 
   listing  WasteListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
   buyer    User          @relation("ConversationBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
@@ -124,7 +132,13 @@ model Message {
   id             String    @id @default(uuid())
   conversationId String
   senderId       String
-  body           String
+  // Defaults to "" rather than being required — an attachment-only message (a photo or a
+  // voice note with no typed caption) has nothing to put here.
+  body           String    @default("")
+  // Data URL (base64) — same no-storage-abstraction shortcut as WasteListing.photos,
+  // just for one attachment per message instead of an array. 'image' or 'audio'.
+  attachmentUrl  String?
+  attachmentType String?
   createdAt      DateTime  @default(now())
   readAt         DateTime?
   // WhatsApp-style delete: "for everyone" replaces the body for both participants
@@ -242,6 +256,56 @@ model CartItem {
 
   @@unique([buyerId, listingId])
   @@index([buyerId])
+}
+
+// Suspicious-activity reports — filed by any user against a user, listing, order, pickup,
+// or conversation, or with nothing attached ("Other"). Intentionally a flat record with
+// every field the spec calls for, rather than normalized further: this is reviewed by
+// admins reading one row at a time, not queried/joined in complex ways.
+model Report {
+  id                    String    @id @default(uuid())
+  // Human-facing ID e.g. "CYC-260925-00001" — YYMMDD of the incident (or filing date if
+  // none given) plus that day's sequence number, computed in ReportsService.create.
+  reportNumber          String    @unique
+  reporterId            String
+  reportedUserId        String?
+  reportedUsername      String?
+  // ACCOUNT | LISTING | PAYMENT | COLLECTOR | BUYER_RECYCLER | CHAT | MISINFORMATION | FRAUDULENT_WASTE | OTHER
+  category              String
+  description           String
+  relatedListingId      String?
+  relatedOrderId        String?
+  relatedTransactionId  String?
+  relatedPickupId       String?
+  relatedConversationId String?
+  incidentAt            DateTime?
+  // MARKETPLACE | CHAT | PICKUP | PAYMENT | OUTSIDE_APP
+  context               String?
+  // Free-text area rather than exact coordinates — see the spec's own privacy note about
+  // not exposing a reporter's precise location for a physical-incident report.
+  locationArea          String?
+  // Data URLs (base64) — same no-storage-abstraction shortcut as WasteListing.photos,
+  // just a plain array of mixed image/video/document attachments here.
+  evidence              String[] @default([])
+  // LOW | MEDIUM | HIGH — for CYCLO's own investigation priority only, never applied as an
+  // automatic penalty against the reported user (see the spec's own note on this).
+  severity              String
+  // IN_APP | EMAIL | PHONE
+  contactPreference     String
+  status                String    @default("UNDER_REVIEW")
+  assignedReviewerId    String?
+  investigationNotes    String?
+  resolution            String?
+  resolvedAt            DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  reporter     User  @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User? @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([status])
 }
 
 model PasswordResetChallenge {

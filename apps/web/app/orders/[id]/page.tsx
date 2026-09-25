@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, XCircle, Wallet as WalletIcon } from "lucide-react";
+import { CheckCircle2, XCircle, Wallet as WalletIcon, Flag } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { api, ApiError, Order } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
@@ -297,6 +297,13 @@ export default function OrderDetailPage() {
                 {t("Cancel Order")}
               </button>
             )}
+
+            <Link
+              href={`/report?category=PAYMENT&reportedUserId=${isBuyer ? order.sellerId : order.buyerId}&relatedOrderId=${order.id}&context=PAYMENT`}
+              className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold text-[var(--text-2)]"
+            >
+              <Flag size={12} /> {t("Report transaction")}
+            </Link>
           </>
         )}
       </div>

@@ -21,6 +21,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PublicStatsModule } from './public-stats/public-stats.module';
 import { WalletModule } from './wallet/wallet.module';
 import { CartModule } from './cart/cart.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { CartModule } from './cart/cart.module';
     PublicStatsModule,
     WalletModule,
     CartModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

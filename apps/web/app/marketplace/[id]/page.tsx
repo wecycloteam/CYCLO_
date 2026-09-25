@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, ShoppingCart } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Flag } from "lucide-react";
 import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -347,6 +347,15 @@ export default function ListingDetailPage() {
               >
                 {t("Back")}
               </button>
+            )}
+
+            {user && (
+              <Link
+                href={`/report?category=LISTING&reportedUserId=${listing.sellerId}&reportedUsername=${encodeURIComponent(listing.seller.name)}&relatedListingId=${listing.id}&context=MARKETPLACE`}
+                className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold text-[var(--text-on-bg-2)]"
+              >
+                <Flag size={12} /> {t("Report listing")}
+              </Link>
             )}
           </>
         )}
