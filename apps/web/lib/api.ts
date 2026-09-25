@@ -161,7 +161,7 @@ export interface PublicSeller {
   rating?: SellerRating;
 }
 
-export type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type ModerationStatus = "PENDING" | "APPROVED" | "REJECTED" | "CHANGES_REQUESTED";
 
 export interface WasteListing {
   id: string;
@@ -179,6 +179,7 @@ export interface WasteListing {
   description: string | null;
   status: ListingStatus;
   moderationStatus: ModerationStatus;
+  moderationReason?: string | null;
   createdAt: string;
   boostedUntil?: string | null;
   material: WasteMaterial;
@@ -192,6 +193,7 @@ export interface WasteListing {
 export function listingStatusLabel(listing: Pick<WasteListing, "status" | "moderationStatus">): string {
   if (listing.status === "ACTIVE" && listing.moderationStatus === "PENDING") return "Pending Verification";
   if (listing.status === "ACTIVE" && listing.moderationStatus === "REJECTED") return "Rejected";
+  if (listing.status === "ACTIVE" && listing.moderationStatus === "CHANGES_REQUESTED") return "Changes Requested";
   if (listing.status === "ACTIVE") return "Approved";
   return listing.status.replace(/_/g, " ");
 }
@@ -666,6 +668,20 @@ export const api = {
     pickupOption: string;
     description?: string;
   }) => request<WasteListing>("/listings", { method: "POST", body: JSON.stringify(input) }, true),
+  updateListing: (
+    id: string,
+    input: Partial<{
+      materialId: string;
+      locationId: string;
+      estimatedWeightKg: number;
+      quantityUnit?: string;
+      condition?: string;
+      askingPrice?: number;
+      photos?: string[];
+      pickupOption: string;
+      description?: string;
+    }>
+  ) => request<WasteListing>(`/listings/${id}`, { method: "PATCH", body: JSON.stringify(input) }, true),
   myListings: () => request<WasteListing[]>("/listings/mine", { method: "GET" }, true),
   browseListings: () => request<WasteListing[]>("/listings", { method: "GET" }, true),
   getListing: (id: string) => request<WasteListing>(`/listings/${id}`, { method: "GET" }, true),
@@ -714,7 +730,7 @@ export const api = {
   reviewableTransactions: () => request<ReviewableTransaction[]>("/reviews/reviewable", { method: "GET" }, true),
 
   // Chat
-  startConversation: (input: { sellerId?: string; listingId?: string }) =>
+  startConversation: (input: { sellerId?: string; listingId?: string; buyerId?: string }) =>
     request<Conversation>("/chat/conversations", { method: "POST", body: JSON.stringify(input) }, true),
   myConversations: () => request<Conversation[]>("/chat/conversations", { method: "GET" }, true),
   conversationMessages: (id: string) =>
@@ -824,6 +840,8 @@ export const api = {
   adminApproveListing: (id: string) => request<WasteListing>(`/admin/listings/${id}/approve`, { method: "PATCH" }, true),
   adminRejectListing: (id: string, reason?: string) =>
     request<WasteListing>(`/admin/listings/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) }, true),
+  adminRequestListingChanges: (id: string, advice: string) =>
+    request<WasteListing>(`/admin/listings/${id}/request-changes`, { method: "PATCH", body: JSON.stringify({ advice }) }, true),
 
   // AI waste scanning (§11-§13) — see ClassificationResult.mock for whether this scan
   // came from the real Gemini classifier or the demo fallback.

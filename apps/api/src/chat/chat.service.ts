@@ -31,12 +31,18 @@ export class ChatService {
 
   // The buyer is always the current user — a seller never "starts" a conversation about
   // their own listing with themselves, they just reply once the buyer opens one.
-  async startConversation(buyerId: string, dto: StartConversationDto) {
+  async startConversation(callerId: string, dto: StartConversationDto) {
+    let buyerId = callerId;
     let sellerId = dto.sellerId;
     if (dto.listingId) {
       const listing = await this.prisma.wasteListing.findUnique({ where: { id: dto.listingId } });
       if (!listing) throw new NotFoundException('Listing not found.');
       sellerId = listing.sellerId;
+      if (listing.sellerId === callerId && dto.buyerId) {
+        const order = await this.prisma.order.findFirst({ where: { listingId: dto.listingId, buyerId: dto.buyerId } });
+        if (!order) throw new BadRequestException('That user has no order on this listing.');
+        buyerId = dto.buyerId;
+      }
     }
     if (!sellerId) throw new BadRequestException('sellerId or listingId is required.');
     if (sellerId === buyerId) throw new BadRequestException('You cannot message yourself.');

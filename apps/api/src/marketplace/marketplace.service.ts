@@ -10,6 +10,7 @@ import { LocationsService } from '../locations/locations.service';
 import { WasteMaterialsService } from '../waste-materials/waste-materials.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateListingDto } from './dto/create-listing.dto';
+import { UpdateListingDto } from './dto/update-listing.dto';
 import { assertValidListingTransition } from './domain/listing-state-machine';
 
 const BROWSE_PAGE_SIZE = 20;
@@ -59,6 +60,30 @@ export class MarketplaceService {
       `/marketplace/${id}`,
     );
     return published;
+  }
+
+  // A seller edits their own listing — most often in response to an admin's "changes
+  // requested" advice (see AdminService.requestListingChanges). If the listing was sitting
+  // in CHANGES_REQUESTED, saving an edit puts it straight back into the moderation queue
+  // (moderationStatus PENDING, the advice cleared) rather than requiring a separate
+  // "resubmit" step — one save both fixes the listing and re-queues it for review.
+  async update(sellerId: string, id: string, dto: UpdateListingDto) {
+    const listing = await this.getOwned(sellerId, id);
+    if (dto.materialId) await this.materials.assertExists(dto.materialId);
+    if (dto.locationId) await this.locations.assertOwnedBy(dto.locationId, sellerId);
+
+    const { photos, ...rest } = dto;
+    await this.prisma.wasteListing.update({
+      where: { id },
+      data: {
+        ...rest,
+        photos: photos ? JSON.stringify(photos) : undefined,
+        ...(listing.moderationStatus === 'CHANGES_REQUESTED'
+          ? { moderationStatus: 'PENDING', moderationReason: null }
+          : {}),
+      },
+    });
+    return this.findOne(sellerId, id);
   }
 
   async cancel(sellerId: string, id: string) {

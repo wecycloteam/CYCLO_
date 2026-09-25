@@ -104,7 +104,9 @@ export default function OrderDetailPage() {
     if (!order) return;
     setStartingChat(true);
     try {
-      const conversation = await api.startConversation({ listingId: order.listing.id });
+      const conversation = await api.startConversation(
+        isSeller ? { listingId: order.listing.id, buyerId: order.buyerId } : { listingId: order.listing.id }
+      );
       router.push(`/chat/${conversation.id}`);
     } catch {
       setActionError(t("Couldn't open the chat."));

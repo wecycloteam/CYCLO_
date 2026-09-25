@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, Order } from "@/lib/api";
+import { api, ApiError, Order, WasteListing } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
@@ -57,15 +57,16 @@ export default function ActivityPage() {
   const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [needsChanges, setNeedsChanges] = useState<WasteListing[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
-    api
-      .myOrders()
-      .then((res) => {
+    Promise.all([api.myOrders(), api.myListings().catch(() => [] as WasteListing[])])
+      .then(([res, listings]) => {
         setOrders(res);
+        setNeedsChanges(listings.filter((l) => l.moderationStatus === "CHANGES_REQUESTED"));
         setState("ready");
       })
       .catch((err) => {
@@ -87,7 +88,28 @@ export default function ActivityPage() {
         {state === "loading" && <LoadingState label={t("Loading activity…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
-        {state === "ready" && orders.length === 0 && (
+        {state === "ready" && needsChanges.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{t("Listings needing changes")}</h3>
+            <div className="flex flex-col gap-2">
+              {needsChanges.map((l) => (
+                <div key={l.id} className="rounded-[var(--r-md)] border border-[var(--warning)]/40 bg-[#FFF3DC] p-4">
+                  <div className="text-sm font-extrabold text-[#3D3212] mb-1">{t(l.material.label)}</div>
+                  <p className="text-xs font-bold text-[var(--warning)]">{t("Admin advice")}</p>
+                  <p className="text-sm text-[#5B4A1E] mb-3">{l.moderationReason}</p>
+                  <Link
+                    href={`/marketplace/new?editId=${l.id}`}
+                    className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-2.5"
+                  >
+                    {t("Edit & Resubmit")}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {state === "ready" && orders.length === 0 && needsChanges.length === 0 && (
           <EmptyState
             title={t("No orders yet")}
             hint={isBuyerMode ? t("Buy something from the marketplace to see its progress here.") : t("Once someone buys your listing, track their payment here.")}

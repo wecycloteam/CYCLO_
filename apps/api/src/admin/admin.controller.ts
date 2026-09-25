@@ -7,6 +7,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { ModerationReasonDto } from './dto/moderation-reason.dto';
+import { RequestChangesDto } from './dto/request-changes.dto';
 import { SetPriceDto } from './dto/set-price.dto';
 
 // Every route here requires role=admin — see main.ts for why RolesGuard is applied
@@ -161,6 +162,15 @@ export class AdminController {
     @Body() dto: ModerationReasonDto,
   ) {
     return this.admin.rejectListing(principal.userId, id, dto.reason);
+  }
+
+  @Patch('listings/:id/request-changes')
+  requestListingChanges(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: RequestChangesDto,
+  ) {
+    return this.admin.requestListingChanges(principal.userId, id, dto.advice);
   }
 
   @Patch('waste-prices/:category')

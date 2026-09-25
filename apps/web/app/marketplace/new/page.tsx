@@ -36,6 +36,8 @@ function NewListingForm() {
   const scanMaterialId = searchParams.get("materialId") ?? undefined;
   const scanWeightKg = searchParams.get("weightKg") ?? undefined;
   const manual = searchParams.get("manual") === "1";
+  const editId = searchParams.get("editId") ?? undefined;
+  const [adminAdvice, setAdminAdvice] = useState<string | null>(null);
   const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [state, setState] = useState<LoadState>("loading");
@@ -68,14 +70,40 @@ function NewListingForm() {
 
   function load() {
     setState("loading");
-    Promise.all([api.wasteMaterials(), api.myLocations(), api.wastePrices()])
-      .then(([m, l, p]) => {
+    Promise.all([
+      api.wasteMaterials(),
+      api.myLocations(),
+      api.wastePrices(),
+      editId ? api.getListing(editId) : Promise.resolve(null),
+    ])
+      .then(([m, l, p, existing]) => {
         setMaterials(m);
         setLocations(l);
         setPrices(p);
-        const scanned = scanMaterialId && m.some((material) => material.id === scanMaterialId);
-        setMaterialId(scanned ? scanMaterialId! : m.length > 0 ? m[0].id : "");
-        if (l.length > 0) setLocationId(l[0].id);
+        if (existing) {
+          setMaterialId(existing.materialId);
+          setLocationId(existing.locationId);
+          setEstimatedWeightKg(String(existing.estimatedWeightKg));
+          setQuantityUnit(existing.quantityUnit);
+          if (existing.condition && !CONDITIONS.includes(existing.condition)) {
+            setCondition("Other");
+            setOtherCondition(existing.condition);
+          } else if (existing.condition) {
+            setCondition(existing.condition);
+          }
+          if (existing.askingPrice != null) {
+            setAskingPrice(String(existing.askingPrice));
+            setPricePerUnit(String(Math.round((existing.askingPrice / existing.estimatedWeightKg) * 100) / 100));
+          }
+          setPickupOption(existing.pickupOption);
+          setDescription(existing.description ?? "");
+          setPhotos(existing.photos ?? []);
+          setAdminAdvice(existing.moderationStatus === "CHANGES_REQUESTED" ? existing.moderationReason ?? null : null);
+        } else {
+          const scanned = scanMaterialId && m.some((material) => material.id === scanMaterialId);
+          setMaterialId(scanned ? scanMaterialId! : m.length > 0 ? m[0].id : "");
+          if (l.length > 0) setLocationId(l[0].id);
+        }
         setState("ready");
       })
       .catch((err) => {
@@ -152,18 +180,24 @@ function NewListingForm() {
     e.preventDefault();
     setSubmitError(null);
     setSubmitting(true);
+    const payload = {
+      materialId,
+      locationId,
+      estimatedWeightKg: Number(estimatedWeightKg),
+      quantityUnit,
+      condition: condition === "Other" ? otherCondition.trim() || "Other" : condition || undefined,
+      askingPrice: askingPrice ? Number(askingPrice) : undefined,
+      photos: photos.length > 0 ? photos : undefined,
+      pickupOption,
+      description: description || undefined,
+    };
     try {
-      const listing = await api.createListing({
-        materialId,
-        locationId,
-        estimatedWeightKg: Number(estimatedWeightKg),
-        quantityUnit,
-        condition: condition === "Other" ? otherCondition.trim() || "Other" : condition || undefined,
-        askingPrice: askingPrice ? Number(askingPrice) : undefined,
-        photos: photos.length > 0 ? photos : undefined,
-        pickupOption,
-        description: description || undefined,
-      });
+      if (editId) {
+        await api.updateListing(editId, payload);
+        router.push(`/marketplace/${editId}`);
+        return;
+      }
+      const listing = await api.createListing(payload);
       if (scanId) {
         // Best-effort scan-history linkage (§33) — never blocks listing creation if it fails.
         api.confirmScan(scanId, materialId).catch(() => undefined);
@@ -178,7 +212,7 @@ function NewListingForm() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      <AppHeader title="List Material" back />
+      <AppHeader title={editId ? "Edit Listing" : "List Material"} back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         {authState === "ready" && user?.role === "collector" ? (
           <EmptyState
@@ -194,6 +228,14 @@ function NewListingForm() {
           <>
         {state === "loading" && <LoadingState label={t("Loading form…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
+
+        {state === "ready" && adminAdvice && (
+          <div className="rounded-[var(--r-md)] border border-[var(--warning)]/40 bg-[#FFF3DC] px-4 py-3 mb-4">
+            <p className="text-xs font-extrabold text-[var(--warning)] mb-1">{t("Admin advice")}</p>
+            <p className="text-sm text-[#5B4A1E]">{adminAdvice}</p>
+            <p className="mt-2 text-[11px] text-[#5B4A1E]/80">{t("Saving your changes sends the listing back for approval.")}</p>
+          </div>
+        )}
 
         {state === "ready" && scanId && (
           <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--text-2)] mb-4">
@@ -483,7 +525,13 @@ function NewListingForm() {
               disabled={submitting || !estimatedWeightKg}
               className="rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm py-3 disabled:opacity-60"
             >
-              {submitting ? t("Creating…") : t("Create Listing")}
+              {editId
+                ? submitting
+                  ? t("Saving…")
+                  : t("Save & Resubmit")
+                : submitting
+                  ? t("Creating…")
+                  : t("Create Listing")}
             </button>
           </form>
         )}

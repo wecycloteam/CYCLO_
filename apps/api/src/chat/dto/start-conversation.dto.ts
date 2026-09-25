@@ -10,4 +10,10 @@ export class StartConversationDto {
   @IsOptional()
   @IsUUID()
   listingId?: string;
+
+  // Only honoured when the caller is the listing's own seller (e.g. messaging the buyer
+  // from an order) — lets the seller open the same buyer/seller thread from their side.
+  @IsOptional()
+  @IsUUID()
+  buyerId?: string;
 }

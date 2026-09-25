@@ -261,6 +261,27 @@ export class AdminService {
     return mapListing(updated);
   }
 
+  // A middle ground between approve and reject — the listing isn't cancelled, it just
+  // drops out of the moderation queue (moderationStatus no longer PENDING) until the
+  // seller edits it. MarketplaceService.update puts it straight back into the queue on
+  // save, so there's no separate "resubmit" action for the seller to remember to press.
+  async requestListingChanges(adminId: string, id: string, advice: string) {
+    const listing = await this.getPendingListing(id);
+    const updated = await this.prisma.wasteListing.update({
+      where: { id },
+      data: { moderationStatus: 'CHANGES_REQUESTED', moderationReason: advice },
+    });
+    await this.audit(adminId, 'LISTING_CHANGES_REQUESTED', 'WasteListing', id, advice);
+    this.notifications.create(
+      listing.sellerId,
+      'LISTING_CHANGES_REQUESTED',
+      'Changes requested on your listing',
+      `An admin asked for changes to "${listing.material.label}": ${advice}`,
+      `/marketplace/new?editId=${id}`,
+    );
+    return mapListing(updated);
+  }
+
   async setPrice(adminId: string, category: WasteCategory, pricePerKg: number) {
     const updated = await this.pricing.upsert(category, pricePerKg);
     await this.audit(adminId, 'PRICE_UPDATED', 'WastePrice', category, `pricePerKg=${pricePerKg}`);

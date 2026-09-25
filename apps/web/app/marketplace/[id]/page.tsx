@@ -212,7 +212,7 @@ export default function ListingDetailPage() {
               <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{t(listing.material.label)}</h1>
               <span
                 className={`inline-block rounded-[var(--r-pill)] px-2.5 py-1 text-[11px] font-bold ${
-                  listing.moderationStatus === "PENDING"
+                  listing.moderationStatus === "PENDING" || listing.moderationStatus === "CHANGES_REQUESTED"
                     ? "bg-[#FFF3DC] text-[var(--warning)]"
                     : listing.moderationStatus === "REJECTED"
                       ? "bg-[#FCE3DE] text-[var(--critical)]"
@@ -346,6 +346,19 @@ export default function ListingDetailPage() {
             )}
 
             {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}
+
+            {isOwner && listing.moderationStatus === "CHANGES_REQUESTED" && (
+              <div className="rounded-[var(--r-md)] border border-[var(--warning)]/40 bg-[#FFF3DC] p-4 mb-3">
+                <p className="text-xs font-extrabold text-[var(--warning)] mb-1">{t("Admin advice")}</p>
+                <p className="text-sm text-[#5B4A1E] mb-3">{listing.moderationReason}</p>
+                <Link
+                  href={`/marketplace/new?editId=${listing.id}`}
+                  className="block w-full rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-3"
+                >
+                  {t("Edit & Resubmit")}
+                </Link>
+              </div>
+            )}
 
             {isOwner && listing.status === "DRAFT" && (
               <button

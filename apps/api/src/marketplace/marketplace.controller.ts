@@ -14,6 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { MarketplaceService } from './marketplace.service';
 import { CreateListingDto } from './dto/create-listing.dto';
+import { UpdateListingDto } from './dto/update-listing.dto';
 
 @Controller('listings')
 export class MarketplaceController {
@@ -50,6 +51,16 @@ export class MarketplaceController {
     @Param('id') id: string,
   ) {
     return this.marketplace.findOne(principal?.userId, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  update(
+    @CurrentUser() principal: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: UpdateListingDto,
+  ) {
+    return this.marketplace.update(principal.userId, id, dto);
   }
 
   @UseGuards(JwtAuthGuard)
