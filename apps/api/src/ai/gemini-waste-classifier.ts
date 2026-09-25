@@ -111,12 +111,20 @@ export class GeminiWasteClassifier implements WasteClassifier {
               text: `Analyze this image for waste classification, condition, and market valuation.
                      Categories: PLASTIC, TEXTILE, PAPER, CARDBOARD, METAL, GLASS, ORGANIC, E-WASTE, or OTHER.
 
+                     First decide whether the image actually shows a waste or recyclable material at all — not a
+                     person, an animal, food being eaten, a random unrelated object/scene, or anything that isn't
+                     discarded/recyclable material. If it is NOT a waste/recyclable item, set "isWaste" to false and
+                     leave the other classification fields as your best guess (they will be ignored). If it IS a
+                     waste item but doesn't cleanly fit PLASTIC/TEXTILE/PAPER/CARDBOARD/METAL/GLASS/ORGANIC/E-WASTE,
+                     set "isWaste" to true and "category" to OTHER.
+
                      Currency Rule:
                      - Default currency should be TZS (Tanzanian Shilling) reflecting local scrap market rates.
                      - Provide both TZS and USD equivalent.
 
                      Return ONLY a valid raw JSON object matching this schema:
                      {
+                       "isWaste": boolean (false if the image doesn't show waste/recyclable material at all),
                        "category": "PLASTIC | TEXTILE | PAPER | CARDBOARD | METAL | GLASS | ORGANIC | E-WASTE | OTHER",
                        "subtype": "string or null",
                        "label": "descriptive name",
@@ -161,8 +169,12 @@ export class GeminiWasteClassifier implements WasteClassifier {
 
     const category = CATEGORY_MAP[String(parsed.category ?? '').toUpperCase()] ?? 'other';
     const recyclable = Boolean(parsed.recyclable);
+    // Defaults true — an older/odd response that omits the field entirely is treated as
+    // "yes, this is waste" (the pre-existing behavior) rather than silently rejecting it.
+    const isWaste = parsed.isWaste !== false;
 
     return {
+      isWaste,
       category,
       subtype: parsed.subtype || null,
       label: parsed.label || 'Unidentified Waste Item',

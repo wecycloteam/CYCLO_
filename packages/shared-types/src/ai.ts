@@ -7,6 +7,12 @@ export interface ClassificationResult {
   label: string;
   confidence: number; // 0-1
   recyclable: boolean;
+  // Whether the photographed item is actually a waste/recyclable material CYCLO deals in
+  // at all — false for a photo of a person, an unrelated object, or anything that isn't
+  // one of the supported categories, distinct from `category: "other"` (a real but
+  // uncategorized waste item). Optional, defaults true, so MockWasteClassifier and any
+  // consumer built before this existed stays valid without it.
+  isWaste?: boolean;
   handlingInstructions: string[];
   // One-line summary of handlingInstructions for the scan result's headline CTA text,
   // e.g. "Separate and sell to a verified recycler."

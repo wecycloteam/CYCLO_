@@ -120,6 +120,7 @@ function LoginContent() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setShowSplash(false), 1300);
@@ -148,6 +149,10 @@ function LoginContent() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!agreedToTerms) {
+      setError(t("Please accept the Terms and Conditions to continue."));
+      return;
+    }
     setLoading(true);
     try {
       const tokens = await api.register({
@@ -329,10 +334,25 @@ function LoginContent() {
                   </option>
                 ))}
               </select>
+              <label className="flex items-start gap-2.5 px-1 text-left text-xs text-[#B9D6D1]">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--cyclo-green)]"
+                />
+                <span>
+                  {t("I have read and agree to CYCLO's")}{" "}
+                  <Link href="/terms" target="_blank" className="font-bold text-[var(--cyclo-green)] underline">
+                    {t("Terms and Conditions")}
+                  </Link>
+                  .
+                </span>
+              </label>
               {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !agreedToTerms}
                 className="w-full rounded-full bg-[var(--cyclo-green)] text-[#0E2A1F] font-extrabold text-[15px] py-[15px] shadow-[0_10px_24px_rgba(72,245,59,0.28)] disabled:opacity-60"
               >
                 {loading ? t("Creating account…") : t("Create account")}
@@ -341,7 +361,17 @@ function LoginContent() {
           )}
 
           <div className="mt-7 text-xs text-[#8FB6AF]">
-            {t("By continuing you agree to CYCLO's Terms and Privacy Policy.")}
+            {mode === "signup" ? (
+              t("You must accept the Terms and Conditions above before creating an account.")
+            ) : (
+              <>
+                {t("By continuing you agree to CYCLO's")}{" "}
+                <Link href="/terms" target="_blank" className="font-bold underline">
+                  {t("Terms and Conditions")}
+                </Link>
+                .
+              </>
+            )}
           </div>
         </div>
       </main>

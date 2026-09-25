@@ -127,7 +127,7 @@ export default function RootPage() {
                     </p>
                   </div>
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
-                    <p className="text-xs font-bold text-[#5B6C69]">{t("Value recovered")}</p>
+                    <p className="text-xs font-bold text-[#5B6C69]">{t("Impact Tracked")}</p>
                     <p className="mt-2 text-2xl font-extrabold text-[#275458]">
                       {stats ? `TZS ${Math.round(stats.valueRecoveredTzs).toLocaleString()}` : "—"}
                     </p>

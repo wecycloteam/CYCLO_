@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
@@ -42,6 +43,17 @@ export class AiService {
         );
       }
       throw new InternalServerErrorException('Failed to analyze this image. Please try again.');
+    }
+
+    // The model successfully looked at the photo and concluded it isn't a waste/recyclable
+    // item at all (a person, an unrelated object, etc.) — that's a real, useful answer, not
+    // a failure, so it's surfaced as a clear 400 rather than forced through as a bogus
+    // classification or a generic "failed to analyze" error. Nothing is persisted for a
+    // non-waste photo — there's no material/condition/price worth keeping a scan record for.
+    if (result.isWaste === false) {
+      throw new BadRequestException(
+        "This doesn't look like a waste or recyclable material CYCLO handles. Please upload a clear photo of the actual item (plastic, paper, metal, glass, textile, e-waste, or organic waste).",
+      );
     }
 
     const scan = await this.prisma.aiScan.create({
