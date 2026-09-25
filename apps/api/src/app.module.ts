@@ -18,6 +18,7 @@ import { ImpactModule } from './impact/impact.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
 import { OrdersModule } from './orders/orders.module';
+import { PublicStatsModule } from './public-stats/public-stats.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { OrdersModule } from './orders/orders.module';
     ReviewsModule,
     ChatModule,
     OrdersModule,
+    PublicStatsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

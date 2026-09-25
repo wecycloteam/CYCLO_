@@ -513,6 +513,12 @@ export const api = {
   resetPassword: (input: { email: string; code: string; newPassword: string }) =>
     request<{ message: string }>("/auth/password-reset/confirm", { method: "POST", body: JSON.stringify(input) }),
 
+  landingStats: () =>
+    request<{ materialsListed: number; valueRecoveredTzs: number; dailyListingCounts: number[] }>(
+      "/public-stats/landing",
+      { method: "GET" }
+    ),
+
   // Locations
   createLocation: (input: { label: string; addressLine?: string; district?: string; region?: string; country?: string }) =>
     request<Location>("/locations", { method: "POST", body: JSON.stringify(input) }, true),

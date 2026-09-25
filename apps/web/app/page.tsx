@@ -1,21 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, ArrowUpRight } from "lucide-react";
-import { tokenStore } from "@/lib/api";
+import { api, tokenStore } from "@/lib/api";
 import { MATERIALS_CATALOG } from "@/lib/materials-catalog";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
+// Chart bars are rendered relative to whatever the busiest day in the window was, so the
+// shape stays meaningful (tallest bar always visible) instead of using fixed pixel heights
+// tuned for the old hardcoded numbers.
+function barHeight(count: number, max: number): number {
+  if (max <= 0) return 6;
+  return Math.max(6, Math.round((count / max) * 94));
+}
+
 export default function RootPage() {
   const hasSession = tokenStore.getAccess();
   const { t } = useLanguage();
+  const [stats, setStats] = useState<{ materialsListed: number; valueRecoveredTzs: number; dailyListingCounts: number[] } | null>(null);
 
   useEffect(() => {
     document.title = "CYCLO — Turn waste into value";
   }, []);
+
+  useEffect(() => {
+    api.landingStats().then(setStats).catch(() => undefined);
+  }, []);
+
+  const maxDailyCount = stats ? Math.max(...stats.dailyListingCounts, 1) : 1;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F6F9F8] text-[#10161A]">
@@ -107,21 +122,25 @@ export default function RootPage() {
                 <div className="mt-8 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
                     <p className="text-xs font-bold text-[#5B6C69]">{t("Materials listed")}</p>
-                    <p className="mt-2 text-2xl font-extrabold text-[#275458]">2,480</p>
+                    <p className="mt-2 text-2xl font-extrabold text-[#275458]">
+                      {stats ? stats.materialsListed.toLocaleString() : "—"}
+                    </p>
                   </div>
                   <div className="rounded-2xl bg-[#EEF3F2] p-4">
                     <p className="text-xs font-bold text-[#5B6C69]">{t("Value recovered")}</p>
-                    <p className="mt-2 text-2xl font-extrabold text-[#275458]">TZS 8.6M</p>
+                    <p className="mt-2 text-2xl font-extrabold text-[#275458]">
+                      {stats ? `TZS ${Math.round(stats.valueRecoveredTzs).toLocaleString()}` : "—"}
+                    </p>
                   </div>
                 </div>
                 <div className="mt-3 rounded-2xl bg-[#275458] p-4 text-[#EFFBF3]">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold">{t("Plastic bottles")}</span>
-                    <span className="rounded-full bg-[#48F53B] px-2.5 py-1 text-xs font-extrabold text-[#0E2A1F]">{t("Active")}</span>
+                    <span className="font-bold">{t("New listings")}</span>
+                    <span className="rounded-full bg-[#48F53B] px-2.5 py-1 text-xs font-extrabold text-[#0E2A1F]">{t("Last 7 days")}</span>
                   </div>
-                  <div className="mt-6 flex items-end gap-1.5" aria-label="Growing recovery value chart">
-                    {[34, 48, 40, 62, 56, 78, 94].map((height, index) => (
-                      <span key={index} className="flex-1 rounded-t-md bg-[#48F53B]" style={{ height }} />
+                  <div className="mt-6 flex items-end gap-1.5" aria-label="Listings created per day over the last 7 days">
+                    {(stats?.dailyListingCounts ?? new Array(7).fill(0)).map((count, index) => (
+                      <span key={index} className="flex-1 rounded-t-md bg-[#48F53B]" style={{ height: barHeight(count, maxDailyCount) }} />
                     ))}
                   </div>
                 </div>

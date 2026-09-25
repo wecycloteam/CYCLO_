@@ -28,6 +28,8 @@ export const sw: Record<string, string> = {
   "Materials listed": "Vitu vilivyoorodheshwa",
   "Value recovered": "Thamani iliyopatikana",
   "Plastic bottles": "Chupa za plastiki",
+  "New listings": "Matangazo Mapya",
+  "Last 7 days": "Siku 7 Zilizopita",
   "Better waste. Better value.": "Taka bora. Thamani bora.",
   "Materials in demand": "Vitu vinavyohitajika",
   "Give useful things a second life.": "Vipe vitu muhimu maisha ya pili.",
