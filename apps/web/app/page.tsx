@@ -194,14 +194,13 @@ export default function RootPage() {
                     <span className="text-sm font-extrabold text-[#275458]">{t("From")} {material.price}</span>
                     <span className="text-xs text-[#8B9997]">{t("Typical listing")}</span>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars from ${material.reviews} reviews`}>
+                  <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars`}>
                     <span className="flex items-center gap-0.5 text-[#E6A51A]" aria-hidden="true">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star key={i} size={13} fill="currentColor" strokeWidth={0} />
                       ))}
                     </span>
                     <span className="font-extrabold text-[#275458]">{material.rating}</span>
-                    <span className="text-[#8B9997]">({material.reviews})</span>
                   </div>
                   <Link
                     href={`/materials/${material.code}`}

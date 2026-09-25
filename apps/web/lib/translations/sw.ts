@@ -772,7 +772,7 @@ export const sw: Record<string, string> = {
   "Typical price seen in active listings — actual offers vary by condition and location.": "Bei ya kawaida inayoonekana kwenye matangazo — bei halisi hutofautiana kwa hali na mahali.",
   "Accepted forms": "Aina zinazokubalika",
   "Sell this material": "Uza kitu hiki",
-  "Browse listings freely — you'll only need to log in or sign up when you're ready to buy or sell.": "Vinjari matangazo kwa uhuru — utahitaji tu kuingia au kujisajili ukiwa tayari kununua au kuuza.",
+  "Browse listings freely — you'll only need to log in or sign up when you're ready to buy.": "Vinjari matangazo kwa uhuru — utahitaji tu kuingia au kujisajili ukiwa tayari kununua.",
 
   // Common
   "Something went wrong.": "Hitilafu imetokea.",

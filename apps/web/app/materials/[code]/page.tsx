@@ -80,14 +80,13 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-[#275458] sm:text-4xl">{t(material.title)}</h1>
 
-          <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars from ${material.reviews} reviews`}>
+          <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars`}>
             <span className="flex items-center gap-0.5 text-[#E6A51A]" aria-hidden="true">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star key={i} size={14} fill="currentColor" strokeWidth={0} />
               ))}
             </span>
             <span className="font-extrabold text-[#275458]">{material.rating}</span>
-            <span className="text-[#8B9997]">({material.reviews} reviews)</span>
           </div>
 
           <p className="mt-6 text-base leading-7 text-[#5B6C69]">{t(material.description)}</p>
@@ -116,14 +115,8 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
             >
               {buyLabel}
             </Link>
-            <Link
-              href={`/login?redirect=${encodeURIComponent("/marketplace/new")}`}
-              className="rounded-full border border-[#275458]/25 px-6 py-3.5 text-sm font-bold text-[#275458] transition hover:bg-black/5"
-            >
-              {t("Sell this material")}
-            </Link>
           </div>
-          <p className="mt-3 text-xs text-[#8B9997]">{t("Browse listings freely — you'll only need to log in or sign up when you're ready to buy or sell.")}</p>
+          <p className="mt-3 text-xs text-[#8B9997]">{t("Browse listings freely — you'll only need to log in or sign up when you're ready to buy.")}</p>
         </div>
       </div>
     </main>
