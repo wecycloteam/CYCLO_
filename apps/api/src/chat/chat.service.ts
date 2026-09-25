@@ -65,6 +65,10 @@ export class ChatService {
       orderBy: { updatedAt: 'desc' },
       select: {
         ...CONVERSATION_SELECT,
+        buyerArchivedAt: true,
+        sellerArchivedAt: true,
+        buyerDeletedAt: true,
+        sellerDeletedAt: true,
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
     });
@@ -73,14 +77,39 @@ export class ChatService {
     // single clever groupBy — conversation lists are small (a person messages a handful
     // of sellers/buyers, not thousands), so this isn't a real performance concern.
     return Promise.all(
-      conversations.map(async (c) => {
-        const unreadCount = await this.prisma.message.count({
-          where: { conversationId: c.id, senderId: { not: userId }, readAt: null },
-        });
-        const { messages, ...rest } = c;
-        return { ...mapConversation(rest), lastMessage: messages[0] ?? null, unreadCount };
-      }),
+      conversations
+        .filter((c) => (userId === c.buyerId ? !c.buyerDeletedAt : !c.sellerDeletedAt))
+        .map(async (c) => {
+          const unreadCount = await this.prisma.message.count({
+            where: { conversationId: c.id, senderId: { not: userId }, readAt: null },
+          });
+          const isBuyer = userId === c.buyerId;
+          const archived = Boolean(isBuyer ? c.buyerArchivedAt : c.sellerArchivedAt);
+          const { messages, buyerArchivedAt: _b, sellerArchivedAt: _s, buyerDeletedAt: _bd, sellerDeletedAt: _sd, ...rest } = c;
+          return { ...mapConversation(rest), lastMessage: messages[0] ?? null, unreadCount, archived };
+        }),
     );
+  }
+
+  async setArchived(userId: string, conversationId: string, archived: boolean) {
+    const conversation = await this.assertParticipant(conversationId, userId);
+    const isBuyer = conversation.buyerId === userId;
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: isBuyer ? { buyerArchivedAt: archived ? new Date() : null } : { sellerArchivedAt: archived ? new Date() : null },
+    });
+    return { message: archived ? 'Archived.' : 'Unarchived.' };
+  }
+
+  // Soft-delete, per viewer only — see the schema comment on Conversation.buyerDeletedAt.
+  async deleteConversation(userId: string, conversationId: string) {
+    const conversation = await this.assertParticipant(conversationId, userId);
+    const isBuyer = conversation.buyerId === userId;
+    await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: isBuyer ? { buyerDeletedAt: new Date() } : { sellerDeletedAt: new Date() },
+    });
+    return { message: 'Conversation deleted.' };
   }
 
   private async assertParticipant(conversationId: string, userId: string) {
@@ -137,15 +166,26 @@ export class ChatService {
     attachmentUrl?: string,
     attachmentType?: string,
   ) {
-    await this.assertParticipant(conversationId, userId);
+    const conversation = await this.assertParticipant(conversationId, userId);
     if (!body?.trim() && !attachmentUrl) {
       throw new BadRequestException('Enter a message or attach a photo/voice note.');
     }
+    // A new message un-deletes the conversation for whoever RECEIVES it (not the sender) —
+    // the same behavior a real chat app has: a conversation you'd removed from your list
+    // reappears the moment the other person messages you again. The sender's own delete
+    // state, if any, is left alone.
+    const recipientIsBuyer = conversation.sellerId === userId;
     const [message] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: { conversationId, senderId: userId, body: body?.trim() ?? '', attachmentUrl, attachmentType },
       }),
-      this.prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } }),
+      this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+          updatedAt: new Date(),
+          ...(recipientIsBuyer ? { buyerDeletedAt: null } : { sellerDeletedAt: null }),
+        },
+      }),
     ]);
     return { ...message, status: 'sent' as const };
   }

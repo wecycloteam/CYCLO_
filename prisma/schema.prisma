@@ -117,6 +117,16 @@ model Conversation {
   // was sent, not merely that the server accepted it.
   buyerLastSeenAt  DateTime?
   sellerLastSeenAt DateTime?
+  // Per-viewer, WhatsApp-style: archiving/deleting only changes what that one participant
+  // sees in their own chat list — the other person's copy of the conversation (and its
+  // messages) is untouched either way. A delete is "soft" (hides it from that viewer's
+  // list) rather than removing rows, and a new incoming message un-hides it for the
+  // recipient (see ChatService.sendMessage) the same way a real chat app surfaces a
+  // conversation you'd deleted the moment the other person messages you again.
+  buyerArchivedAt  DateTime?
+  sellerArchivedAt DateTime?
+  buyerDeletedAt   DateTime?
+  sellerDeletedAt  DateTime?
 
   listing  WasteListing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
   buyer    User          @relation("ConversationBuyer", fields: [buyerId], references: [id], onDelete: Cascade)

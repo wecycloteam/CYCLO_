@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { api, ApiError, AdminDashboard, AuditLogEntry } from "@/lib/api";
+import { api, ApiError, AdminDashboard, AuditLogEntry, Report } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { AdminGate } from "@/components/AdminGate";
@@ -44,15 +44,17 @@ export default function AdminDashboardPage() {
   const { state: authState, user } = useCurrentUser();
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [activity, setActivity] = useState<AuditLogEntry[]>([]);
+  const [pendingReports, setPendingReports] = useState<Report[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     setState("loading");
-    Promise.all([api.adminDashboard(), api.adminActivity()])
-      .then(([d, a]) => {
+    Promise.all([api.adminDashboard(), api.adminActivity(), api.adminListReports("UNDER_REVIEW")])
+      .then(([d, a, r]) => {
         setDashboard(d);
         setActivity(a);
+        setPendingReports(r);
         setState("ready");
       })
       .catch((err) => {
@@ -95,10 +97,19 @@ export default function AdminDashboardPage() {
               {dashboard.pendingListingModerationCount > 0 && (
                 <Link
                   href="/admin/listings"
-                  className="block rounded-[var(--r-md)] bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-3 mb-6"
+                  className="block rounded-[var(--r-md)] bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-3 mb-3"
                 >
                   Review {dashboard.pendingListingModerationCount} pending listing
                   {dashboard.pendingListingModerationCount === 1 ? "" : "s"} →
+                </Link>
+              )}
+
+              {pendingReports.length > 0 && (
+                <Link
+                  href="/admin/reports"
+                  className="block rounded-[var(--r-md)] bg-[var(--critical)] text-white font-bold text-sm text-center py-3 mb-6"
+                >
+                  {pendingReports.length} suspicious activity report{pendingReports.length === 1 ? "" : "s"} awaiting review →
                 </Link>
               )}
 

@@ -6,8 +6,20 @@
 // --text-1/2 (which assume a light --surface card behind them). ErrorState does have its
 // own bg-[var(--surface)] card, so its text stays on --text-2 as before.
 
+import { Recycle } from "lucide-react";
+
+// A small pulsing CYCLO mark instead of a spinner or bare "Loading…" text — same branded
+// feel as PageTransitionOverlay's route-change flash, just sized for an inline data-fetch
+// wait rather than a full-screen transition. currentColor via the teal token means this
+// looks right in both themes without needing separate light/dark image assets. `label`
+// still exists for a11y (announced to screen readers) even though it's no longer shown
+// as visible text.
 export function LoadingState({ label = "Loading…" }: { label?: string }) {
-  return <p className="text-sm text-[var(--text-on-bg-2)] py-8 text-center">{label}</p>;
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-10" role="status" aria-label={label}>
+      <Recycle size={32} strokeWidth={1.75} className="animate-pulse text-[var(--cyclo-teal)]" />
+    </div>
+  );
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {

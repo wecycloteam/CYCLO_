@@ -90,6 +90,7 @@ function ListingProductCard({ listing }: { listing: WasteListing }) {
       </div>
       <div className="p-3">
         <div className="truncate text-xs font-extrabold text-[var(--text-1)]">{t(listing.material.label)}</div>
+        <div className="mt-0.5 truncate text-[10px] font-bold text-[var(--text-2)]">{listing.seller.name}</div>
         <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--text-2)]">
           <Scale size={11} /> {listing.estimatedWeightKg} kg
         </div>
@@ -158,7 +159,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
-      {state === "ready" && user && user.role !== "collector" ? (
+      {state === "ready" && user ? (
         <header className="sticky top-0 z-10 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)]">
           <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 px-5 py-3 md:max-w-xl lg:max-w-3xl">
             <div className="flex items-center gap-2">

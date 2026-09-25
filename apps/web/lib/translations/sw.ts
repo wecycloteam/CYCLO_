@@ -140,6 +140,17 @@ export const sw: Record<string, string> = {
   "Recording…": "Inarekodi…",
   "Photo": "Picha",
   "Voice note": "Ujumbe wa sauti",
+  "Chats": "Mazungumzo",
+  "Archived": "Yaliyowekwa Kumbukumbu",
+  "No archived chats": "Hakuna mazungumzo yaliyowekwa kumbukumbu",
+  "More options": "Chaguo zaidi",
+  "Unarchive": "Toa kwenye Kumbukumbu",
+  "Archive": "Weka Kumbukumbu",
+  "Delete chat": "Futa Mazungumzo",
+  "Delete this chat?": "Futa mazungumzo haya?",
+  "This removes the conversation from your chat list. The other person can still see their copy.":
+    "Hii huondoa mazungumzo kwenye orodha yako. Mtu mwingine bado anaweza kuona nakala yake.",
+  "Delete": "Futa",
 
   // Report Suspicious Activity
   "Report Suspicious Activity": "Ripoti Shughuli ya Kutiliwa Shaka",

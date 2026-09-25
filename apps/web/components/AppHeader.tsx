@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { api, tokenStore } from "@/lib/api";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/lib/i18n";
@@ -14,7 +16,9 @@ import { useLanguage } from "@/lib/i18n";
 // pass back={true}.
 export function AppHeader({ title, back }: { title?: string; back?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useLanguage();
+  const { user } = useCurrentUser();
 
   async function handleLogout() {
     const refreshToken = tokenStore.getRefresh();
@@ -68,6 +72,20 @@ export function AppHeader({ title, back }: { title?: string; back?: boolean }) {
           >
             {t("Log out")}
           </button>
+          {user && pathname !== "/profile" && (
+            <Link
+              href="/profile"
+              aria-label={t("Your profile")}
+              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--cyclo-teal)] text-sm font-extrabold text-white"
+            >
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- data: URL, not an optimizable remote asset
+                <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                user.name.trim().charAt(0).toUpperCase() || "?"
+              )}
+            </Link>
+          )}
         </div>
       </div>
     </header>

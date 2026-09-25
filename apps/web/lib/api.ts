@@ -322,6 +322,7 @@ export interface Conversation {
   listing: { id: string; askingPrice: number | null; photos: string[]; material: { label: string } } | null;
   lastMessage?: ChatMessageRecord | null;
   unreadCount?: number;
+  archived?: boolean;
 }
 
 export type OrderPaymentStatus = "PENDING" | "AWAITING_CONFIRMATION" | "PAID" | "CANCELLED";
@@ -428,6 +429,10 @@ export interface Report extends CreateReportInput {
   reportNumber: string;
   reporterId: string;
   status: "UNDER_REVIEW" | "INVESTIGATING" | "RESOLVED" | "DISMISSED";
+  assignedReviewerId?: string | null;
+  investigationNotes?: string | null;
+  resolution?: string | null;
+  resolvedAt?: string | null;
   createdAt: string;
 }
 
@@ -695,6 +700,9 @@ export const api = {
     ),
   markConversationRead: (id: string) =>
     request<{ message: string }>(`/chat/conversations/${id}/read`, { method: "PATCH" }, true),
+  archiveConversation: (id: string, archived: boolean) =>
+    request<{ message: string }>(`/chat/conversations/${id}/archive`, { method: "PATCH", body: JSON.stringify({ archived }) }, true),
+  deleteConversation: (id: string) => request<{ message: string }>(`/chat/conversations/${id}`, { method: "DELETE" }, true),
   deleteMessageForMe: (id: string) =>
     request<{ message: string }>(`/chat/messages/${id}/delete-for-me`, { method: "PATCH" }, true),
   deleteMessageForEveryone: (id: string) =>
@@ -748,6 +756,14 @@ export const api = {
   // Admin
   adminDashboard: () => request<AdminDashboard>("/admin/dashboard", { method: "GET" }, true),
   adminActivity: () => request<AuditLogEntry[]>("/admin/activity", { method: "GET" }, true),
+
+  // Admin — suspicious-activity reports
+  adminListReports: (status?: string) =>
+    request<
+      (Report & { reporter: { id: string; name: string; username: string | null }; reportedUser: { id: string; name: string; username: string | null } | null })[]
+    >(`/reports${status ? `?status=${status}` : ""}`, { method: "GET" }, true),
+  adminUpdateReport: (id: string, data: { status?: string; investigationNotes?: string; resolution?: string }) =>
+    request<Report>(`/reports/${id}`, { method: "PATCH", body: JSON.stringify(data) }, true),
   adminPendingUsers: () =>
     request<{ pendingAccounts: PendingAccount[]; pendingCollectors: PendingCollector[]; pendingOrganizations: PendingOrganization[] }>(
       "/admin/users/pending",

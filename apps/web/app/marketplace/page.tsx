@@ -62,9 +62,11 @@ function ListingCard({ listing }: { listing: WasteListing }) {
             </span>
           )}
         </div>
+        <div className="mb-1 truncate text-xs font-bold text-[var(--text-2)]">{listing.seller.name}</div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--text-2)] mb-2">
           <span className="inline-flex items-center gap-1">
-            <MapPin size={12} /> {listing.location.region ?? listing.location.label}
+            <MapPin size={12} />{" "}
+            {[listing.location.district, listing.location.region].filter(Boolean).join(", ") || listing.location.label}
           </span>
           <span className="inline-flex items-center gap-1">
             <Scale size={12} /> {listing.estimatedWeightKg} kg

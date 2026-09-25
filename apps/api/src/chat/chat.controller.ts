@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -34,6 +34,16 @@ export class ChatController {
   @Patch('conversations/:id/read')
   markRead(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string) {
     return this.chat.markRead(principal.userId, id);
+  }
+
+  @Patch('conversations/:id/archive')
+  setArchived(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string, @Body() dto: { archived: boolean }) {
+    return this.chat.setArchived(principal.userId, id, dto.archived);
+  }
+
+  @Delete('conversations/:id')
+  deleteConversation(@CurrentUser() principal: CurrentUserPayload, @Param('id') id: string) {
+    return this.chat.deleteConversation(principal.userId, id);
   }
 
   @Patch('messages/:id/delete-for-me')
