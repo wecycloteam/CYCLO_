@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WASTE_CLASSIFIER } from './domain/waste-classifier.interface';
 import type { WasteClassifier } from './domain/waste-classifier.interface';
 import { ScanImageDto } from './dto/scan-image.dto';
+import { GEMINI_MODEL_CHAIN } from './gemini-waste-classifier';
 
 @Injectable()
 export class AiService {
@@ -108,13 +109,23 @@ export class AiService {
   // and caps length, since the app's plain <div>{text}</div> renderer shows literal "**"
   // characters and the rest of the UI has no emoji anywhere (lucide icons only).
   async chatGuidance(message: string, history: { role: 'user' | 'model'; parts: string }[] = []) {
-    try {
+    let lastError: unknown;
+    for (const model of GEMINI_MODEL_CHAIN) {
+      try {
+        return await this.chatOnce(model, message, history);
+      } catch (error) {
+        lastError = error;
+        console.warn(`Gemini chat with ${model} failed, trying next model:`, error instanceof Error ? error.message.slice(0, 200) : error);
+      }
+    }
+    console.error('Gemini Chat Error:', lastError);
+    throw new InternalServerErrorException('Failed to generate a response from CYCLO AI.');
+  }
+
+  private async chatOnce(model: string, message: string, history: { role: 'user' | 'model'; parts: string }[]) {
+    {
       const response = await this.ai.models.generateContent({
-        // gemini-3.6-flash's free tier is capped at 20 requests/day, and this project's
-        // own testing exhausted it; gemini-2.5-flash turned out to be fully deprecated
-        // ("no longer available to new users"). gemini-3.5-flash is a distinct, still-
-        // current model with its own separate quota bucket that hasn't been touched.
-        model: 'gemini-3.5-flash',
+        model,
         config: {
           systemInstruction:
             'You are CYCLO AI, an AI recycling and waste management guide for the Cyclo App in Tanzania. ' +
@@ -144,9 +155,6 @@ export class AiService {
       });
 
       return { reply: sanitizeAssistantReply(response.text ?? '') };
-    } catch (error) {
-      console.error('Gemini Chat Error:', error);
-      throw new InternalServerErrorException('Failed to generate a response from CYCLO AI.');
     }
   }
 }

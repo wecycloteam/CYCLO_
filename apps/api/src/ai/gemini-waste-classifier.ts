@@ -33,30 +33,10 @@ const HANDLING_INSTRUCTIONS_NON_RECYCLABLE = [
   'Check with your local authority for safe disposal',
 ];
 
-const MAX_ATTEMPTS = 3;
-const RETRY_DELAY_MS = 1500;
-
-function isRetryableGeminiError(error: unknown): boolean {
-  // Gemini periodically returns 503 UNAVAILABLE ("This model is currently experiencing
-  // high demand... usually temporary") — a real, external capacity issue, not a bug in
-  // this app. Retrying a couple of times with a short delay is the honest fix: it doesn't
-  // paper over a real failure, it just doesn't give up on the very first transient blip.
-  // A malformed/truncated JSON reply is also treated as retryable — that's usually the
-  // model getting cut off or emitting stray text around the JSON on a single bad call,
-  // not a permanent failure, and retrying fixes it far more often than it repeats.
-  const message = error instanceof Error ? error.message : String(error);
-  return (
-    message.includes('"code":503') ||
-    message.includes('UNAVAILABLE') ||
-    message.includes('high demand') ||
-    message.includes('Gemini returned an empty response') ||
-    message.includes('Gemini returned malformed JSON')
-  );
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// Tried in order. The full flash models regularly return 503 "high demand" under load
+// while the lite models (separate capacity and quota buckets) keep answering, so any
+// failure moves straight to the next model instead of waiting and retrying the same one.
+export const GEMINI_MODEL_CHAIN = ['gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemini-3.5-flash-lite'];
 
 @Injectable()
 export class GeminiWasteClassifier implements WasteClassifier {
@@ -64,28 +44,20 @@ export class GeminiWasteClassifier implements WasteClassifier {
 
   async classify(imageBase64: string): Promise<ClassificationResult> {
     let lastError: unknown;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    for (const model of GEMINI_MODEL_CHAIN) {
       try {
-        return await this.classifyOnce(imageBase64);
+        return await this.classifyOnce(imageBase64, model);
       } catch (error) {
         lastError = error;
-        if (attempt < MAX_ATTEMPTS && isRetryableGeminiError(error)) {
-          console.warn(`Gemini classify attempt ${attempt} failed (retrying):`, error);
-          await delay(RETRY_DELAY_MS * attempt);
-          continue;
-        }
-        throw error;
+        console.warn(`Gemini classify with ${model} failed, trying next model:`, error instanceof Error ? error.message.slice(0, 200) : error);
       }
     }
     throw lastError;
   }
 
-  private async classifyOnce(imageBase64: string): Promise<ClassificationResult> {
+  private async classifyOnce(imageBase64: string, model: string): Promise<ClassificationResult> {
     const response = await this.ai.models.generateContent({
-      // Same quota reasoning as AiService.chatGuidance — gemini-3.6-flash's 20/day free
-      // quota was exhausted and gemini-2.5-flash turned out to be deprecated entirely;
-      // gemini-3.5-flash is current and has its own separate, untouched quota bucket.
-      model: 'gemini-3.5-flash',
+      model,
       // Same fix as AiService.chatGuidance: gemini-3.6-flash spends part of its output
       // budget on invisible "thinking" tokens before the visible reply — disabling it
       // keeps this call fast and focused on the actual classification task.

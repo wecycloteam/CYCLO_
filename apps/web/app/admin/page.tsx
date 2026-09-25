@@ -87,14 +87,43 @@ export default function AdminDashboardPage() {
                   TZS {Math.round(dashboard.totalPlatformRevenueTzs).toLocaleString()}
                 </div>
                 <div className="mt-1 text-[10px] text-[var(--cyclo-mint)]">
-                  {t("Real platform fees collected across all transactions — TZS 0 until a fee schedule is set.")}
+                  {t("{rate}% commission on all completed transactions.").replace("{rate}", String(Math.round(dashboard.commissionRate * 100)))}
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <StatTile label={t("Total Transactions")} value={dashboard.totalTransactions} />
+                <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-3">
+                  <div className="text-lg font-extrabold">TZS {Math.round(dashboard.totalTransactionValueTzs).toLocaleString()}</div>
+                  <div className="text-[11px] text-[var(--text-2)]">{t("Total Transaction Value")}</div>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <StatTile label={t("Total Users")} value={dashboard.totalUsers} />
                 <StatTile label={t("Pending Listing Reviews")} value={dashboard.pendingListingModerationCount} />
               </div>
+
+              {dashboard.recentTransactions.length > 0 && (
+                <>
+                  <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{t("Recent transactions")}</h3>
+                  <div className="flex flex-col gap-2 mb-6">
+                    {dashboard.recentTransactions.map((tx) => (
+                      <div key={tx.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-xs font-extrabold">{t(tx.materialLabel)}</span>
+                          <span className="whitespace-nowrap text-xs font-extrabold text-[var(--cyclo-teal)]">TZS {tx.amountTzs.toLocaleString()}</span>
+                        </div>
+                        <div className="text-[11px] text-[var(--text-2)]">
+                          {tx.sellerName} → {tx.buyerName} · {tx.quantityKg} kg · {new Date(tx.paidAt).toLocaleDateString()}
+                        </div>
+                        <div className="text-[11px] font-bold text-[var(--success)]">
+                          {t("Commission")}: TZS {tx.commissionTzs.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {dashboard.pendingListingModerationCount > 0 && (
                 <Link

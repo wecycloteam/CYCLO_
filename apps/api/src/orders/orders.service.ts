@@ -4,6 +4,7 @@ import { ListingStatus } from '@cyclo/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PLATFORM_COMMISSION_RATE } from '../admin/admin.service';
 import { assertValidListingTransition } from '../marketplace/domain/listing-state-machine';
 
 const ORDER_SELECT = {
@@ -207,7 +208,8 @@ export class OrdersService {
     const updated = await this.prisma.$transaction(
       async (tx) => {
         await this.wallet.debitForPurchase(tx, buyerId, order.agreedPrice, id);
-        await this.wallet.creditSaleEarning(tx, order.sellerId, order.agreedPrice, id);
+        // Seller receives the sale price minus CYCLO's commission.
+        await this.wallet.creditSaleEarning(tx, order.sellerId, Math.round(order.agreedPrice * (1 - PLATFORM_COMMISSION_RATE)), id);
         await this.wallet.creditBuyerCC(tx, buyerId, order.agreedPrice, id);
 
         const result = await tx.order.update({

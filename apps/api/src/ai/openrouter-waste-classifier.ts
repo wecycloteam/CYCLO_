@@ -33,7 +33,8 @@ const HANDLING_INSTRUCTIONS_NON_RECYCLABLE = [
 
 // A free, vision-capable OpenRouter model — kept as a single named constant so swapping
 // it (OpenRouter's free-model lineup changes over time) never touches call-site logic.
-const OPENROUTER_MODEL = 'google/gemini-2.0-flash-exp:free';
+// OpenRouter tries these in order (its `models` routing) when one is rate-limited upstream.
+const OPENROUTER_MODELS = ['google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'qwen/qwen3.8-27b:free'];
 
 const PROMPT = `Analyze this image for waste classification, condition, and market valuation.
 CYCLO only deals in these 7 waste categories — you must classify into exactly one of them:
@@ -89,7 +90,7 @@ export class OpenRouterWasteClassifier implements WasteClassifier {
         'X-Title': 'CYCLO',
       },
       body: JSON.stringify({
-        model: OPENROUTER_MODEL,
+        models: OPENROUTER_MODELS,
         temperature: 0.2,
         max_tokens: 1024,
         messages: [

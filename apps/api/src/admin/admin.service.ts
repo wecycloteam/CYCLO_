@@ -11,6 +11,8 @@ import { PricingService } from '../pricing/pricing.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const ACTIVITY_PAGE_SIZE = 20;
+// CYCLO's commission on every completed (PAID) marketplace sale.
+export const PLATFORM_COMMISSION_RATE = 0.05;
 const PENDING_VERIFICATION_STATUSES = ['unverified', 'pending'];
 
 function toCountRecord(
@@ -71,7 +73,41 @@ export class AdminService {
       this.prisma.transaction.aggregate({ _sum: { platformFee: true } }),
     ]);
 
+    const [paidOrdersAgg, recentPaidOrders] = await Promise.all([
+      this.prisma.order.aggregate({ where: { paymentStatus: 'PAID' }, _count: true, _sum: { agreedPrice: true } }),
+      this.prisma.order.findMany({
+        where: { paymentStatus: 'PAID' },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          agreedPrice: true,
+          quantityKg: true,
+          paymentMethod: true,
+          updatedAt: true,
+          buyer: { select: { name: true } },
+          seller: { select: { name: true } },
+          listing: { select: { material: { select: { label: true } } } },
+        },
+      }),
+    ]);
+    const totalTransactionValueTzs = paidOrdersAgg._sum.agreedPrice ?? 0;
+
     return {
+      totalTransactions: paidOrdersAgg._count,
+      totalTransactionValueTzs,
+      commissionRate: PLATFORM_COMMISSION_RATE,
+      recentTransactions: recentPaidOrders.map((o) => ({
+        id: o.id,
+        buyerName: o.buyer.name,
+        sellerName: o.seller.name,
+        materialLabel: o.listing.material.label,
+        quantityKg: o.quantityKg,
+        amountTzs: o.agreedPrice,
+        commissionTzs: Math.round(o.agreedPrice * PLATFORM_COMMISSION_RATE),
+        paymentMethod: o.paymentMethod,
+        paidAt: o.updatedAt,
+      })),
       totalUsers,
       usersByRole: toCountRecord(usersByRole),
       usersByVerificationStatus: toCountRecord(usersByVerification),
@@ -80,7 +116,8 @@ export class AdminService {
       listingsByStatus: toCountRecord(listingsByStatus),
       pendingListingModerationCount: pendingListings,
       pickupsByStatus: toCountRecord(pickupsByStatus),
-      totalPlatformRevenueTzs: platformFeeAgg._sum.platformFee ?? 0,
+      totalPlatformRevenueTzs:
+        Math.round(totalTransactionValueTzs * PLATFORM_COMMISSION_RATE) + (platformFeeAgg._sum.platformFee ?? 0),
     };
   }
 

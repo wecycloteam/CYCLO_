@@ -282,6 +282,20 @@ export interface AdminDashboard {
   pendingListingModerationCount: number;
   pickupsByStatus: Record<string, number>;
   totalPlatformRevenueTzs: number;
+  totalTransactions: number;
+  totalTransactionValueTzs: number;
+  commissionRate: number;
+  recentTransactions: {
+    id: string;
+    buyerName: string;
+    sellerName: string;
+    materialLabel: string;
+    quantityKg: number;
+    amountTzs: number;
+    commissionTzs: number;
+    paymentMethod: string;
+    paidAt: string;
+  }[];
 }
 
 export interface Review {
