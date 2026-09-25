@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WASTE_CLASSIFIER } from './domain/waste-classifier.interface';
 import type { WasteClassifier } from './domain/waste-classifier.interface';
 import { ScanImageDto } from './dto/scan-image.dto';
-import { GEMINI_MODEL_CHAIN } from './gemini-waste-classifier';
+import { GEMINI_MODEL_CHAIN, thinkingConfigFor } from './gemini-waste-classifier';
 
 @Injectable()
 export class AiService {
@@ -139,7 +139,7 @@ export class AiService {
           // thinking off removes that hidden cost entirely (also the main fix for slow
           // replies) and a higher cap is now a genuine ceiling on the visible text, not a
           // shared pool with reasoning.
-          thinkingConfig: { thinkingBudget: 0 },
+          ...thinkingConfigFor(model),
           maxOutputTokens: 500,
         },
         contents: [

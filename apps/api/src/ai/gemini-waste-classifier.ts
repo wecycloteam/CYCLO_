@@ -38,6 +38,11 @@ const HANDLING_INSTRUCTIONS_NON_RECYCLABLE = [
 // failure moves straight to the next model instead of waiting and retrying the same one.
 export const GEMINI_MODEL_CHAIN = ['gemini-3.5-flash', 'gemini-flash-lite-latest', 'gemini-3.5-flash-lite'];
 
+// Lite models reject thinkingBudget (400 INVALID_ARGUMENT); only full flash models take it.
+export function thinkingConfigFor(model: string) {
+  return model.includes('lite') ? {} : { thinkingConfig: { thinkingBudget: 0 } };
+}
+
 @Injectable()
 export class GeminiWasteClassifier implements WasteClassifier {
   private ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -62,7 +67,7 @@ export class GeminiWasteClassifier implements WasteClassifier {
       // budget on invisible "thinking" tokens before the visible reply — disabling it
       // keeps this call fast and focused on the actual classification task.
       config: {
-        thinkingConfig: { thinkingBudget: 0 },
+        ...thinkingConfigFor(model),
         // Forces a raw JSON body (no markdown fences, no stray prose around it) instead of
         // relying on prompt wording alone — this is what previously caused occasional
         // "Unexpected token" JSON.parse failures when the model added a sentence before or
