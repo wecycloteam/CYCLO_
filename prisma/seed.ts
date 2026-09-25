@@ -75,7 +75,7 @@ const DEMO_LISTINGS: Array<{
   { category: 'paper_cardboard', subtype: 'GENERAL', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', seller: 'baraka', photo: '/materials/cardboard.jpg?v=2' },
   { category: 'metal', subtype: 'GENERAL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', seller: 'fatuma', photo: '/materials/steel-tin.jpg' },
   { category: 'paper_cardboard', subtype: 'GENERAL', label: 'Office Paper', estimatedWeightKg: 20, description: 'Sorted office paper and newspaper bundles, kept dry.', seller: 'godfrey', photo: '/materials/paper.jpg?v=2' },
-  { category: 'textile', subtype: 'GENERAL', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', seller: 'neema', photo: '/materials/textiles.jpg?v=2' },
+  { category: 'textile', subtype: 'GENERAL', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', seller: 'neema', photo: '/materials/newtextiles.jpg' },
 ];
 
 async function main() {

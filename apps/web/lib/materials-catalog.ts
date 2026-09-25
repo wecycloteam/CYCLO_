@@ -102,7 +102,7 @@ export const MATERIALS_CATALOG: CatalogMaterial[] = [
     price: "TZS 300 / kg",
     rating: "4.7",
     reviews: 76,
-    image: "/materials/textiles.jpg?v=2",
+    image: "/materials/newtextiles.jpg",
     acceptedForms: ["Clothing", "Fabric", "Offcuts"],
   },
   {
