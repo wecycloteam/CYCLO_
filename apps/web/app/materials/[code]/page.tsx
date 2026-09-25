@@ -72,7 +72,7 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
         </div>
 
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#275458] sm:text-4xl">{material.title}</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#275458] sm:text-4xl">{t(material.title)}</h1>
 
           <div className="mt-3 flex items-center gap-2 text-sm" aria-label={`${material.rating} out of 5 stars from ${material.reviews} reviews`}>
             <span className="flex items-center gap-0.5 text-[#E6A51A]" aria-hidden="true">
@@ -84,7 +84,7 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
             <span className="text-[#8B9997]">({material.reviews} reviews)</span>
           </div>
 
-          <p className="mt-6 text-base leading-7 text-[#5B6C69]">{material.description}</p>
+          <p className="mt-6 text-base leading-7 text-[#5B6C69]">{t(material.description)}</p>
 
           <div className="mt-8 rounded-[1.25rem] border border-[#E2E9E7] bg-white p-6">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5B6C69]">{t("Reference price")}</p>
@@ -97,7 +97,7 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
             <div className="flex flex-wrap gap-2">
               {material.acceptedForms.map((f) => (
                 <span key={f} className="rounded-full border border-[#E2E9E7] bg-white px-3 py-1.5 text-xs font-bold text-[#275458]">
-                  {f}
+                  {t(f)}
                 </span>
               ))}
             </div>

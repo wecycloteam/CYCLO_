@@ -180,6 +180,18 @@ model OtpChallenge {
   @@index([phone])
 }
 
+model PasswordResetChallenge {
+  id           String    @id @default(uuid())
+  email        String
+  codeHash     String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@index([email])
+}
+
 model RefreshToken {
   id        String    @id @default(uuid())
   userId    String

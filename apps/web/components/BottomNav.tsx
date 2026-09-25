@@ -41,7 +41,7 @@ const PRODUCER_ITEMS: NavItem[] = [
 // old Jobs tab here.
 const COLLECTOR_ITEMS: NavItem[] = [
   { href: "/marketplace", label: "Marketplace", icon: ShoppingCart },
-  { href: "/activity", label: "Active", icon: Compass },
+  { href: "/activity", label: "Activity", icon: Compass },
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -74,23 +74,25 @@ export function BottomNav({ role }: { role: string }) {
   const items = itemsForRole(role);
 
   return (
-    <nav className="sticky bottom-0 z-10 flex border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)]">
-      {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold ${
-              active ? "text-[var(--cyclo-green)]" : "text-[var(--chrome-text-muted)]"
-            }`}
-          >
-            <Icon size={20} strokeWidth={2} />
-            {t(item.label)}
-          </Link>
-        );
-      })}
+    <nav className="sticky bottom-0 z-10 border-t border-[var(--chrome-border)] bg-[var(--chrome-bg)]">
+      <div className="mx-auto flex w-full max-w-md md:max-w-xl lg:max-w-3xl">
+        {items.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold ${
+                active ? "text-[var(--cyclo-green)]" : "text-[var(--chrome-text-muted)]"
+              }`}
+            >
+              <Icon size={20} strokeWidth={2} />
+              {t(item.label)}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

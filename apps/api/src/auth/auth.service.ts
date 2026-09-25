@@ -8,14 +8,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { SMS_PROVIDER } from '../sms/sms-provider.interface';
 import type { SmsProvider } from '../sms/sms-provider.interface';
+import { EMAIL_PROVIDER } from '../email/email-provider.interface';
+import type { EmailProvider } from '../email/email-provider.interface';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const OTP_TTL_MINUTES = 5;
 const OTP_LENGTH = 6;
 const MAX_OTP_ATTEMPTS = 5;
+
+const RESET_CODE_TTL_MINUTES = 10;
+const RESET_CODE_LENGTH = 6;
+const MAX_RESET_ATTEMPTS = 5;
 
 function hashRefreshToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -29,6 +37,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     @Inject(SMS_PROVIDER) private readonly sms: SmsProvider,
+    @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
   ) {}
 
   async requestOtp(phone: string) {
@@ -190,6 +199,78 @@ export class AuthService {
     }
 
     return this.issueTokens(user.id, user.role);
+  }
+
+  // Deliberately does NOT reveal whether the email has an account — always returns the
+  // same message either way, and only actually creates a challenge/sends an email when a
+  // matching, password-capable account exists. Otherwise this endpoint would let anyone
+  // enumerate which emails are registered on CYCLO just by watching the response differ.
+  async requestPasswordReset(dto: RequestPasswordResetDto) {
+    const user = await this.users.findByEmail(dto.email);
+    const genericResponse = {
+      message: 'If an account exists for that email, a verification code has been sent.',
+      expiresInSeconds: RESET_CODE_TTL_MINUTES * 60,
+    };
+
+    if (!user) return genericResponse;
+
+    const code = randomInt(0, 10 ** RESET_CODE_LENGTH).toString().padStart(RESET_CODE_LENGTH, '0');
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000);
+
+    await this.prisma.passwordResetChallenge.create({ data: { email: dto.email, codeHash, expiresAt } });
+    await this.email.sendPasswordResetCode(dto.email, code);
+
+    return {
+      ...genericResponse,
+      // Same shape as requestOtp's devCode — only present for the console dev stub that
+      // doesn't actually deliver anything, never once a real EmailProvider is wired in.
+      devCode: this.email.exposesCodeInResponse ? code : undefined,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const challenge = await this.prisma.passwordResetChallenge.findFirst({
+      where: { email: dto.email, consumedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!challenge) {
+      throw new BadRequestException('No active reset code for this email. Request a new one.');
+    }
+
+    if (challenge.attemptCount >= MAX_RESET_ATTEMPTS) {
+      await this.prisma.passwordResetChallenge.update({
+        where: { id: challenge.id },
+        data: { consumedAt: new Date() },
+      });
+      throw new BadRequestException('Too many incorrect attempts. Request a new code.');
+    }
+
+    const matches = await bcrypt.compare(dto.code, challenge.codeHash);
+    if (!matches) {
+      await this.prisma.passwordResetChallenge.update({
+        where: { id: challenge.id },
+        data: { attemptCount: { increment: 1 } },
+      });
+      throw new BadRequestException('Incorrect verification code.');
+    }
+
+    const user = await this.users.findByEmail(dto.email);
+    if (!user) {
+      // The challenge existed (requestPasswordReset only creates one for a real account),
+      // so this would mean the account was deleted in between — genuinely exceptional.
+      throw new BadRequestException('No account found for this email.');
+    }
+
+    await this.prisma.passwordResetChallenge.update({
+      where: { id: challenge.id },
+      data: { consumedAt: new Date() },
+    });
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+    return { message: 'Password reset. You can now log in with your new password.' };
   }
 
   // The current password can't be shown back to the user (only its hash is ever stored),

@@ -26,7 +26,7 @@ export default function LearnPage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Learn" />
-      <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         <h1 className="text-lg font-extrabold text-[var(--text-on-bg)] mb-1">{t("Why waste management matters")}</h1>
         <p className="text-sm text-[var(--text-on-bg-2)] mb-5">
           {t("A short guide to recycling, and how CYCLO turns it into real income.")}

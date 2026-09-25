@@ -50,7 +50,7 @@ export default function ChatListPage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Chats" />
-      <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-5 py-6">
         {state === "loading" && <LoadingState label={t("Loading your chats…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={() => load(true)} />}
 
@@ -88,7 +88,7 @@ export default function ChatListPage() {
                         </span>
                       )}
                     </div>
-                    {c.listing && <div className="truncate text-[11px] text-[var(--text-3)]">{t("Re:")} {c.listing.material.label}</div>}
+                    {c.listing && <div className="truncate text-[11px] text-[var(--text-3)]">{t("Re:")} {t(c.listing.material.label)}</div>}
                     <div className="truncate text-xs text-[var(--text-2)]">
                       {c.lastMessage ? c.lastMessage.body : <span className="italic text-[var(--text-3)]">{t("No messages yet")}</span>}
                     </div>

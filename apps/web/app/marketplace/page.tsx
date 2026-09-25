@@ -36,6 +36,7 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
 };
 
 function ListingCard({ listing }: { listing: WasteListing }) {
+  const { t } = useLanguage();
   const photo = listing.photos?.[0];
   const CategoryIcon = CATEGORY_ICON[listing.material.category] ?? Trash2;
   return (
@@ -53,7 +54,7 @@ function ListingCard({ listing }: { listing: WasteListing }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3 mb-1">
-          <span className="text-sm font-extrabold">{listing.material.label}</span>
+          <span className="text-sm font-extrabold">{t(listing.material.label)}</span>
           {formatUnitPrice(listing) && (
             <span className="text-sm font-extrabold text-[var(--cyclo-teal)] whitespace-nowrap">
               {formatUnitPrice(listing)}
@@ -192,25 +193,27 @@ function MarketplaceContent() {
       {user ? (
         <AppHeader title="Marketplace" />
       ) : (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
-          <Link href="/" aria-label="CYCLO home">
-            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-light h-[34px] w-auto" />
-            <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
-            <Link
-              href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
-              className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
-            >
-              {t("Log in")}
+        <header className="sticky top-0 z-10 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-6 py-3 md:max-w-xl lg:max-w-3xl">
+            <Link href="/" aria-label="CYCLO home">
+              <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-light h-[34px] w-auto" />
+              <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
             </Link>
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+              <Link
+                href={`/login?redirect=${encodeURIComponent("/marketplace")}`}
+                className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
+              >
+                {t("Log in")}
+              </Link>
+            </div>
           </div>
         </header>
       )}
 
-      <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex rounded-[var(--r-pill)] border border-[var(--border)] p-1">
             <button

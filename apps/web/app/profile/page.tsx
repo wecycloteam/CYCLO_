@@ -150,7 +150,7 @@ export default function ProfilePage() {
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Profile" />
 
-      <div className="flex-1 max-w-md w-full mx-auto px-6 py-8">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-8">
         {state === "loading" && <LoadingState label={t("Loading your profile…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={retry} />}
 

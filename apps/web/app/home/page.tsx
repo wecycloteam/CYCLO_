@@ -67,6 +67,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 function ListingProductCard({ listing }: { listing: WasteListing }) {
+  const { t } = useLanguage();
   const photo = listing.photos?.[0];
   const CategoryIcon = CATEGORY_ICON[listing.material.category] ?? Trash2;
   return (
@@ -88,7 +89,7 @@ function ListingProductCard({ listing }: { listing: WasteListing }) {
         )}
       </div>
       <div className="p-3">
-        <div className="truncate text-xs font-extrabold text-[var(--text-1)]">{listing.material.label}</div>
+        <div className="truncate text-xs font-extrabold text-[var(--text-1)]">{t(listing.material.label)}</div>
         <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--text-2)]">
           <Scale size={11} /> {listing.estimatedWeightKg} kg
         </div>
@@ -158,69 +159,73 @@ export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       {state === "ready" && user && user.role !== "collector" ? (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-5 py-3">
-          <div className="flex items-center gap-2">
+        <header className="sticky top-0 z-10 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)]">
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 px-5 py-3 md:max-w-xl lg:max-w-3xl">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/brand/cyclo-logo-light.png"
+                alt="CYCLO"
+                width={92}
+                height={26}
+                className="cyclo-header-logo-light h-[26px] w-auto"
+              />
+              <Image
+                src="/brand/cyclo-logo-dark.png"
+                alt="CYCLO"
+                width={92}
+                height={26}
+                className="cyclo-header-logo-dark h-[26px] w-auto"
+              />
+              <Link href="/profile" className="hidden items-center gap-1 rounded-full bg-[var(--cyclo-teal)] px-2.5 py-1 text-[11px] font-bold text-white sm:flex">
+                <MapPin size={12} /> {locationLabel}
+              </Link>
+            </div>
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+              <Link
+                href="/activity"
+                aria-label="Notifications and activity"
+                className="grid h-9 w-9 place-items-center rounded-full border border-[var(--chrome-border)] text-[var(--chrome-text)]"
+              >
+                <Bell size={18} />
+              </Link>
+              <Link
+                href="/profile"
+                aria-label="Your profile"
+                className="grid h-9 w-9 place-items-center rounded-full bg-[var(--cyclo-teal)] text-sm font-extrabold text-white"
+              >
+                {user.name.trim().charAt(0).toUpperCase() || "?"}
+              </Link>
+            </div>
+          </div>
+        </header>
+      ) : (
+        <header className="sticky top-0 z-10 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-6 py-3 md:max-w-xl lg:max-w-3xl">
             <Image
               src="/brand/cyclo-logo-light.png"
               alt="CYCLO"
-              width={92}
-              height={26}
-              className="cyclo-header-logo-light h-[26px] w-auto"
+              width={140}
+              height={40}
+              className="cyclo-header-logo-light h-[42px] w-auto"
             />
             <Image
               src="/brand/cyclo-logo-dark.png"
               alt="CYCLO"
-              width={92}
-              height={26}
-              className="cyclo-header-logo-dark h-[26px] w-auto"
+              width={140}
+              height={40}
+              className="cyclo-header-logo-dark h-[42px] w-auto"
             />
-            <Link href="/profile" className="hidden items-center gap-1 rounded-full bg-[var(--cyclo-teal)] px-2.5 py-1 text-[11px] font-bold text-white sm:flex">
-              <MapPin size={12} /> {locationLabel}
-            </Link>
-          </div>
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
-            <Link
-              href="/activity"
-              aria-label="Notifications and activity"
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--chrome-border)] text-[var(--chrome-text)]"
-            >
-              <Bell size={18} />
-            </Link>
-            <Link
-              href="/profile"
-              aria-label="Your profile"
-              className="grid h-9 w-9 place-items-center rounded-full bg-[var(--cyclo-teal)] text-sm font-extrabold text-white"
-            >
-              {user.name.trim().charAt(0).toUpperCase() || "?"}
-            </Link>
-          </div>
-        </header>
-      ) : (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
-          <Image
-            src="/brand/cyclo-logo-light.png"
-            alt="CYCLO"
-            width={140}
-            height={40}
-            className="cyclo-header-logo-light h-[42px] w-auto"
-          />
-          <Image
-            src="/brand/cyclo-logo-dark.png"
-            alt="CYCLO"
-            width={140}
-            height={40}
-            className="cyclo-header-logo-dark h-[42px] w-auto"
-          />
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
           </div>
         </header>
       )}
 
-      <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-5 py-6">
         {state === "loading" && <LoadingState label="Loading your profile…" />}
         {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={retry} />}
 
@@ -360,7 +365,7 @@ export default function HomePage() {
                   className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                 >
                   <div>
-                    <div className="text-sm font-bold">{o.listing.material.label}</div>
+                    <div className="text-sm font-bold">{t(o.listing.material.label)}</div>
                     <div className="text-xs text-[var(--text-2)]">TZS {o.agreedPrice.toLocaleString()}</div>
                   </div>
                   <StatusBadge status={o.paymentStatus} />
@@ -374,7 +379,7 @@ export default function HomePage() {
                     className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                   >
                     <div>
-                      <div className="text-sm font-bold">{l.material.label}</div>
+                      <div className="text-sm font-bold">{t(l.material.label)}</div>
                       <div className="text-xs text-[var(--text-2)]">{l.estimatedWeightKg} kg listed</div>
                     </div>
                     <StatusBadge status={l.status} />

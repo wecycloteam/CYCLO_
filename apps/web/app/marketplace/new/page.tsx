@@ -172,7 +172,7 @@ function NewListingForm() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="List Material" />
-      <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         {authState === "ready" && user?.role === "collector" ? (
           <EmptyState
             title={t("Buyer mode is buy-only")}
@@ -263,7 +263,7 @@ function NewListingForm() {
               >
                 {materials.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.label}
+                    {t(m.label)}
                   </option>
                 ))}
               </select>

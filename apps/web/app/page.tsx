@@ -160,8 +160,8 @@ export default function RootPage() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="text-lg font-extrabold leading-snug text-[#275458]">{material.title}</h3>
-                  <p className="mt-3 min-h-20 text-sm leading-6 text-[#5B6C69]">{material.detail}</p>
+                  <h3 className="text-lg font-extrabold leading-snug text-[#275458]">{t(material.title)}</h3>
+                  <p className="mt-3 min-h-20 text-sm leading-6 text-[#5B6C69]">{t(material.detail)}</p>
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <span className="text-sm font-extrabold text-[#275458]">{t("From")} {material.price}</span>
                     <span className="text-xs text-[#8B9997]">{t("Typical listing")}</span>

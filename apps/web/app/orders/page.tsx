@@ -53,7 +53,7 @@ export default function OrdersPage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Orders & Payments" />
-      <div className="flex-1 max-w-md w-full mx-auto px-5 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-5 py-6">
         {state === "loading" && <LoadingState label={t("Loading your orders…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
@@ -73,7 +73,7 @@ export default function OrdersPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <span className="text-sm font-extrabold text-[var(--text-1)]">{o.listing.material.label}</span>
+                      <span className="text-sm font-extrabold text-[var(--text-1)]">{t(o.listing.material.label)}</span>
                       <span className="whitespace-nowrap text-sm font-extrabold text-[var(--cyclo-teal)]">
                         TZS {o.agreedPrice.toLocaleString()}
                       </span>

@@ -504,6 +504,15 @@ export const api = {
   changePassword: (input: { currentPassword?: string; newPassword: string }) =>
     request<{ message: string }>("/auth/change-password", { method: "POST", body: JSON.stringify(input) }, true),
 
+  requestPasswordReset: (email: string) =>
+    request<{ message: string; expiresInSeconds: number; devCode?: string }>("/auth/password-reset/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (input: { email: string; code: string; newPassword: string }) =>
+    request<{ message: string }>("/auth/password-reset/confirm", { method: "POST", body: JSON.stringify(input) }),
+
   // Locations
   createLocation: (input: { label: string; addressLine?: string; district?: string; region?: string; country?: string }) =>
     request<Location>("/locations", { method: "POST", body: JSON.stringify(input) }, true),

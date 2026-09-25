@@ -138,7 +138,7 @@ export default function ConversationPage() {
           <div className="truncate text-sm font-extrabold text-[var(--chrome-text)]">{other?.name ?? "Chat"}</div>
           {conversation?.listing && (
             <Link href={`/marketplace/${conversation.listingId}`} className="truncate text-[11px] text-[var(--chrome-text-muted)]">
-              {t("Re:")} {conversation.listing.material.label}
+              {t("Re:")} {t(conversation.listing.material.label)}
             </Link>
           )}
         </div>

@@ -149,7 +149,7 @@ export default function ScanPage() {
   return (
     <main className="min-h-screen flex flex-col bg-[var(--bg)]">
       <AppHeader title="Scan Waste" />
-      <div className="flex-1 max-w-md w-full mx-auto px-6 py-8">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-8">
         {authState === "loading" && <LoadingState />}
 
         {authState === "ready" && step === "capture" && (

@@ -171,24 +171,26 @@ export default function ListingDetailPage() {
       {user ? (
         <AppHeader title="Listing" />
       ) : (
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-3 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
-          <Link href="/" aria-label="CYCLO home">
-            <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-light h-[34px] w-auto" />
-            <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
-            <Link
-              href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
-              className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
-            >
-              {t("Log in")}
+        <header className="sticky top-0 z-10 bg-[var(--chrome-bg)] border-b border-[var(--chrome-border)]">
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-4 px-6 py-3 md:max-w-xl lg:max-w-3xl">
+            <Link href="/" aria-label="CYCLO home">
+              <Image src="/brand/cyclo-logo-light.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-light h-[34px] w-auto" />
+              <Image src="/brand/cyclo-logo-dark.png" alt="CYCLO" width={120} height={34} className="cyclo-header-logo-dark h-[34px] w-auto" />
             </Link>
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+              <Link
+                href={`/login?redirect=${encodeURIComponent(`/marketplace/${id}`)}`}
+                className="rounded-full bg-[var(--cyclo-teal)] px-4 py-2 text-sm font-bold text-white"
+              >
+                {t("Log in")}
+              </Link>
+            </div>
           </div>
         </header>
       )}
-      <div className="flex-1 max-w-md w-full mx-auto px-6 py-6">
+      <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         {state === "loading" && <LoadingState label={t("Loading listing…")} />}
         {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
@@ -204,7 +206,7 @@ export default function ListingDetailPage() {
             )}
 
             <div className="flex items-start justify-between gap-3 mb-2">
-              <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{listing.material.label}</h1>
+              <h1 className="text-lg font-extrabold text-[var(--text-on-bg)]">{t(listing.material.label)}</h1>
               <span
                 className={`inline-block rounded-[var(--r-pill)] px-2.5 py-1 text-[11px] font-bold ${
                   listing.moderationStatus === "PENDING"
@@ -324,7 +326,7 @@ export default function ListingDetailPage() {
                 ) : contact.phone ? (
                   <a
                     href={`tel:${contact.phone}`}
-                    className="flex w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-[var(--text-on-bg)] font-bold text-sm py-2.5"
+                    className="flex w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] text-[var(--text-1)] font-bold text-sm py-2.5"
                   >
                     <Phone size={16} />
                     {contact.phone}

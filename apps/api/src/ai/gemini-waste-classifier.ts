@@ -40,8 +40,17 @@ function isRetryableGeminiError(error: unknown): boolean {
   // high demand... usually temporary") — a real, external capacity issue, not a bug in
   // this app. Retrying a couple of times with a short delay is the honest fix: it doesn't
   // paper over a real failure, it just doesn't give up on the very first transient blip.
+  // A malformed/truncated JSON reply is also treated as retryable — that's usually the
+  // model getting cut off or emitting stray text around the JSON on a single bad call,
+  // not a permanent failure, and retrying fixes it far more often than it repeats.
   const message = error instanceof Error ? error.message : String(error);
-  return message.includes('"code":503') || message.includes('UNAVAILABLE') || message.includes('high demand');
+  return (
+    message.includes('"code":503') ||
+    message.includes('UNAVAILABLE') ||
+    message.includes('high demand') ||
+    message.includes('Gemini returned an empty response') ||
+    message.includes('Gemini returned malformed JSON')
+  );
 }
 
 function delay(ms: number) {
@@ -79,7 +88,21 @@ export class GeminiWasteClassifier implements WasteClassifier {
       // Same fix as AiService.chatGuidance: gemini-3.6-flash spends part of its output
       // budget on invisible "thinking" tokens before the visible reply — disabling it
       // keeps this call fast and focused on the actual classification task.
-      config: { thinkingConfig: { thinkingBudget: 0 } },
+      config: {
+        thinkingConfig: { thinkingBudget: 0 },
+        // Forces a raw JSON body (no markdown fences, no stray prose around it) instead of
+        // relying on prompt wording alone — this is what previously caused occasional
+        // "Unexpected token" JSON.parse failures when the model added a sentence before or
+        // after the object despite being asked not to.
+        responseMimeType: 'application/json',
+        // Well above what this schema needs even with a long conditionNotes string — the
+        // previous unset default occasionally truncated the JSON mid-object on a verbose
+        // reply, which surfaced as a parse error rather than a usable (if imperfect) result.
+        maxOutputTokens: 1024,
+        // Classification should be consistent, not creative — a lower temperature makes the
+        // same photo far less likely to flip category/condition between calls.
+        temperature: 0.2,
+      },
       contents: [
         {
           role: 'user',
@@ -124,8 +147,17 @@ export class GeminiWasteClassifier implements WasteClassifier {
       throw new Error('Gemini returned an empty response for this image.');
     }
 
+    // responseMimeType: 'application/json' should mean raw already IS the JSON body, but
+    // the fence-stripping stays as a defensive fallback in case a future model revision
+    // reintroduces markdown wrapping despite the config.
     const cleanedJson = raw.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleanedJson);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleanedJson);
+    } catch {
+      throw new Error(`Gemini returned malformed JSON for this image: ${cleanedJson.slice(0, 200)}`);
+    }
 
     const category = CATEGORY_MAP[String(parsed.category ?? '').toUpperCase()] ?? 'other';
     const recyclable = Boolean(parsed.recyclable);

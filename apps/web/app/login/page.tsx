@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { api, tokenStore, ApiError, API_URL } from "@/lib/api";
 import { PasswordInput } from "@/components/PasswordInput";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -268,6 +269,9 @@ function LoginContent() {
               >
                 {loading ? t("Signing in…") : t("Sign in")}
               </button>
+              <Link href="/forgot-password" className="text-xs font-bold text-[#8FB6AF]">
+                {t("Forgot password?")}
+              </Link>
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="flex flex-col gap-3">
