@@ -11,14 +11,15 @@ import { WasteClassifier } from './domain/waste-classifier.interface';
 const CATEGORY_MAP: Record<string, string> = {
   PLASTIC: 'plastic',
   TEXTILE: 'textile',
-  PAPER: 'paper',
-  CARDBOARD: 'cardboard',
+  PAPER: 'paper_cardboard',
+  CARDBOARD: 'paper_cardboard',
+  PAPER_CARDBOARD: 'paper_cardboard',
+  'PAPER & CARDBOARD': 'paper_cardboard',
   METAL: 'metal',
   GLASS: 'glass',
-  ORGANIC: 'organic',
   'E-WASTE': 'e_waste',
   E_WASTE: 'e_waste',
-  OTHER: 'other',
+  RUBBER: 'rubber',
 };
 
 const HANDLING_INSTRUCTIONS_RECYCLABLE = [
@@ -109,14 +110,18 @@ export class GeminiWasteClassifier implements WasteClassifier {
           parts: [
             {
               text: `Analyze this image for waste classification, condition, and market valuation.
-                     Categories: PLASTIC, TEXTILE, PAPER, CARDBOARD, METAL, GLASS, ORGANIC, E-WASTE, or OTHER.
+                     CYCLO only deals in these 7 waste categories — you must classify into exactly one of them:
+                     PLASTIC (bottles, containers, packaging etc), PAPER_CARDBOARD (boxes, newspapers, office paper etc),
+                     METAL (aluminium cans, scrap metal etc), GLASS (bottles and glass containers etc),
+                     E-WASTE (old electronics, cables, components etc), TEXTILE (clothes, fabric, offcuts etc),
+                     RUBBER (tyres and rubber materials etc).
 
                      First decide whether the image actually shows a waste or recyclable material at all — not a
                      person, an animal, food being eaten, a random unrelated object/scene, or anything that isn't
                      discarded/recyclable material. If it is NOT a waste/recyclable item, set "isWaste" to false and
                      leave the other classification fields as your best guess (they will be ignored). If it IS a
-                     waste item but doesn't cleanly fit PLASTIC/TEXTILE/PAPER/CARDBOARD/METAL/GLASS/ORGANIC/E-WASTE,
-                     set "isWaste" to true and "category" to OTHER.
+                     waste item, always pick whichever of the 7 categories above is the closest match — never
+                     invent a category outside this list.
 
                      Currency Rule:
                      - Default currency should be TZS (Tanzanian Shilling) reflecting local scrap market rates.
@@ -125,7 +130,7 @@ export class GeminiWasteClassifier implements WasteClassifier {
                      Return ONLY a valid raw JSON object matching this schema:
                      {
                        "isWaste": boolean (false if the image doesn't show waste/recyclable material at all),
-                       "category": "PLASTIC | TEXTILE | PAPER | CARDBOARD | METAL | GLASS | ORGANIC | E-WASTE | OTHER",
+                       "category": "PLASTIC | PAPER_CARDBOARD | METAL | GLASS | E-WASTE | TEXTILE | RUBBER",
                        "subtype": "string or null",
                        "label": "descriptive name",
                        "confidence": number between 0 and 1,
@@ -167,7 +172,7 @@ export class GeminiWasteClassifier implements WasteClassifier {
       throw new Error(`Gemini returned malformed JSON for this image: ${cleanedJson.slice(0, 200)}`);
     }
 
-    const category = CATEGORY_MAP[String(parsed.category ?? '').toUpperCase()] ?? 'other';
+    const category = CATEGORY_MAP[String(parsed.category ?? '').toUpperCase()] ?? 'plastic';
     const recyclable = Boolean(parsed.recyclable);
     // Defaults true — an older/odd response that omits the field entirely is treated as
     // "yes, this is waste" (the pre-existing behavior) rather than silently rejecting it.

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { MapPin, Scale, Recycle, Magnet, FileText, Package, Shirt, GlassWater, Cpu, Leaf, Trash2, type LucideIcon } from "lucide-react";
+import { MapPin, Scale, Recycle, Magnet, FileText, Shirt, GlassWater, Cpu, Circle, Trash2, type LucideIcon } from "lucide-react";
 import { api, ApiError, CurrentUser, WasteListing, listingStatusLabel, formatUnitPrice, tokenStore } from "@/lib/api";
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
@@ -20,20 +20,18 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
 type Tab = "browse" | "mine";
 type LoadState = "loading" | "ready" | "error";
 
-const CATEGORIES = ["plastic", "paper", "cardboard", "textile", "glass", "metal", "e_waste", "organic", "other"];
+const CATEGORIES = ["plastic", "paper_cardboard", "metal", "glass", "e_waste", "textile", "rubber"];
 
 // Mirrors home/page.tsx's CATEGORY_ICON — small, stable map duplicated locally rather
-// than factored into a shared module for nine lookup entries.
+// than factored into a shared module for seven lookup entries.
 const CATEGORY_ICON: Record<string, LucideIcon> = {
   plastic: Recycle,
+  paper_cardboard: FileText,
   metal: Magnet,
-  paper: FileText,
-  cardboard: Package,
-  textile: Shirt,
   glass: GlassWater,
   e_waste: Cpu,
-  organic: Leaf,
-  other: Trash2,
+  textile: Shirt,
+  rubber: Circle,
 };
 
 function ListingCard({ listing }: { listing: WasteListing }) {

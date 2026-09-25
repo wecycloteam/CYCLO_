@@ -207,7 +207,112 @@ export const sw: Record<string, string> = {
   "Hide password": "Ficha nenosiri",
   "Individual": "Mtu Binafsi",
   "Finish setting up your account": "Kamilisha kuweka akaunti yako",
+  "Email": "Barua pepe",
+  "Confirm password": "Thibitisha nenosiri",
+
+  // Admin
+  "Admin Dashboard": "Dashibodi ya Msimamizi",
+  "We couldn't load the dashboard.": "Imeshindwa kupakia dashibodi.",
+  "Loading dashboard…": "Inapakia dashibodi…",
+  "Total platform revenue": "Mapato jumla ya jukwaa",
+  "Real platform fees collected across all transactions — TZS 0 until a fee schedule is set.":
+    "Ada halisi za jukwaa zilizokusanywa kwenye miamala yote — TZS 0 hadi ratiba ya ada iwekwe.",
+  "Total Users": "Watumiaji Jumla",
+  "Pending Listing Reviews": "Matangazo Yanayosubiri Upitiaji",
+  "Review {count} pending listing{plural} →": "Pitia matangazo {count} yanayosubiri →",
+  "{count} suspicious activity report{plural} awaiting review →": "Ripoti {count} za shughuli za kutiliwa shaka zinasubiri upitiaji →",
+  "Users by role": "Watumiaji kwa aina",
+  "Collectors by verification": "Wakusanyaji kwa uthibitisho",
+  "Organizations by verification": "Mashirika kwa uthibitisho",
+  "Listings by status": "Matangazo kwa hali",
+  "Pickups by status": "Ukusanyaji kwa hali",
+  "No admin actions yet.": "Hakuna vitendo vya usimamizi bado.",
+  "System": "Mfumo",
+  "Pending Listings": "Matangazo Yanayosubiri",
+  "We couldn't load pending listings.": "Imeshindwa kupakia matangazo yanayosubiri.",
+  "Loading pending listings…": "Inapakia matangazo yanayosubiri…",
+  "Nothing pending review": "Hakuna kinachosubiri upitiaji",
+  "Newly published listings will show up here for approval.": "Matangazo mapya yaliyochapishwa yataonekana hapa kwa idhini.",
+  "Couldn't approve this listing.": "Imeshindwa kuidhinisha tangazo hili.",
+  "Couldn't reject this listing.": "Imeshindwa kukataa tangazo hili.",
+  "Collector verification:": "Uthibitisho wa mkusanyaji:",
+  "submitted": "iliwasilishwa",
+  "Rejection reason (optional)": "Sababu ya kukataa (si lazima)",
+  "Approve": "Idhinisha",
+  "Reject": "Kataa",
+  "unverified": "haijathibitishwa",
+  "pending": "inasubiri",
+  "verified": "imethibitishwa",
+  "rejected": "imekataliwa",
+  "suspended": "imesimamishwa",
   "Welcome, {name} — a few more details and you're in.": "Karibu, {name} — maelezo machache zaidi na utaingia.",
+
+  // Terms and Conditions (/terms)
+  "1. Acceptance of these Terms": "1. Kukubali Masharti Haya",
+  "These Terms and Conditions (\"Terms\") govern your access to and use of CYCLO — the mobile and web application, website, and related services (together, the \"Service\") operated by the CYCLO team (\"CYCLO\", \"we\", \"us\", or \"our\"). By creating an account, browsing the marketplace, or otherwise using the Service, you agree to be bound by these Terms and by our handling of your information as described here. If you do not agree, do not create an account or use the Service.":
+    "Masharti na Vigezo haya (\"Masharti\") yanasimamia ufikiaji na matumizi yako ya CYCLO — programu ya simu na wavuti, tovuti, na huduma zinazohusiana (kwa pamoja, \"Huduma\") zinazoendeshwa na timu ya CYCLO (\"CYCLO\", \"sisi\", au \"yetu\"). Kwa kufungua akaunti, kuvinjari sokoni, au kutumia Huduma kwa namna nyingine yoyote, unakubali kufungwa na Masharti haya na jinsi tunavyoshughulikia taarifa zako kama ilivyoelezwa hapa. Kama hukubaliani, usifungue akaunti wala kutumia Huduma.",
+  "2. Eligibility and accounts": "2. Sifa za Kustahiki na Akaunti",
+  "You must be at least 18 years old, or the age of legal majority in your jurisdiction, to create a CYCLO account. By registering, you confirm that the information you provide (name, phone number, email, and any other details) is accurate and that you will keep it up to date.":
+    "Lazima uwe na umri wa angalau miaka 18, au umri wa utu uzima kisheria katika eneo lako, ili kufungua akaunti ya CYCLO. Kwa kujisajili, unathibitisha kuwa taarifa unazotoa (jina, namba ya simu, barua pepe, na maelezo mengine) ni sahihi na kwamba utaziendeleza kuwa za kisasa.",
+  "You are responsible for maintaining the confidentiality of your password and for all activity that occurs under your account. Notify us immediately if you suspect unauthorized use of your account. CYCLO is not liable for losses caused by your failure to keep your credentials secure.":
+    "Wewe ndiye unayehusika kwa kutunza usiri wa nenosiri lako na kwa shughuli zote zinazofanyika kwenye akaunti yako. Tujulishe mara moja ukishuku matumizi yasiyoidhinishwa ya akaunti yako. CYCLO haihusiki na hasara zinazotokana na kushindwa kwako kulinda taarifa zako za kuingia.",
+  "CYCLO supports distinct account roles (household/seller, collector/buyer, business, recycling company, environmental authority). Some features are only available to certain roles, and switching between seller and buyer mode may change which features and listings are visible to you.":
+    "CYCLO inasaidia aina tofauti za akaunti (kaya/muuzaji, mkusanyaji/mnunuzi, biashara, kampuni ya kutumia taka tena, mamlaka ya mazingira). Baadhi ya vipengele vinapatikana kwa aina fulani tu, na kubadilisha kati ya hali ya muuzaji na mnunuzi kunaweza kubadilisha vipengele na matangazo unayoyaona.",
+  "3. The marketplace: listings, buying and selling": "3. Soko: Matangazo, Ununuzi na Uuzaji",
+  "CYCLO is a marketplace that connects people who have recyclable materials to sell with people who want to buy or collect them. CYCLO is not the seller of any material listed on the Service, is not a party to transactions between buyers and sellers, and does not take ownership or physical custody of any material at any point.":
+    "CYCLO ni soko linalounganisha watu wenye vitu vinavyoweza kutumika tena vya kuuza na watu wanaotaka kuvinunua au kuvikusanya. CYCLO si muuzaji wa kitu chochote kilichoorodheshwa kwenye Huduma, si mshiriki katika miamala kati ya wanunuzi na wauzaji, na haichukui umiliki au uangalizi wa kimwili wa kitu chochote wakati wowote.",
+  "Sellers are solely responsible for the accuracy of their listings, including the material type, quantity, condition, photos, and asking price.":
+    "Wauzaji ndio wanaohusika pekee na usahihi wa matangazo yao, ikiwemo aina ya kitu, kiasi, hali, picha, na bei inayoombwa.",
+  "Buyers are solely responsible for inspecting or verifying a material (in person, by chat, or by phone) before agreeing to purchase it.":
+    "Wanunuzi ndio wanaohusika pekee kwa kukagua au kuthibitisha kitu (ana kwa ana, kwa mazungumzo, au kwa simu) kabla ya kukubali kukinunua.",
+  "Prices, weights, and \"estimated market value\" figures shown on the Service — including AI scan results — are estimates only and are never a guaranteed or binding price.":
+    "Bei, uzito, na namba za \"thamani ya soko inayokadiriwa\" zinazoonyeshwa kwenye Huduma — ikiwemo matokeo ya kupiga picha kwa AI — ni makadirio tu na kamwe si bei ya uhakika au inayofunga.",
+  "CYCLO reserves the right to remove any listing that violates these Terms, local law, or that we reasonably believe to be fraudulent, unsafe, or misleading.":
+    "CYCLO inahifadhi haki ya kuondoa tangazo lolote linalokiuka Masharti haya, sheria za mtaa, au tunaloamini kwa busara kuwa la ulaghai, hatari, au la kupotosha.",
+  "4. Payments": "4. Malipo",
+  "Where the Service facilitates a purchase, payment is arranged directly between buyer and seller (for example, by mobile money) and confirmed manually within the app. CYCLO does not process, hold, or guarantee any payment, and is not a bank, payment processor, or escrow service. You are responsible for confirming that a payment has genuinely been received before releasing material, and for confirming that material has genuinely been received before releasing payment.":
+    "Pale Huduma inaporahisisha ununuzi, malipo hupangwa moja kwa moja kati ya mnunuzi na muuzaji (kwa mfano, kwa pesa za simu) na kuthibitishwa kwa mkono ndani ya programu. CYCLO haichakati, haishikilii, wala haihakikishii malipo yoyote, na si benki, msindikaji wa malipo, au huduma ya udhamini. Wewe ndiye unayehusika kuthibitisha kuwa malipo yamepokelewa kweli kabla ya kutoa kitu, na kuthibitisha kuwa kitu kimepokelewa kweli kabla ya kutoa malipo.",
+  "5. Prohibited materials and conduct": "5. Vitu na Tabia Zisizoruhusiwa",
+  "You agree not to use the Service to:": "Unakubali kutotumia Huduma kwa:",
+  "List or request hazardous, illegal, stolen, or counterfeit materials, or any item prohibited by Tanzanian law or applicable local regulation;":
+    "Kuorodhesha au kuomba vitu hatari, haramu, vilivyoibiwa, au bandia, au kitu chochote kilichokatazwa na sheria za Tanzania au kanuni za mtaa zinazotumika;",
+  "Impersonate another person, misrepresent your identity, or create an account on behalf of someone else without authorization;":
+    "Kujifanya kuwa mtu mwingine, kutoa taarifa za uongo kuhusu utambulisho wako, au kufungua akaunti kwa niaba ya mtu mwingine bila idhini;",
+  "Harass, threaten, or defraud other users, including through chat messages;":
+    "Kusumbua, kutisha, au kudanganya watumiaji wengine, ikiwemo kupitia ujumbe wa mazungumzo;",
+  "Attempt to circumvent, disable, or interfere with the Service's security features, rate limits, or moderation systems;":
+    "Kujaribu kukwepa, kuzima, au kuingilia vipengele vya usalama vya Huduma, mipaka ya kiwango, au mifumo ya usimamizi;",
+  "Use automated means (bots, scrapers) to access the Service without our prior written consent.":
+    "Kutumia njia za kiotomatiki (roboti, viondoa data) kufikia Huduma bila idhini yetu ya maandishi mapema.",
+  "We may suspend or terminate accounts that violate this section, remove associated content, and, where required by law, report illegal activity to the relevant authorities.":
+    "Tunaweza kusimamisha au kufunga akaunti zinazokiuka sehemu hii, kuondoa maudhui yanayohusiana, na, pale sheria inapohitaji, kuripoti shughuli haramu kwa mamlaka husika.",
+  "6. AI features": "6. Vipengele vya AI",
+  "CYCLO offers AI-assisted features, including photo-based waste identification (\"AI Scan\") and a conversational assistant (\"CYCLO AI\"), powered by third-party AI models. These features are provided to help you sort, price, and understand materials, but their output is an estimate, not a certified or guaranteed result. Always use your own judgment, and treat AI-provided pricing, classification, or advice as a starting point rather than a final answer.":
+    "CYCLO inatoa vipengele vinavyosaidiwa na AI, ikiwemo utambuzi wa taka kwa picha (\"AI Scan\") na msaidizi wa mazungumzo (\"CYCLO AI\"), unaoendeshwa na miundo ya AI ya wahusika wengine. Vipengele hivi vinatolewa kukusaidia kupanga, kuweka bei, na kuelewa vitu, lakini matokeo yake ni makadirio, si matokeo yaliyothibitishwa au ya uhakika. Daima tumia busara yako mwenyewe, na chukulia bei, utambuzi, au ushauri unaotolewa na AI kama mwanzo tu, si jibu la mwisho.",
+  "7. Ratings, reviews and verification": "7. Alama, Maoni na Uthibitisho",
+  "Ratings and reviews shown on the Service are meant to reflect real, completed transactions between users. Submitting a fake review, manipulating your own rating, or retaliating against another user for a genuine review is prohibited. Account verification badges indicate that CYCLO's admin team has reviewed certain account details — they are not a guarantee of a user's honesty, reliability, or the quality of any specific transaction.":
+    "Alama na maoni yanayoonyeshwa kwenye Huduma yanalenga kuonyesha miamala halisi iliyokamilika kati ya watumiaji. Kutoa maoni ya uongo, kubadilisha alama yako mwenyewe, au kulipiza kisasi dhidi ya mtumiaji mwingine kwa maoni halisi ni marufuku. Alama za uthibitisho wa akaunti zinaonyesha kuwa timu ya usimamizi ya CYCLO imepitia maelezo fulani ya akaunti — si uhakikisho wa uaminifu wa mtumiaji, kutegemewa, au ubora wa muamala wowote mahususi.",
+  "8. Content you submit": "8. Maudhui Unayowasilisha",
+  "You retain ownership of the photos, descriptions, and messages you submit to the Service (\"User Content\"), but you grant CYCLO a worldwide, non-exclusive, royalty-free license to host, display, and distribute that content solely for the purpose of operating and promoting the Service (for example, showing your listing photo in the marketplace). You are solely responsible for your User Content and confirm you have the right to share it.":
+    "Unabaki na umiliki wa picha, maelezo, na ujumbe unaowasilisha kwenye Huduma (\"Maudhui ya Mtumiaji\"), lakini unaipa CYCLO leseni ya kimataifa, isiyo ya kipekee, isiyo na malipo ya kuhifadhi, kuonyesha, na kusambaza maudhui hayo kwa madhumuni ya kuendesha na kutangaza Huduma pekee (kwa mfano, kuonyesha picha ya tangazo lako sokoni). Wewe ndiye unayehusika pekee na Maudhui yako ya Mtumiaji na unathibitisha una haki ya kuyashiriki.",
+  "9. Disclaimers": "9. Kanusho",
+  "The Service is provided \"as is\" and \"as available,\" without warranties of any kind, whether express or implied, including implied warranties of merchantability, fitness for a particular purpose, or non-infringement. CYCLO does not warrant that the Service will be uninterrupted, error-free, or completely secure, or that any listing, user, or AI-generated estimate is accurate or reliable.":
+    "Huduma inatolewa \"kama ilivyo\" na \"kama inavyopatikana,\" bila dhamana ya aina yoyote, iwe ya wazi au ya kudhaniwa, ikiwemo dhamana za kudhaniwa za uwezo wa kuuzika, ufaafu kwa kusudi maalum, au kutokiuka haki. CYCLO haihakikishii kuwa Huduma itakuwa bila kukatizwa, bila makosa, au salama kabisa, wala kuwa tangazo, mtumiaji, au makadirio yanayotolewa na AI ni sahihi au ya kutegemewa.",
+  "10. Limitation of liability": "10. Ukomo wa Dhima",
+  "To the fullest extent permitted by law, CYCLO and its team will not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, revenue, data, or goodwill, arising from your use of the Service, any transaction between users, or any material exchanged as a result of using the Service — even if we have been advised of the possibility of such damages. Our total liability for any claim arising from these Terms or the Service will not exceed the greater of the amount you paid us in the past 12 months (if any) or TZS 50,000.":
+    "Kwa kiwango kikubwa kinachoruhusiwa na sheria, CYCLO na timu yake hazitawajibika kwa hasara zisizo za moja kwa moja, za bahati mbaya, maalum, zinazofuatana, au za adhabu, au upotevu wowote wa faida, mapato, data, au sifa njema, unaotokana na matumizi yako ya Huduma, muamala wowote kati ya watumiaji, au kitu chochote kilichobadilishana kutokana na matumizi ya Huduma — hata kama tumeelezwa uwezekano wa hasara kama hizo. Dhima yetu jumla kwa madai yoyote yanayotokana na Masharti haya au Huduma haitazidi kiwango kikubwa kati ya kiasi ulicholipa kwetu katika miezi 12 iliyopita (kama kipo) au TZS 50,000.",
+  "11. Termination": "11. Kusitisha",
+  "You may stop using the Service and delete your account at any time by contacting us. We may suspend or terminate your access to the Service, with or without notice, if we reasonably believe you have violated these Terms, engaged in fraudulent or unlawful activity, or created risk or legal exposure for CYCLO or other users.":
+    "Unaweza kuacha kutumia Huduma na kufuta akaunti yako wakati wowote kwa kuwasiliana nasi. Tunaweza kusimamisha au kusitisha ufikiaji wako wa Huduma, kwa taarifa au bila taarifa, ikiwa tunaamini kwa busara umekiuka Masharti haya, umejihusisha na shughuli za ulaghai au haramu, au umeleta hatari au uwazi wa kisheria kwa CYCLO au watumiaji wengine.",
+  "12. Changes to these Terms": "12. Mabadiliko ya Masharti Haya",
+  "We may update these Terms from time to time to reflect changes to the Service or for legal, regulatory, or operational reasons. If we make material changes, we will make a reasonable effort to notify you (for example, in-app). Continuing to use the Service after changes take effect means you accept the updated Terms.":
+    "Tunaweza kusasisha Masharti haya mara kwa mara ili kuonyesha mabadiliko ya Huduma au kwa sababu za kisheria, kikanuni, au kiuendeshaji. Tukifanya mabadiliko makubwa, tutafanya juhudi za busara kukujulisha (kwa mfano, ndani ya programu). Kuendelea kutumia Huduma baada ya mabadiliko kuanza kutumika kunamaanisha unakubali Masharti yaliyosasishwa.",
+  "13. Governing law": "13. Sheria Inayosimamia",
+  "These Terms are governed by the laws of the United Republic of Tanzania, without regard to its conflict-of-law principles. Any dispute arising from these Terms or the Service will be subject to the exclusive jurisdiction of the courts of Tanzania.":
+    "Masharti haya yanasimamiwa na sheria za Jamhuri ya Muungano wa Tanzania, bila kujali kanuni zake za mgongano wa sheria. Mgogoro wowote unaotokana na Masharti haya au Huduma utakuwa chini ya mamlaka ya pekee ya mahakama za Tanzania.",
+  "14. Contact us": "14. Wasiliana Nasi",
+  "If you have questions about these Terms, contact the CYCLO team through the in-app chat support or the contact details provided on our website.":
+    "Kama una maswali kuhusu Masharti haya, wasiliana na timu ya CYCLO kupitia msaada wa mazungumzo ndani ya programu au maelezo ya mawasiliano yaliyotolewa kwenye tovuti yetu.",
   "Waste Collector — I want to buy waste": "Mkusanyaji wa Taka — Nataka kununua taka",
 
   // Header / nav
@@ -232,11 +337,11 @@ export const sw: Record<string, string> = {
   "Browse by category": "Vinjari kwa aina",
   "Plastic": "Plastiki",
   "Metal": "Chuma",
-  "Paper": "Karatasi",
+  "Paper & cardboard": "Karatasi na Katoni",
   "Textile": "Nguo",
   "Glass": "Kioo",
-  "Electronics": "Vifaa vya Elektroniki",
-  "Organic": "Taka za Asili",
+  "E-waste": "Taka za Elektroniki",
+  "Rubber": "Mpira",
   "Available materials near you": "Vitu vilivyopo karibu nawe",
   "See all": "Ona zote",
   "Loading listings…": "Inapakia orodha…",
@@ -270,15 +375,15 @@ export const sw: Record<string, string> = {
   "View transparent reference prices →": "Ona bei za rejea zilizo wazi →",
   "Hide filters": "Ficha vichujio",
   "Filters": "Vichujio",
-  "cardboard": "katoni",
   "e_waste": "taka za elektroniki",
-  "other": "nyingine",
+  "e waste": "taka za elektroniki",
   "metal": "chuma",
   "plastic": "plastiki",
-  "paper": "karatasi",
+  "paper_cardboard": "karatasi na katoni",
+  "paper cardboard": "karatasi na katoni",
   "textile": "nguo",
   "glass": "kioo",
-  "organic": "taka za asili",
+  "rubber": "mpira",
   "Location contains…": "Mahali ni pamoja na…",
   "Min price": "Bei ya chini",
   "Max price": "Bei ya juu",
@@ -564,55 +669,62 @@ export const sw: Record<string, string> = {
   // WasteMaterial catalog labels — the fixed set every listing's material.label comes
   // from (see prisma/seed.ts MATERIALS) — translating these covers every place a
   // listing's material name is shown, without touching free-text listing descriptions.
-  "PET Plastic (bottles)": "Plastiki ya PET (chupa)",
-  "HDPE Plastic (containers)": "Plastiki ya HDPE (vyombo)",
-  "PVC Plastic": "Plastiki ya PVC",
-  "LDPE Plastic (bags/film)": "Plastiki ya LDPE (mifuko/foili)",
-  "Polypropylene": "Polipropylene",
-  "Other Plastic": "Plastiki Nyingine",
-  "Office/Printer Paper": "Karatasi za Ofisi/Printa",
-  "Newspaper": "Gazeti",
-  "Corrugated Cardboard": "Katoni Iliyokunjwa",
-  "Used Clothing/Textiles": "Nguo Zilizotumika",
-  "Clear Glass": "Kioo Angavu",
-  "Colored Glass": "Kioo cha Rangi",
-  "Aluminum (cans)": "Alumini (makopo)",
-  "Steel/Tin": "Chuma/Bati",
-  "Copper": "Shaba",
-  "Electronics (general)": "Vifaa vya Elektroniki (jumla)",
-  "Batteries": "Betri",
-  "Food Waste": "Taka za Chakula",
-  "Garden Waste": "Taka za Bustani",
-  "Mixed/Unsorted": "Mchanganyiko/Haijapangwa",
+  "Plastic waste (bottles, containers, packaging etc)": "Taka za plastiki (chupa, vyombo, vifungashio n.k.)",
+  "Paper & cardboard (boxes, newspapers, office paper etc)": "Karatasi na katoni (masanduku, magazeti, karatasi za ofisi n.k.)",
+  "Metal waste (aluminium cans, scrap metal etc)": "Taka za chuma (makopo ya alumini, chuma chakavu n.k.)",
+  "Glass waste (bottles and glass containers etc)": "Taka za kioo (chupa na vyombo vya kioo n.k.)",
+  "E-waste (old electronics, cables, components etc)": "Taka za elektroniki (vifaa vya zamani, nyaya, sehemu n.k.)",
+  "Textile waste (clothes, fabric, offcuts etc)": "Taka za nguo (mavazi, kitambaa, mabaki n.k.)",
+  "Rubber waste (tyres and rubber materials etc)": "Taka za mpira (matairi na vifaa vya mpira n.k.)",
 
-  // Landing/materials-catalog marketing copy (apps/web/lib/materials-catalog.ts) — a
-  // separate, small (4-entry) static catalog from the WasteMaterial DB taxonomy above.
-  "Plastic bottles & containers": "Chupa na vyombo vya plastiki",
-  "Water bottles, cooking oil containers and clean packaging.": "Chupa za maji, vyombo vya mafuta ya kupikia na vifungashio safi.",
-  "Clean PET and HDPE plastic — water bottles, cooking oil containers and food-safe packaging. Rinsed and cap-off material earns the best rate. This is one of the highest-demand materials on CYCLO because recyclers can bale and export it directly.":
-    "Plastiki safi ya PET na HDPE — chupa za maji, vyombo vya mafuta ya kupikia na vifungashio salama vya chakula. Vitu vilivyooshwa na bila kifuniko hupata bei nzuri zaidi. Hiki ni miongoni mwa vitu vinavyohitajika zaidi CYCLO kwa sababu watumiaji tena wanaweza kuvifunga na kuvisafirisha moja kwa moja.",
-  "Boxes, cartons and flattened packaging ready for reuse or recycling.": "Masanduku, katoni na vifungashio vilivyobonyezwa tayari kwa matumizi tena au kutumika tena.",
-  "Boxes, cartons and flattened packaging ready for reuse or recycling. Dry, uncontaminated cardboard (no food grease, no wet material) is collected in bulk and moves fastest through the marketplace.":
-    "Masanduku, katoni na vifungashio vilivyobonyezwa tayari kwa matumizi tena au kutumika tena. Katoni kavu, isiyochafuliwa (bila mafuta ya chakula, bila unyevu) hukusanywa kwa wingi na huuzwa haraka zaidi sokoni.",
-  "Textiles": "Nguo",
-  "Second-hand clothes, shoes, bags and fabric in wearable condition.": "Nguo, viatu, mifuko na kitambaa vya mtumba katika hali ya kuvaliwa.",
-  "Second-hand clothes, shoes, bags and fabric in wearable or repairable condition. Sorted, clean textiles are priced per item rather than by weight since condition varies more than for other materials.":
-    "Nguo, viatu, mifuko na kitambaa vya mtumba katika hali ya kuvaliwa au kutengenezwa. Nguo zilizopangwa na safi hupangiwa bei kwa kila kipande badala ya uzito kwa sababu hali yake hutofautiana zaidi kuliko vitu vingine.",
-  "Office paper, newspapers, magazines and sorted paper bundles.": "Karatasi za ofisi, magazeti, majarida na mafungu ya karatasi yaliyopangwa.",
-  "Office paper, newspapers, magazines and sorted paper bundles. Keeping paper dry and separated from cardboard and plastic gets you the transparent reference price shown here, updated by CYCLO's pricing team.":
-    "Karatasi za ofisi, magazeti, majarida na mafungu ya karatasi yaliyopangwa. Kuweka karatasi kavu na kutenganisha na katoni na plastiki hukupatia bei ya rejea iliyo wazi inayoonyeshwa hapa, inayosasishwa na timu ya bei ya CYCLO.",
+  // Landing/materials-catalog marketing copy (apps/web/lib/materials-catalog.ts) — the
+  // 7-entry static catalog matching the WasteMaterial DB taxonomy above.
+  "Plastic waste": "Taka za plastiki",
+  "Bottles, containers and packaging.": "Chupa, vyombo na vifungashio.",
+  "Bottles, containers and packaging — clean, rinsed plastic earns the best rate. This is one of the highest-demand materials on CYCLO because recyclers can bale and export it directly.":
+    "Chupa, vyombo na vifungashio — plastiki safi iliyooshwa hupata bei nzuri zaidi. Hiki ni miongoni mwa vitu vinavyohitajika zaidi CYCLO kwa sababu watumiaji tena wanaweza kuvifunga na kuvisafirisha moja kwa moja.",
+  "Boxes, newspapers, office paper.": "Masanduku, magazeti, karatasi za ofisi.",
+  "Boxes, newspapers and office paper ready for reuse or recycling. Dry, uncontaminated material (no food grease, no wet paper) moves fastest through the marketplace.":
+    "Masanduku, magazeti na karatasi za ofisi tayari kwa matumizi tena au kutumika tena. Vitu vikavu, visivyochafuliwa (bila mafuta ya chakula, bila unyevu) huuzwa haraka zaidi sokoni.",
+  "Metal waste": "Taka za chuma",
+  "Aluminium cans and scrap metal.": "Makopo ya alumini na chuma chakavu.",
+  "Aluminium cans and scrap metal — sorted, rinsed metal earns the highest reference price on CYCLO of any category.":
+    "Makopo ya alumini na chuma chakavu — chuma kilichopangwa na kuoshwa hupata bei ya juu zaidi ya rejea CYCLO kuliko aina nyingine yoyote.",
+  "Glass waste": "Taka za kioo",
+  "Bottles and glass containers.": "Chupa na vyombo vya kioo.",
+  "Bottles and glass containers — sorted and unbroken glass is easiest to move on to a recycler and earns the best rate.":
+    "Chupa na vyombo vya kioo — kioo kilichopangwa na kisichovunjika ni rahisi zaidi kukipeleka kwa mtumiaji tena na hupata bei nzuri zaidi.",
+  "Old electronics, cables, components.": "Vifaa vya zamani vya elektroniki, nyaya, sehemu.",
+  "Old electronics, cables and components — a high-value category since recyclers recover metals and parts from it directly.":
+    "Vifaa vya zamani vya elektroniki, nyaya na sehemu — aina yenye thamani kubwa kwa sababu watumiaji tena hupata chuma na sehemu moja kwa moja kutoka humo.",
+  "Textile waste": "Taka za nguo",
+  "Clothes, fabric, offcuts.": "Mavazi, kitambaa, mabaki.",
+  "Clothes, fabric and offcuts in wearable or reusable condition. Sorted, clean textiles move fastest through the marketplace.":
+    "Mavazi, kitambaa na mabaki katika hali ya kuvaliwa au kutumika tena. Nguo zilizopangwa na safi huuzwa haraka zaidi sokoni.",
+  "Rubber waste": "Taka za mpira",
+  "Tyres and rubber materials.": "Matairi na vifaa vya mpira.",
+  "Tyres and rubber materials — collected for retreading, repurposing or safe processing by a verified recycler.":
+    "Matairi na vifaa vya mpira — hukusanywa kwa ajili ya kuwekewa upya, matumizi mengine au uchakataji salama na mtumiaji tena aliyethibitishwa.",
   "Bottles (cap removed)": "Chupa (bila kifuniko)",
   "Rinsed containers": "Vyombo vilivyooshwa",
-  "Clear or lightly coloured plastic": "Plastiki angavu au yenye rangi hafifu",
+  "Packaging": "Vifungashio",
   "Flattened boxes": "Masanduku yaliyobonyezwa",
-  "Cartons": "Katoni",
-  "Clean packaging paper": "Karatasi safi ya vifungashio",
-  "Clothing": "Nguo",
-  "Shoes": "Viatu",
-  "Bags": "Mifuko",
-  "Fabric offcuts": "Vipande vya kitambaa",
+  "Newspapers": "Magazeti",
   "Office paper": "Karatasi za ofisi",
-  "Magazines": "Majarida",
+  "Scrap metal": "Chuma chakavu",
+  "Steel/tin": "Chuma/Bati",
+  "Aluminium cans": "Makopo ya alumini",
+  "Bottles": "Chupa",
+  "Glass containers": "Vyombo vya kioo",
+  "Electronics": "Vifaa vya elektroniki",
+  "Cables": "Nyaya",
+  "Components": "Sehemu",
+  "Batteries": "Betri",
+  "Clothing": "Nguo",
+  "Fabric": "Kitambaa",
+  "Offcuts": "Mabaki",
+  "Tyres": "Matairi",
+  "Rubber offcuts": "Mabaki ya mpira",
   "Material not found": "Kitu hakikupatikana",
   "We couldn't find that material in the catalog.": "Imeshindwa kupata kitu hicho kwenye orodha.",
   "← Back to home": "← Rudi Nyumbani",

@@ -7,10 +7,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { AdminGate } from "@/components/AdminGate";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
 export default function AdminUsersPage() {
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [accounts, setAccounts] = useState<PendingAccount[]>([]);
   const [collectors, setCollectors] = useState<PendingCollector[]>([]);
@@ -31,7 +33,7 @@ export default function AdminUsersPage() {
         setState("ready");
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "We couldn't load pending accounts.");
+        setError(err instanceof ApiError ? err.message : t("We couldn't load pending accounts."));
         setState("error");
       });
   }
@@ -49,7 +51,7 @@ export default function AdminUsersPage() {
       else await api.adminSuspendUser(userId);
       setAccounts((prev) => prev.filter((a) => a.id !== userId));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "That action didn't go through.");
+      setActionError(err instanceof ApiError ? err.message : t("That action didn't go through."));
     } finally {
       setActingId(null);
     }
@@ -64,7 +66,7 @@ export default function AdminUsersPage() {
       else await api.adminSuspendCollector(userId);
       setCollectors((prev) => prev.filter((c) => c.userId !== userId));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "That action didn't go through.");
+      setActionError(err instanceof ApiError ? err.message : t("That action didn't go through."));
     } finally {
       setActingId(null);
     }
@@ -79,7 +81,7 @@ export default function AdminUsersPage() {
       else await api.adminSuspendOrganization(orgId);
       setOrganizations((prev) => prev.filter((o) => o.id !== orgId));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "That action didn't go through.");
+      setActionError(err instanceof ApiError ? err.message : t("That action didn't go through."));
     } finally {
       setActingId(null);
     }
@@ -92,17 +94,17 @@ export default function AdminUsersPage() {
       <AppHeader title="Pending Verifications" back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         <AdminGate authState={authState} user={user}>
-          {state === "loading" && <LoadingState label="Loading pending accounts…" />}
-          {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+          {state === "loading" && <LoadingState label={t("Loading pending accounts…")} />}
+          {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
           {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}
 
           {state === "ready" && nothingPending && (
-            <EmptyState title="Nothing pending" hint="New household, business, and collector accounts will show up here for verification." />
+            <EmptyState title={t("Nothing pending")} hint={t("New household, business, and collector accounts will show up here for verification.")} />
           )}
 
           {state === "ready" && accounts.length > 0 && (
             <>
-              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Households &amp; other accounts</h3>
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{t("Households & other accounts")}</h3>
               <div className="flex flex-col gap-2 mb-6">
                 {accounts.map((a) => (
                   <div key={a.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -110,7 +112,7 @@ export default function AdminUsersPage() {
                       {a.name} {a.username && <span className="font-semibold text-[var(--cyclo-teal)]">@{a.username}</span>}
                     </div>
                     <div className="text-xs text-[var(--text-2)] mb-3">
-                      {a.phone} · {a.role} · joined {new Date(a.createdAt).toLocaleDateString()}
+                      {a.phone} · {a.role} · {t("joined")} {new Date(a.createdAt).toLocaleDateString()}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -118,21 +120,21 @@ export default function AdminUsersPage() {
                         disabled={actingId === a.id}
                         className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Verify
+                        {t("Verify")}
                       </button>
                       <button
                         onClick={() => handleAccount(a.id, "reject")}
                         disabled={actingId === a.id}
                         className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Reject
+                        {t("Reject")}
                       </button>
                       <button
                         onClick={() => handleAccount(a.id, "suspend")}
                         disabled={actingId === a.id}
                         className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Suspend
+                        {t("Suspend")}
                       </button>
                     </div>
                   </div>
@@ -143,7 +145,7 @@ export default function AdminUsersPage() {
 
           {state === "ready" && collectors.length > 0 && (
             <>
-              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Collectors</h3>
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{t("Collectors")}</h3>
               <div className="flex flex-col gap-2 mb-6">
                 {collectors.map((c) => (
                   <div key={c.userId} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -151,7 +153,7 @@ export default function AdminUsersPage() {
                       {c.user.name} {c.user.username && <span className="font-semibold text-[var(--cyclo-teal)]">@{c.user.username}</span>}
                     </div>
                     <div className="text-xs text-[var(--text-2)] mb-3">
-                      {c.user.phone} · joined {new Date(c.user.createdAt).toLocaleDateString()}
+                      {c.user.phone} · {t("joined")} {new Date(c.user.createdAt).toLocaleDateString()}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -159,21 +161,21 @@ export default function AdminUsersPage() {
                         disabled={actingId === c.userId}
                         className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Verify
+                        {t("Verify")}
                       </button>
                       <button
                         onClick={() => handleCollector(c.userId, "reject")}
                         disabled={actingId === c.userId}
                         className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Reject
+                        {t("Reject")}
                       </button>
                       <button
                         onClick={() => handleCollector(c.userId, "suspend")}
                         disabled={actingId === c.userId}
                         className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Suspend
+                        {t("Suspend")}
                       </button>
                     </div>
                   </div>
@@ -184,13 +186,13 @@ export default function AdminUsersPage() {
 
           {state === "ready" && organizations.length > 0 && (
             <>
-              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Businesses &amp; recyclers</h3>
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{t("Businesses & recyclers")}</h3>
               <div className="flex flex-col gap-2">
                 {organizations.map((o) => (
                   <div key={o.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
                     <div className="text-sm font-extrabold">{o.name}</div>
                     <div className="text-xs text-[var(--text-2)] mb-3">
-                      {o.type} · owner {o.owner.name}
+                      {o.type} · {t("owner")} {o.owner.name}
                       {o.owner.username && <> @{o.owner.username}</>} ({o.owner.phone})
                     </div>
                     <div className="flex gap-2">
@@ -199,21 +201,21 @@ export default function AdminUsersPage() {
                         disabled={actingId === o.id}
                         className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Verify
+                        {t("Verify")}
                       </button>
                       <button
                         onClick={() => handleOrganization(o.id, "reject")}
                         disabled={actingId === o.id}
                         className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Reject
+                        {t("Reject")}
                       </button>
                       <button
                         onClick={() => handleOrganization(o.id, "suspend")}
                         disabled={actingId === o.id}
                         className="flex-1 rounded-full border border-[var(--border)] text-[var(--text-2)] font-bold text-xs py-2.5 disabled:opacity-60"
                       >
-                        Suspend
+                        {t("Suspend")}
                       </button>
                     </div>
                   </div>

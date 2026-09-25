@@ -255,21 +255,27 @@ function LoginContent() {
 
           {mode === "signin" ? (
             <form onSubmit={handleSignIn} className="flex flex-col gap-3">
-              <input
-                type="text"
-                required
-                placeholder={t("Username")}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
-              <PasswordInput
-                required
-                placeholder={t("Password")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Username")}</span>
+                <input
+                  type="text"
+                  required
+                  placeholder={t("Username")}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Password")}</span>
+                <PasswordInput
+                  required
+                  placeholder={t("Password")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
               {error && <p className="text-sm text-[#ffb4a8]">{error}</p>}
               <button
                 type="submit"
@@ -284,49 +290,64 @@ function LoginContent() {
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="flex flex-col gap-3">
-              <input
-                type="text"
-                required
-                placeholder={t("Full name")}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
-              <input
-                type="text"
-                required
-                minLength={3}
-                maxLength={20}
-                pattern="[a-zA-Z0-9][a-zA-Z0-9_.]{1,18}[a-zA-Z0-9]"
-                title="Letters, numbers, underscore or full stop only (not at the start or end)"
-                placeholder={t("Choose a username")}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
-              <input
-                type="tel"
-                required
-                placeholder="+255 7XX XXX XXX or 07XX XXX XXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
-              <input
-                type="email"
-                placeholder={t("Email (optional)")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
-              <PasswordInput
-                required
-                minLength={8}
-                placeholder={t("Password (min. 8 characters)")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
-              />
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Full name")}</span>
+                <input
+                  type="text"
+                  required
+                  placeholder={t("Full name")}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Username")}</span>
+                <input
+                  type="text"
+                  required
+                  minLength={3}
+                  maxLength={20}
+                  pattern="[a-zA-Z0-9][a-zA-Z0-9_.]{1,18}[a-zA-Z0-9]"
+                  title="Letters, numbers, underscore or full stop only (not at the start or end)"
+                  placeholder={t("Choose a username")}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Phone number")}</span>
+                <input
+                  type="tel"
+                  required
+                  placeholder="+255 7XX XXX XXX or 07XX XXX XXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Email (optional)")}</span>
+                <input
+                  type="email"
+                  placeholder={t("Email (optional)")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 px-1">
+                <span className="text-xs font-bold text-[#8FB6AF]">{t("Password")}</span>
+                <PasswordInput
+                  required
+                  minLength={8}
+                  placeholder={t("Password (min. 8 characters)")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-full border border-white/25 bg-transparent px-5 py-3.5 text-center text-white placeholder:text-white/50 focus:outline-none focus:border-[var(--cyclo-green)]"
+                />
+              </label>
               <div className="flex rounded-full border border-white/25 p-1">
                 {ROLE_OPTIONS.map((r) => (
                   <button

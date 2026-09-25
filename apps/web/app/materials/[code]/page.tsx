@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
-import { Star } from "lucide-react";
+import { Star, Recycle } from "lucide-react";
 import { getMaterialByCode } from "@/lib/materials-catalog";
 import { api, WasteListing } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
@@ -64,8 +64,14 @@ export default function MaterialDetailPage({ params }: { params: Promise<{ code:
       </nav>
 
       <div className="mx-auto grid w-full max-w-5xl gap-10 px-6 pb-20 pt-4 lg:grid-cols-[1fr_1fr] lg:items-start lg:px-10">
-        <div className="relative h-72 overflow-hidden rounded-[1.5rem] bg-[#DCE7E4] sm:h-96 lg:h-[420px]">
-          <Image src={material.image} alt={material.title} fill className="object-cover" sizes="(min-width: 1024px) 45vw, 100vw" priority />
+        <div className="relative h-72 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-[#DCE7E4] to-[#B9CDC8] sm:h-96 lg:h-[420px]">
+          {material.image ? (
+            <Image src={material.image} alt={material.title} fill className="object-cover" sizes="(min-width: 1024px) 45vw, 100vw" priority />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Recycle size={72} className="text-[#275458]/40" />
+            </div>
+          )}
           <span className="absolute left-5 top-5 rounded-full bg-black/55 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-white">
             {material.category}
           </span>

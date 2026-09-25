@@ -10,32 +10,22 @@ loadEnv({ path: path.join(__dirname, '.env') });
 
 const prisma = new PrismaClient();
 
+// The full catalog CYCLO deals in — deliberately just these 7 categories, one row
+// each (no per-subtype breakdown), per an explicit product decision to keep the
+// material picker simple rather than exposing a long plastic-resin/glass-color taxonomy.
 const MATERIALS: Array<{
   category: string;
   subtype: string;
   label: string;
   recyclable: boolean;
 }> = [
-  { category: 'plastic', subtype: 'PET', label: 'PET Plastic (bottles)', recyclable: true },
-  { category: 'plastic', subtype: 'HDPE', label: 'HDPE Plastic (containers)', recyclable: true },
-  { category: 'plastic', subtype: 'PVC', label: 'PVC Plastic', recyclable: false },
-  { category: 'plastic', subtype: 'LDPE', label: 'LDPE Plastic (bags/film)', recyclable: true },
-  { category: 'plastic', subtype: 'PP', label: 'Polypropylene', recyclable: true },
-  { category: 'plastic', subtype: 'OTHER', label: 'Other Plastic', recyclable: false },
-  { category: 'paper', subtype: 'OFFICE', label: 'Office/Printer Paper', recyclable: true },
-  { category: 'paper', subtype: 'NEWSPAPER', label: 'Newspaper', recyclable: true },
-  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Corrugated Cardboard', recyclable: true },
-  { category: 'textile', subtype: 'CLOTHING', label: 'Used Clothing/Textiles', recyclable: true },
-  { category: 'glass', subtype: 'CLEAR', label: 'Clear Glass', recyclable: true },
-  { category: 'glass', subtype: 'COLORED', label: 'Colored Glass', recyclable: true },
-  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminum (cans)', recyclable: true },
-  { category: 'metal', subtype: 'STEEL', label: 'Steel/Tin', recyclable: true },
-  { category: 'metal', subtype: 'COPPER', label: 'Copper', recyclable: true },
-  { category: 'e_waste', subtype: 'ELECTRONICS', label: 'Electronics (general)', recyclable: true },
-  { category: 'e_waste', subtype: 'BATTERIES', label: 'Batteries', recyclable: true },
-  { category: 'organic', subtype: 'FOOD_WASTE', label: 'Food Waste', recyclable: true },
-  { category: 'organic', subtype: 'GARDEN_WASTE', label: 'Garden Waste', recyclable: true },
-  { category: 'other', subtype: 'MIXED', label: 'Mixed/Unsorted', recyclable: false },
+  { category: 'plastic', subtype: 'GENERAL', label: 'Plastic waste (bottles, containers, packaging etc)', recyclable: true },
+  { category: 'paper_cardboard', subtype: 'GENERAL', label: 'Paper & cardboard (boxes, newspapers, office paper etc)', recyclable: true },
+  { category: 'metal', subtype: 'GENERAL', label: 'Metal waste (aluminium cans, scrap metal etc)', recyclable: true },
+  { category: 'glass', subtype: 'GENERAL', label: 'Glass waste (bottles and glass containers etc)', recyclable: true },
+  { category: 'e_waste', subtype: 'GENERAL', label: 'E-waste (old electronics, cables, components etc)', recyclable: true },
+  { category: 'textile', subtype: 'GENERAL', label: 'Textile waste (clothes, fabric, offcuts etc)', recyclable: true },
+  { category: 'rubber', subtype: 'GENERAL', label: 'Rubber waste (tyres and rubber materials etc)', recyclable: true },
 ];
 
 // §17 — reference prices (TZS/kg) shown as "Estimated Market Value" everywhere and
@@ -44,14 +34,12 @@ const MATERIALS: Array<{
 // of accuracy; admins are expected to correct these to real market rates.
 const PRICES: Array<{ category: string; pricePerKg: number }> = [
   { category: 'plastic', pricePerKg: 500 },
-  { category: 'paper', pricePerKg: 200 },
-  { category: 'cardboard', pricePerKg: 150 },
+  { category: 'paper_cardboard', pricePerKg: 180 },
   { category: 'textile', pricePerKg: 300 },
   { category: 'glass', pricePerKg: 100 },
   { category: 'metal', pricePerKg: 1200 },
   { category: 'e_waste', pricePerKg: 2000 },
-  { category: 'organic', pricePerKg: 50 },
-  { category: 'other', pricePerKg: 100 },
+  { category: 'rubber', pricePerKg: 250 },
 ];
 
 // §14 — sample listings so the marketplace is never empty on a fresh database. Idempotency
@@ -82,12 +70,12 @@ const DEMO_LISTINGS: Array<{
   // fabricating one. See prisma/seed.ts's main() for how this becomes WasteListing.photos.
   photo?: string;
 }> = [
-  { category: 'plastic', subtype: 'PET', label: 'PET Plastic Bottles', estimatedWeightKg: 25, description: 'Clean PET plastic bottles collected from a household.', seller: 'amina', photo: '/materials/plastic-bottles.png?v=2' },
-  { category: 'metal', subtype: 'ALUMINUM', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', seller: 'neema', photo: '/materials/aluminum-cans.jpg' },
-  { category: 'cardboard', subtype: 'CORRUGATED', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', seller: 'baraka', photo: '/materials/cardboard.jpg?v=2' },
-  { category: 'metal', subtype: 'STEEL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', seller: 'fatuma', photo: '/materials/steel-tin.jpg' },
-  { category: 'paper', subtype: 'OFFICE', label: 'Office Paper', estimatedWeightKg: 20, description: 'Sorted office paper and newspaper bundles, kept dry.', seller: 'godfrey', photo: '/materials/paper.jpg?v=2' },
-  { category: 'textile', subtype: 'CLOTHING', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', seller: 'neema', photo: '/materials/textiles.jpg?v=2' },
+  { category: 'plastic', subtype: 'GENERAL', label: 'Plastic Bottles', estimatedWeightKg: 25, description: 'Clean plastic bottles collected from a household.', seller: 'amina', photo: '/materials/plastic-bottles.png?v=2' },
+  { category: 'metal', subtype: 'GENERAL', label: 'Aluminium Cans', estimatedWeightKg: 15, description: 'Sorted aluminium cans, rinsed and flattened.', seller: 'neema', photo: '/materials/aluminum-cans.jpg' },
+  { category: 'paper_cardboard', subtype: 'GENERAL', label: 'Cardboard', estimatedWeightKg: 40, description: 'Flattened corrugated cardboard, dry and clean.', seller: 'baraka', photo: '/materials/cardboard.jpg?v=2' },
+  { category: 'metal', subtype: 'GENERAL', label: 'Metal Scrap', estimatedWeightKg: 50, description: 'Mixed steel/tin scrap from home repairs.', seller: 'fatuma', photo: '/materials/steel-tin.jpg' },
+  { category: 'paper_cardboard', subtype: 'GENERAL', label: 'Office Paper', estimatedWeightKg: 20, description: 'Sorted office paper and newspaper bundles, kept dry.', seller: 'godfrey', photo: '/materials/paper.jpg?v=2' },
+  { category: 'textile', subtype: 'GENERAL', label: 'Used Clothing', estimatedWeightKg: 10, description: 'Second-hand clothes and fabric offcuts, sorted and clean.', seller: 'neema', photo: '/materials/textiles.jpg?v=2' },
 ];
 
 async function main() {

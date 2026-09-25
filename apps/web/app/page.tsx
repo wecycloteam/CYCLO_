@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, ArrowUpRight } from "lucide-react";
+import { Star, ArrowUpRight, Recycle } from "lucide-react";
 import { api, tokenStore } from "@/lib/api";
 import { MATERIALS_CATALOG } from "@/lib/materials-catalog";
 import { useLanguage } from "@/lib/i18n";
@@ -172,8 +172,14 @@ export default function RootPage() {
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {MATERIALS_CATALOG.map((material) => (
               <article key={material.code} className="overflow-hidden rounded-[1.25rem] border border-[#E2E9E7] bg-white shadow-[0_8px_24px_rgba(16,22,26,.05)] transition hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(16,22,26,.1)]">
-                <div className="relative h-40 overflow-hidden bg-[#DCE7E4]">
-                  <Image src={material.image} alt={material.title} fill className="object-cover transition duration-500 hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
+                <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#DCE7E4] to-[#B9CDC8]">
+                  {material.image ? (
+                    <Image src={material.image} alt={material.title} fill className="object-cover transition duration-500 hover:scale-105" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Recycle size={40} className="text-[#275458]/40" />
+                    </div>
+                  )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-5 pb-4 pt-10">
                     <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-white">{material.code} {t("material")}</span>
                   </div>

@@ -8,10 +8,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { AdminGate } from "@/components/AdminGate";
 import { LoadingState, ErrorState, EmptyState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
 function SellerIdentity({ seller }: { seller: AdminPendingListing["seller"] }) {
+  const { t } = useLanguage();
   const org = seller.organizationMemberships[0]?.organization;
   return (
     <div className="rounded-[var(--r-md)] bg-[var(--surface-2)] p-3 mb-3 text-xs">
@@ -20,11 +22,11 @@ function SellerIdentity({ seller }: { seller: AdminPendingListing["seller"] }) {
         {seller.phone} · {seller.role}
       </div>
       {seller.collectorProfile && (
-        <div className="text-[var(--text-2)]">Collector verification: {seller.collectorProfile.verificationStatus}</div>
+        <div className="text-[var(--text-2)]">{t("Collector verification:")} {t(seller.collectorProfile.verificationStatus)}</div>
       )}
       {org && (
         <div className="text-[var(--text-2)]">
-          {org.name} ({org.type}) — {org.verificationStatus}
+          {org.name} ({org.type}) — {t(org.verificationStatus)}
         </div>
       )}
     </div>
@@ -32,6 +34,7 @@ function SellerIdentity({ seller }: { seller: AdminPendingListing["seller"] }) {
 }
 
 export default function AdminListingsPage() {
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [listings, setListings] = useState<AdminPendingListing[]>([]);
   const [state, setState] = useState<LoadState>("loading");
@@ -49,7 +52,7 @@ export default function AdminListingsPage() {
         setState("ready");
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "We couldn't load pending listings.");
+        setError(err instanceof ApiError ? err.message : t("We couldn't load pending listings."));
         setState("error");
       });
   }
@@ -65,7 +68,7 @@ export default function AdminListingsPage() {
       await api.adminApproveListing(id);
       setListings((prev) => prev.filter((l) => l.id !== id));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't approve this listing.");
+      setActionError(err instanceof ApiError ? err.message : t("Couldn't approve this listing."));
     } finally {
       setActingId(null);
     }
@@ -78,7 +81,7 @@ export default function AdminListingsPage() {
       await api.adminRejectListing(id, reasonDrafts[id]);
       setListings((prev) => prev.filter((l) => l.id !== id));
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't reject this listing.");
+      setActionError(err instanceof ApiError ? err.message : t("Couldn't reject this listing."));
     } finally {
       setActingId(null);
     }
@@ -89,11 +92,11 @@ export default function AdminListingsPage() {
       <AppHeader title="Pending Listings" back />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         <AdminGate authState={authState} user={user}>
-          {state === "loading" && <LoadingState label="Loading pending listings…" />}
-          {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+          {state === "loading" && <LoadingState label={t("Loading pending listings…")} />}
+          {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
           {state === "ready" && listings.length === 0 && (
-            <EmptyState title="Nothing pending review" hint="Newly published listings will show up here for approval." />
+            <EmptyState title={t("Nothing pending review")} hint={t("Newly published listings will show up here for approval.")} />
           )}
 
           {actionError && <p className="text-xs text-[var(--critical)] mb-3">{actionError}</p>}
@@ -103,7 +106,7 @@ export default function AdminListingsPage() {
               {listings.map((listing) => (
                 <div key={listing.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-4">
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <span className="text-sm font-extrabold">{listing.material.label}</span>
+                    <span className="text-sm font-extrabold">{t(listing.material.label)}</span>
                     {listing.askingPrice != null && (
                       <span className="text-sm font-extrabold text-[var(--cyclo-teal)]">
                         TZS {listing.askingPrice.toLocaleString()}
@@ -112,7 +115,7 @@ export default function AdminListingsPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-1 text-xs text-[var(--text-2)] mb-3">
                     <MapPin size={12} className="inline" /> {listing.location.region ?? listing.location.label} ·{" "}
-                    <Scale size={12} className="inline" /> {listing.estimatedWeightKg} kg · submitted{" "}
+                    <Scale size={12} className="inline" /> {listing.estimatedWeightKg} kg · {t("submitted")}{" "}
                     {new Date(listing.createdAt).toLocaleDateString()}
                   </div>
 
@@ -121,7 +124,7 @@ export default function AdminListingsPage() {
                   {listing.description && <p className="text-xs text-[var(--text-2)] mb-3">{listing.description}</p>}
 
                   <input
-                    placeholder="Rejection reason (optional)"
+                    placeholder={t("Rejection reason (optional)")}
                     value={reasonDrafts[listing.id] ?? ""}
                     onChange={(e) => setReasonDrafts((prev) => ({ ...prev, [listing.id]: e.target.value }))}
                     className="w-full rounded-[var(--r-md)] border border-[var(--border)] px-3 py-2 text-xs mb-3"
@@ -133,14 +136,14 @@ export default function AdminListingsPage() {
                       disabled={actingId === listing.id}
                       className="flex-1 rounded-full bg-[var(--cyclo-teal)] text-white font-bold text-xs py-2.5 disabled:opacity-60"
                     >
-                      Approve
+                      {t("Approve")}
                     </button>
                     <button
                       onClick={() => handleReject(listing.id)}
                       disabled={actingId === listing.id}
                       className="flex-1 rounded-full border border-[var(--critical)] text-[var(--critical)] font-bold text-xs py-2.5 disabled:opacity-60"
                     >
-                      Reject
+                      {t("Reject")}
                     </button>
                   </div>
                 </div>

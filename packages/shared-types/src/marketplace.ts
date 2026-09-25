@@ -5,14 +5,12 @@
 
 export const WASTE_CATEGORIES = [
   "plastic",
-  "paper",
-  "cardboard",
-  "textile",
-  "glass",
+  "paper_cardboard",
   "metal",
+  "glass",
   "e_waste",
-  "organic",
-  "other",
+  "textile",
+  "rubber",
 ] as const;
 export type WasteCategory = (typeof WASTE_CATEGORIES)[number];
 

@@ -10,8 +10,7 @@ import {
   FileText,
   GlassWater,
   Cpu,
-  Leaf,
-  Package,
+  Circle,
   Shirt,
   Trash2,
   MapPin,
@@ -37,24 +36,22 @@ import { LoadingState, ErrorState } from "@/components/AsyncState";
 
 const CATEGORY_TILES: { key: string; label: string; icon: LucideIcon }[] = [
   { key: "plastic", label: "Plastic", icon: Recycle },
+  { key: "paper_cardboard", label: "Paper & cardboard", icon: FileText },
   { key: "metal", label: "Metal", icon: Magnet },
-  { key: "paper", label: "Paper", icon: FileText },
-  { key: "textile", label: "Textile", icon: Shirt },
   { key: "glass", label: "Glass", icon: GlassWater },
-  { key: "e_waste", label: "Electronics", icon: Cpu },
-  { key: "organic", label: "Organic", icon: Leaf },
+  { key: "e_waste", label: "E-waste", icon: Cpu },
+  { key: "textile", label: "Textile", icon: Shirt },
+  { key: "rubber", label: "Rubber", icon: Circle },
 ];
 
 const CATEGORY_ICON: Record<string, LucideIcon> = {
   plastic: Recycle,
+  paper_cardboard: FileText,
   metal: Magnet,
-  paper: FileText,
-  cardboard: Package,
-  textile: Shirt,
   glass: GlassWater,
   e_waste: Cpu,
-  organic: Leaf,
-  other: Trash2,
+  textile: Shirt,
+  rubber: Circle,
 };
 
 function StatTile({ label, value }: { label: string; value: string }) {

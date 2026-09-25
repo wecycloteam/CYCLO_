@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { AdminGate } from "@/components/AdminGate";
 import { LoadingState, ErrorState } from "@/components/AsyncState";
+import { useLanguage } from "@/lib/i18n";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -41,6 +42,7 @@ function CountBreakdown({ title, counts }: { title: string; counts: Record<strin
 }
 
 export default function AdminDashboardPage() {
+  const { t } = useLanguage();
   const { state: authState, user } = useCurrentUser();
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [activity, setActivity] = useState<AuditLogEntry[]>([]);
@@ -58,7 +60,7 @@ export default function AdminDashboardPage() {
         setState("ready");
       })
       .catch((err) => {
-        setError(err instanceof ApiError ? err.message : "We couldn't load the dashboard.");
+        setError(err instanceof ApiError ? err.message : t("We couldn't load the dashboard."));
         setState("error");
       });
   }
@@ -72,26 +74,26 @@ export default function AdminDashboardPage() {
       <AppHeader title="Admin Dashboard" />
       <div className="flex-1 max-w-md md:max-w-xl lg:max-w-3xl w-full mx-auto px-6 py-6">
         <AdminGate authState={authState} user={user}>
-          {state === "loading" && <LoadingState label="Loading dashboard…" />}
-          {state === "error" && <ErrorState message={error ?? "Something went wrong."} onRetry={load} />}
+          {state === "loading" && <LoadingState label={t("Loading dashboard…")} />}
+          {state === "error" && <ErrorState message={error ?? t("Something went wrong.")} onRetry={load} />}
 
           {state === "ready" && dashboard && (
             <>
               <div className="rounded-[var(--r-lg)] bg-[var(--cyclo-teal)] p-5 mb-4">
                 <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--cyclo-mint)]">
-                  Total platform revenue
+                  {t("Total platform revenue")}
                 </div>
                 <div className="text-2xl font-extrabold text-white">
                   TZS {Math.round(dashboard.totalPlatformRevenueTzs).toLocaleString()}
                 </div>
                 <div className="mt-1 text-[10px] text-[var(--cyclo-mint)]">
-                  Real platform fees collected across all transactions — TZS 0 until a fee schedule is set.
+                  {t("Real platform fees collected across all transactions — TZS 0 until a fee schedule is set.")}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <StatTile label="Total Users" value={dashboard.totalUsers} />
-                <StatTile label="Pending Listing Reviews" value={dashboard.pendingListingModerationCount} />
+                <StatTile label={t("Total Users")} value={dashboard.totalUsers} />
+                <StatTile label={t("Pending Listing Reviews")} value={dashboard.pendingListingModerationCount} />
               </div>
 
               {dashboard.pendingListingModerationCount > 0 && (
@@ -99,8 +101,9 @@ export default function AdminDashboardPage() {
                   href="/admin/listings"
                   className="block rounded-[var(--r-md)] bg-[var(--cyclo-teal)] text-white font-bold text-sm text-center py-3 mb-3"
                 >
-                  Review {dashboard.pendingListingModerationCount} pending listing
-                  {dashboard.pendingListingModerationCount === 1 ? "" : "s"} →
+                  {t("Review {count} pending listing{plural} →")
+                    .replace("{count}", String(dashboard.pendingListingModerationCount))
+                    .replace("{plural}", dashboard.pendingListingModerationCount === 1 ? "" : "s")}
                 </Link>
               )}
 
@@ -109,24 +112,26 @@ export default function AdminDashboardPage() {
                   href="/admin/reports"
                   className="block rounded-[var(--r-md)] bg-[var(--critical)] text-white font-bold text-sm text-center py-3 mb-6"
                 >
-                  {pendingReports.length} suspicious activity report{pendingReports.length === 1 ? "" : "s"} awaiting review →
+                  {t("{count} suspicious activity report{plural} awaiting review →")
+                    .replace("{count}", String(pendingReports.length))
+                    .replace("{plural}", pendingReports.length === 1 ? "" : "s")}
                 </Link>
               )}
 
-              <CountBreakdown title="Users by role" counts={dashboard.usersByRole} />
-              <CountBreakdown title="Collectors by verification" counts={dashboard.collectorsByVerificationStatus} />
-              <CountBreakdown title="Organizations by verification" counts={dashboard.organizationsByVerificationStatus} />
-              <CountBreakdown title="Listings by status" counts={dashboard.listingsByStatus} />
-              <CountBreakdown title="Pickups by status" counts={dashboard.pickupsByStatus} />
+              <CountBreakdown title={t("Users by role")} counts={dashboard.usersByRole} />
+              <CountBreakdown title={t("Collectors by verification")} counts={dashboard.collectorsByVerificationStatus} />
+              <CountBreakdown title={t("Organizations by verification")} counts={dashboard.organizationsByVerificationStatus} />
+              <CountBreakdown title={t("Listings by status")} counts={dashboard.listingsByStatus} />
+              <CountBreakdown title={t("Pickups by status")} counts={dashboard.pickupsByStatus} />
 
-              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">Recent activity</h3>
-              {activity.length === 0 && <p className="text-xs text-[var(--text-on-bg-2)]">No admin actions yet.</p>}
+              <h3 className="text-xs font-extrabold text-[var(--text-on-bg-2)] uppercase tracking-wide mb-2">{t("Recent activity")}</h3>
+              {activity.length === 0 && <p className="text-xs text-[var(--text-on-bg-2)]">{t("No admin actions yet.")}</p>}
               <div className="flex flex-col gap-2">
                 {activity.map((a) => (
                   <div key={a.id} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--surface)] p-3">
-                    <div className="text-xs font-bold">{a.action.replace(/_/g, " ")}</div>
+                    <div className="text-xs font-bold">{t(a.action.replace(/_/g, " "))}</div>
                     <div className="text-[11px] text-[var(--text-2)]">
-                      {a.actorName ?? "System"} · {new Date(a.createdAt).toLocaleString()}
+                      {a.actorName ?? t("System")} · {new Date(a.createdAt).toLocaleString()}
                     </div>
                   </div>
                 ))}
